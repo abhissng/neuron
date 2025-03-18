@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/database"
@@ -13,11 +14,12 @@ import (
 
 // PostgreSQL-specific implementation
 type PostgresDB[T any] struct {
-	pool     *pgxpool.Pool
-	options  *database.PostgresDBOptions
-	db       T
-	factory  database.PostgresQueriesFactory[T]
-	stopChan chan struct{}
+	pool               *pgxpool.Pool
+	options            *database.PostgresDBOptions
+	db                 T
+	factory            database.PostgresQueriesFactory[T]
+	stopChan           chan struct{}
+	checkAliveInterval time.Duration
 }
 
 // NewPostgresFactory creates a new PostgresDB with a custom factory.
@@ -48,6 +50,8 @@ func (p *PostgresDB[T]) Connect(ctx context.Context) error {
 	if err := p.Ping(); err != nil {
 		return err
 	}
+
+	p.checkAliveInterval = p.options.GetCheckAliveInterval()
 
 	// Use the factory to initialize the Queries struct.
 	if !helpers.IsEmpty(p.options.GetQueryProvider()) {

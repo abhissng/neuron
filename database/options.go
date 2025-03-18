@@ -1,7 +1,10 @@
 package database
 
 import (
+	"time"
+
 	"github.com/abhissng/neuron/adapters/log"
+	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/types"
 )
@@ -16,15 +19,17 @@ func NewDBOptions[T DBConfig](opts ...DBOption) T {
 	switch any(defaultConfig).(type) {
 	case *PostgresDBOptions:
 		defaultConfig = any(&PostgresDBOptions{
-			dsn:       "postgresql://user:password@localhost:5432/mydatabase",
-			maxConns:  10,
-			debugMode: false,
+			dsn:                "postgresql://user:password@localhost:5432/mydatabase",
+			maxConns:           10,
+			debugMode:          false,
+			checkAliveInterval: constant.DatabaseCheckAliveInterval,
 		}).(T)
 	case *MySQLDBOptions:
 		defaultConfig = any(&MySQLDBOptions{
-			dsn:       "user:password@tcp(localhost:3306)/mydatabase",
-			maxConns:  10,
-			debugMode: false,
+			dsn:                "user:password@tcp(localhost:3306)/mydatabase",
+			maxConns:           10,
+			debugMode:          false,
+			checkAliveInterval: constant.DatabaseCheckAliveInterval,
 		}).(T)
 	}
 
@@ -70,9 +75,15 @@ func WithQueryProvider(queryProvider types.DBType) DBOption {
 }
 
 // WithLogger sets the logger for any database.
-
 func WithLogger(logger *log.Log) DBOption {
 	return func(c DBConfig) {
 		c.setLogger(logger)
+	}
+}
+
+// WithCheckAliveInterval sets the interval for checking the health of the database connection.
+func WithCheckAliveInterval(interval time.Duration) DBOption {
+	return func(c DBConfig) {
+		c.setCheckAliveInterval(interval)
 	}
 }

@@ -3,17 +3,19 @@ package database
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/abhissng/neuron/adapters/log"
 )
 
 // MySQLDBOptions struct for MySQL configuration.
 type MySQLDBOptions struct {
-	dsn           string
-	queryProvider string
-	maxConns      int
-	debugMode     bool
-	log           *log.Log
+	dsn                string
+	queryProvider      string
+	maxConns           int
+	debugMode          bool
+	log                *log.Log
+	checkAliveInterval time.Duration
 }
 
 // MySqlDBTX is the common interface for executing database queries using SQLC.
@@ -52,6 +54,11 @@ func (m *MySQLDBOptions) GetQueryProvider() string {
 	return m.queryProvider
 }
 
+// GetCheckAliveInterval returns the interval for checking the health of the database connection.
+func (m *MySQLDBOptions) GetCheckAliveInterval() time.Duration {
+	return m.checkAliveInterval
+}
+
 // setDSN sets the Data Source Name (DSN) for the MySQL connection.
 // The DSN string should be in the format:
 // user:password@tcp(host:port)/dbname?options
@@ -74,6 +81,11 @@ func (m *MySQLDBOptions) setDebugMode(debug bool) {
 // This can be used to switch between different query sources (e.g., raw, sqlc).
 func (m *MySQLDBOptions) setQueryProvider(queryProvider string) {
 	m.queryProvider = queryProvider
+}
+
+// setCheckAliveInterval sets the interval for checking the health of the database connection.
+func (m *MySQLDBOptions) setCheckAliveInterval(interval time.Duration) {
+	m.checkAliveInterval = interval
 }
 
 // setLogger sets the logger for the MySQL client to use for logging messages.

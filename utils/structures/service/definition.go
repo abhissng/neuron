@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// TODO change main service, microservice and states schema changes
 // ServiceDefinition represents the configuration of a service.
 type ServiceDefinition struct {
 	ServiceName string    `json:"serviceName"`
