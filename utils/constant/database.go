@@ -1,0 +1,20 @@
+package constant
+
+import (
+	"time"
+
+	"github.com/abhissng/neuron/utils/types"
+)
+
+// Database constants
+const (
+	PostgreSQL                 types.DBType  = "postgres"
+	MySQL                      types.DBType  = "mysql"
+	SQLCProvider               types.DBType  = "sqlc"
+	DatabaseCheckAliveInterval time.Duration = 30 * time.Second
+)
+
+// Database constant Queries
+const (
+	DatabaseExistQuery = "SELECT 1 FROM pg_database WHERE datname = $1"
+)

@@ -1,0 +1,442 @@
+[  
+    {
+        "Code": "internal-server-error",
+        "Message": "Internal Server Error", 
+        "Description": "An internal server error occurred.", 
+        "Component": "service",
+        "ResponseType": "InternalServerError" 
+  },
+  {
+      "Code": "error-bucket-upload-failure",
+      "Message": "Bucket upload failed",
+      "Description": "Bucket upload failed",
+      "Component": "adaptors",
+      "ResponseType": "Unauthorized"
+  },
+  {
+      "Code": "error-bucket-credential-failure",
+      "Message": "Invalid bucket credentials",
+      "Description": "Invalid bucket credentials",
+      "Component": "adaptors",
+      "ResponseType": "Unauthorized"
+  },
+  {
+      "Code": "error-file-unavailable",
+      "Message": "File not found or unavailable",
+      "Description": "File not found or unavailable",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "param-not-found",
+      "Message": "Missing parameter: {{.name}}",
+      "Description": "Missing parameter: {{.name}}",
+      "Component": "controller",
+      "ResponseType": "NotFound"
+  },
+  {
+      "Code": "param-malformed",
+      "Message": "Malformed parameter: {{.name}}",
+      "Description": "Malformed parameter: {{.name}}",
+      "Component": "adaptors",
+      "ResponseType": "Unauthorized"
+  },
+  {
+      "Code": "error-source-invalid",
+      "Message": "Invalid parameter source: {{.source}}",
+      "Description": "Invalid parameter source: {{.source}}",
+      "Component": "adaptors",
+      "ResponseType": "Unauthorized"
+  },
+  {
+      "Code": "error-type-conversion",
+      "Message": "Failed to convert parameter {{.name}} with value {{.value}} to {{.targetType}}",
+      "Description": "Failed to convert parameter {{.name}} with value {{.value}} to {{.targetType}}",
+      "Component": "library",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "gin-context-key-not-found",
+      "Message": "Failed to retrieve key {{.key}} from gin context",
+      "Description": "Failed to retrieve key {{.key}} from gin context",
+      "Component": "service",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "service-context-not-found",
+      "Message": "Service Context can not be found for the incoming request, Please contact {{.key}} for more information",
+      "Description": "Service Context can not be found for the incoming request, Please contact {{.key}} for more information",
+      "Component": "service",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-marshal-failed",
+      "Message": "Failed to marshal {{.type}} data",
+      "Description": "Failed to marshal {{.type}} data",
+      "Component": "library",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-unmarshal-failed",
+      "Message": "Failed to unmarshal {{.type}} data",
+      "Description": "Failed to unmarshal {{.type}} data",
+      "Component": "library",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-publish-message-failed",
+      "Message": "Failed to publish subject: {{.subject}}, message: {{.message}}",
+      "Description": "Failed to publish subject: {{.subject}}, message: {{.message}}",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-subscribe-to-subject-failed",
+      "Message": "Failed to subscribe to subject: {{.subject}}",
+      "Description": "Failed to subscribe to subject: {{.subject}}",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-already-subscribed-to-subject",
+      "Message": "Already subscribed to subject: {{.subject}}",
+      "Description": "Already subscribed to subject: {{.subject}}",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-subject-handler-failed",
+      "Message": "Handler failed for subject: {{.subject}}",
+      "Description": "Handler failed for subject: {{.subject}}",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-unsubscribe-failed",
+      "Message": "Failed to unsubscribe from subject: {{.subject}}",
+      "Description": "Failed to unsubscribe from subject: {{.subject}}",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-publish-rollback-event-failed",
+      "Message": "Failed to publish rollback event",
+      "Description": "Failed to publish rollback event",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-publish-event-to-next-subject-failed",
+      "Message": "Failed to publish event to next subject: {{.subject}}",
+      "Description": "Failed to publish event to next subject: {{.subject}}",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-step-rollback-failed",
+      "Message": "Rollback failed for step {{.step}} with correlation ID {{.correlation_id}}",
+      "Description": "Rollback failed for step {{.step}} with correlation ID {{.correlation_id}}",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-unknown-correlation-Code",
+      "Message": "Unknown correlation ID: {{.correlation_id}} encountered.",
+      "Description": "The system encountered an unknown correlation ID: {{.correlation_id}}. This ID was not recognized by the system and may be missing, malformed, or associated with a completed or failed operation.",
+      "Component": "service",
+      "ResponseType": "BadRequest"
+  },
+  {
+      "Code": "error-create-token-failed",
+      "Message": "Unable to create token.",
+      "Description": "Unable to create token.",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+      "Code": "error-create-token-Code-failed",
+      "Message": "Unable to create token ID.",
+      "Description": "Unable to create token ID.",
+      "Component": "adaptors",
+      "ResponseType": "InternalServerError"
+  },
+  {
+    "Code": "error-missing-auth-credential",
+    "Message": "Authentication credentials are missing.",
+    "Description": "The request does not contain the required authentication token or credentials.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized"
+  },
+  {
+    "Code": "error-malformed-auth-token",
+    "Message": "Authentication token is malformed or invalid.",
+    "Description": "The provided authentication token is incorrectly formatted or does not meet the validation criteria.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized"
+  },
+  {
+    "Code": "error-expired-auth-token",
+    "Message": "Authentication token has expired.",
+    "Description": "The provided authentication token is no longer valid as it has exceeded its expiration time.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized"
+  },
+  {
+    "Code": "error-untrusted-token-issuer",
+    "Message": "Token issuer is not trusted.",
+    "Description": "The authentication token was issued by an untrusted or unknown source.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized"
+  },
+  {
+    "Code": "error-auth-payload-invalid",
+    "Message": "Authentication payload has an invalid structure.",
+    "Description": "The authentication payload does not conform to the expected format or is missing required fields.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest"
+  },
+  {
+    "Code": "error-auth-validation-failed",
+    "Message": "Authentication token validation failed.",
+    "Description": "The authentication token failed one or more validation checks, making it unusable.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized"
+  },
+  {
+    "Code": "error-request-body-data-extraction-failed",
+    "Message": "Failed to extract data from request body",
+    "Description": "An error occurred while extracting data from the request body.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
+  },{
+    "Code": "error-form-data-extraction-failed",
+    "Message": "Failed to extract data from form data",
+    "Description": "An error occurred while extracting data from the request form data.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
+  },{
+    "Code": "error-business-id-path-param-missing",
+    "Message": "Business ID path parameter is missing",
+    "Description": "The required Business ID path parameter is missing in the request.",
+    "Component": "adaptors", 
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-time-query-param-invalid",
+    "Message": "Time query parameter is invalid",
+    "Description": "The provided time query parameter is invalid or missing.",
+    "Component": "httadaptorsp",
+    "ResponseType": "BadRequest"
+  },
+  {
+    "Code": "error-user-id-context-missing",
+    "Message": "{{.user_id}} field is missing from context",
+    "Description": "The {{.user_id}} field could not be retrieved from the context.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-user-id-query-param-missing",
+    "Message": "{{.user_id}} query parameter is missing",
+    "Description": "The required {{.user_id}} query parameter is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest"
+  },
+  {
+    "Code": "error-business-id-header-missing",
+    "Message": "{{.business_id}} header is missing",
+    "Description": "The required {{.business_id}} header is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest"
+  },
+  {
+    "Code": "error-user-id-header-missing",
+    "Message": "{{.user_id}} header is missing",
+    "Description": "The required {{.user_id}} header is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest"
+  },
+  {
+    "Code": "error-correlation-id-header-missing",
+    "Message": "{{.correlation_id}} header is missing",
+    "Description": "The required {{.correlation_id}} header is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest"
+  },
+  {
+    "Code": "error-auth-signature-missing",
+    "Message": "Authorization signature is missing",
+    "Description": "The authorization signature is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized" 
+  },
+  {
+    "Code": "error-auth-signature-invalid",
+    "Message": "Authorization signature is invalid",
+    "Description": "The provided authorization signature is invalid.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized" 
+  },
+  {
+    "Code": "error-x-subject-header-missing",
+    "Message": "X-Subject header is missing",
+    "Description": "The required X-Subject header is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest"
+  },
+  {
+    "Code": "error-server-start-failed",
+    "Message": "Server failed to start",
+    "Description": "An error occurred while starting the server.",
+    "Component": "adaptors",
+    "ResponseType": "InternalServerError" 
+  },
+  {
+    "Code": "error-request-body-invalid",
+    "Message": "Invalid request body",
+    "Description": "The request body is invalid or malformed.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-business-not-found",
+    "Message": "Business not found",
+    "Description": "The specified business could not be found.",
+    "Component": "business", 
+    "ResponseType": "NotFound" 
+  },
+  {
+    "Code": "error-config-load-failure",
+    "Message": "Failed to load configuration",
+    "Description": "An error occurred while loading the application configuration.",
+    "Component": "config",
+    "ResponseType": "InternalServerError" 
+  },
+  {
+    "Code": "error-database-operation-failed",
+    "Message": "Database operation failed",
+    "Description": "An error occurred during a database operation.",
+    "Component": "database",
+    "ResponseType": "InternalServerError" 
+  },
+  {
+    "Code": "error-service-query-param-missing",
+    "Message": "{{.service}} query parameter is missing",
+    "Description": "The required {{.service}} query parameter is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest"
+  },
+  {
+    "Code": "error-service-name-missing",
+    "Message": "Service name is missing",
+    "Description": "The required service name is missing in the request.",
+    "Component": "adaptors", 
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-request-payload-nil",
+    "Message": "Request payload is nil",
+    "Description": "The required request payload is nil in the request.",
+    "Component": "engine",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-state-execution-failed",
+    "Message": "State execution failed for state {{.state}}",
+    "Description": "An error occurred while executing a state: {{.state}}",
+    "Component": "engine",
+    "ResponseType": "InternalServerError" 
+  },
+  {
+    "Code": "error-headers-not-found",
+    "Message": "Headers not found",
+    "Description": "The required headers are not found in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest"
+  },
+  {
+    "Code": "error-inactive-service",
+    "Message": "Service {{.service}} is inactive",
+    "Description": "The service {{.service}} is inactive.",
+    "Component": "engine",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-service-definition-not-found",
+    "Message": "Service definition not found for service {{.service}}",
+    "Description": "The service definition for the specified service {{.service}} could not be found.",
+    "Component": "engine",
+    "ResponseType": "NotFound" 
+  },
+  {
+    "Code": "error-url-validation-failed",
+    "Message": "URL validation failed for url {{.url}}",
+    "Description": "An error occurred while validating the URL: {{.url}}",
+    "Component": "http",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-url-parsing-failed",
+    "Message": "URL parsing failed for url {{.url}}",
+    "Description": "An error occurred while parsing the URL: {{.url}}",
+    "Component": "http",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-url-construction-failed",
+    "Message": "URL construction failed for url {{.url}} with queryParams {{.queryParams}}",
+    "Description": "An error occurred while constructing the URL: {{.url}} with queryParams {{.queryParams}}",
+    "Component": "http",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-create-request-body-failed",
+    "Message": "Request body creation failed",
+    "Description": "An error occurred while creating the request body.",
+    "Component": "http",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-create-http-request-failed",
+    "Message": "HTTP request creation failed",
+    "Description": "An error occurred while creating the HTTP request.",
+    "Component": "http",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-create-http-client-failed",
+    "Message": "HTTP client creation failed",
+    "Description": "An error occurred while creating the HTTP client.",
+    "Component": "http",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-create-http-request-failed",
+    "Message": "HTTP request creation failed",
+    "Description": "An error occurred while creating the HTTP request.",
+    "Component": "http",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-decode-response-failed",
+    "Message": "Response decoding failed",
+    "Description": "An error occurred while decoding the response.",
+    "Component": "http",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-response-result-error",
+    "Message": "Response result has an error",
+    "Description": "The response result has an error.",
+    "Component": "http",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-missing-correlation-id",
+    "Message": "Correlation ID is missing",
+    "Description": "The correlation ID is missing.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
+  }
+
+]

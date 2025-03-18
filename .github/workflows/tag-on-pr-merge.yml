@@ -1,0 +1,62 @@
+name: Tag on PR Merge to Main
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  tag-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository with full commit history
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch the entire commit history
+
+      # Step 2: Set up Git user for tagging
+      - name: Set up Git user
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      # Step 3: Ensure the PR is merged (not just closed)
+      - name: Ensure PR is merged
+        run: |
+          if [ "${{ github.event.pull_request.merged }}" != "true" ]; then
+            echo "Pull request was not merged, skipping tag creation."
+            exit 0
+          fi
+
+      # Step 4: Generate custom tag
+      - name: Generate tag
+        id: tag
+        run: |
+          # Define the base version (can be dynamically fetched if needed)
+          BASE_VERSION="v0.0.1"
+
+          # Get current date in YYYYMMDD format
+          DATE=$(date +%Y%m%d)
+
+          # Get the latest short commit hash from the merged PR
+          SHORT_COMMIT=$(git rev-parse --short HEAD)
+
+          # Combine into custom tag format
+          TAG="$BASE_VERSION-$DATE-$SHORT_COMMIT"
+
+          # Export tag as an environment variable for later steps
+          echo "tag=$TAG" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT  # Use GITHUB_OUTPUT instead of ::set-output
+
+      # Step 5: Push the tag to the repository
+      - name: Push tag to origin
+        run: |
+          git tag $TAG
+          git push origin $TAG
+        env:
+          TAG: ${{ steps.tag.outputs.TAG }}  # Use the output from the tag step
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Add GITHUB_TOKEN for permissions to push
