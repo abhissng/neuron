@@ -3,6 +3,7 @@ package mysql
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/database"
@@ -21,6 +22,11 @@ func (db *MySQLDB[T]) Close() error {
 // FetchStopChannel returns a channel that is closed when the database connection is closed.
 func (db *MySQLDB[T]) FetchStopChannel() <-chan struct{} {
 	return db.stopChan
+}
+
+// FetchCheckAliveInterval returns the interval for checking the health of the database connection.
+func (db *MySQLDB[T]) FetchCheckAliveInterval() time.Duration {
+	return db.checkAliveInterval
 }
 
 // Query executes a SQL query and returns a Rows object.

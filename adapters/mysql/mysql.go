@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	// "log"
 
@@ -15,11 +16,12 @@ import (
 
 // MySQL-specific implementation
 type MySQLDB[T any] struct {
-	conn     *sql.DB
-	options  *database.MySQLDBOptions
-	db       T
-	factory  database.MySqlQueriesFactory[T]
-	stopChan chan struct{}
+	conn               *sql.DB
+	options            *database.MySQLDBOptions
+	db                 T
+	factory            database.MySqlQueriesFactory[T]
+	stopChan           chan struct{}
+	checkAliveInterval time.Duration
 }
 
 // NewMySQLFactory creates a new MySQLDB factory with the given options.
@@ -46,6 +48,7 @@ func (m *MySQLDB[T]) Connect(ctx context.Context) error {
 	if err := m.Ping(); err != nil {
 		return err
 	}
+	m.checkAliveInterval = m.options.GetCheckAliveInterval()
 
 	if m.options.IsDebugMode() {
 		logs := log.NewBasicLogger(helpers.IsProdEnvironment())

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/database"
@@ -30,6 +31,11 @@ func (db *PostgresDB[T]) Close() {
 // FetchStopChannel returns a channel that is closed when the database connection is closed.
 func (db *PostgresDB[T]) FetchStopChannel() <-chan struct{} {
 	return db.stopChan
+}
+
+// FetchCheckAliveInterval returns the interval for checking the health of the database connection.
+func (db *PostgresDB[T]) FetchCheckAliveInterval() time.Duration {
+	return db.checkAliveInterval
 }
 
 // Query executes a SQL query and returns a Rows object.

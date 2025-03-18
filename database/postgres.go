@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/jackc/pgx/v5"
@@ -10,11 +11,12 @@ import (
 
 // PostgresDBOptions struct for PostgreSQL configuration.
 type PostgresDBOptions struct {
-	dsn           string
-	queryProvider string
-	maxConns      int
-	debugMode     bool
-	log           *log.Log
+	dsn                string
+	queryProvider      string
+	maxConns           int
+	debugMode          bool
+	log                *log.Log
+	checkAliveInterval time.Duration
 }
 
 // PostgresDBTX is the common interface for executing database queries using SQLC.
@@ -52,6 +54,11 @@ func (p *PostgresDBOptions) GetQueryProvider() string {
 	return p.queryProvider
 }
 
+// GetCheckAliveInterval returns the interval for checking the health of the database connection.
+func (p *PostgresDBOptions) GetCheckAliveInterval() time.Duration {
+	return p.checkAliveInterval
+}
+
 // setDSN sets the Data Source Name (DSN) for the PostgreSQL connection.
 // The DSN string should be in the format:
 // "postgresql://user:password@host:port/dbname?options
@@ -79,4 +86,9 @@ func (p *PostgresDBOptions) setQueryProvider(queryProvider string) {
 // setLogger sets the logger for the PostgreSQL client to use for logging messages.
 func (p *PostgresDBOptions) setLogger(logger *log.Log) {
 	p.log = logger
+}
+
+// setCheckAliveInterval sets the interval for checking the health of the database connection.
+func (p *PostgresDBOptions) setCheckAliveInterval(interval time.Duration) {
+	p.checkAliveInterval = interval
 }

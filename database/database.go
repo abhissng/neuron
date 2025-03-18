@@ -24,6 +24,7 @@ type Database interface {
 	GetProviderDB() any // GetDB should return the underlying query or database object (e.g., *sqlc.Queries)
 	IsQueryProviderAvailable() bool
 	FetchStopChannel() <-chan struct{}
+	FetchCheckAliveInterval() time.Duration
 }
 
 // DBOptions defines a generic interface for database-specific options.
@@ -43,10 +44,9 @@ func NewDatabase[T Database, O DBOptions, Q any](
 
 	// Establish the connection and initialize the query struct.
 	if err := db.Connect(context.Background()); err != nil {
-		// var empty Q
 		return nil, fmt.Errorf("failed to connect to the database: %w", err)
 	}
-	go MonitorDB[Database](context.Background(), db, constant.DatabaseCheckAliveInterval)
+	go MonitorDB[Database](context.Background(), db)
 
 	return db, nil
 }
@@ -101,16 +101,18 @@ type DBConfig interface {
 	IsDebugMode() bool
 	GetQueryProvider() string
 	GetLogger() *log.Log
+	GetCheckAliveInterval() time.Duration
 	setDSN(string)
 	setMaxConns(int)
 	setDebugMode(bool)
 	setQueryProvider(string)
 	setLogger(*log.Log)
+	setCheckAliveInterval(time.Duration)
 }
 
 // MonitorDB continuously monitors the database connection.
-func MonitorDB[T Database](ctx context.Context, dbInstance T, interval time.Duration) {
-	ticker := time.NewTicker(interval)
+func MonitorDB[T Database](ctx context.Context, dbInstance T) {
+	ticker := time.NewTicker(dbInstance.FetchCheckAliveInterval())
 	defer ticker.Stop()
 
 	logger := log.NewBasicLogger(helpers.IsProdEnvironment())
