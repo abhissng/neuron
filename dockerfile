@@ -31,8 +31,8 @@ EOF
 
 # Download dependencies explicitly
 RUN go mod tidy && \
-    # go get -v github.com/abhissng/core-structures@v0.0.1-20250303-08f02b3 && \
-    # go get -v github.com/abhissng/neuron@v0.0.1-20250320-205c58c && \
+    go get -v github.com/abhissng/core-structures@${CORE_TAG} && \
+    go get -v github.com/abhissng/neuron@${NEURON_TAG} && \
     go mod download
 
 # Verify that the dependencies were downloaded
