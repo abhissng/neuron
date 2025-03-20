@@ -20,13 +20,13 @@ RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "htt
 # Create a minimal module to download neuron dependencies
 RUN go env -w GOPRIVATE="github.com/abhissng*"
 
-
 COPY go.mod go.sum ./
 
 COPY . .
 
 # Download dependencies explicitly
-RUN go mod tidy -v && go mod download
+RUN go mod tidy -v \
+    && go mod download
 
 # Verify that the dependencies were downloaded
 RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not found"
