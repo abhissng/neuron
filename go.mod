@@ -20,9 +20,6 @@ require (
 	github.com/o1egl/paseto v1.0.0
 	github.com/prometheus/client_golang v1.21.0
 	github.com/sony/gobreaker v1.0.0
-	github.com/spacecafe/gobox/gin-csrf v0.0.0-20250219130325-3dcac40f6a36
-	github.com/spacecafe/gobox/gin-problems v0.0.0-20250219130325-3dcac40f6a36
-	github.com/spacecafe/gobox/logger v0.0.0-20250219130325-3dcac40f6a36
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.59.0
@@ -64,7 +61,6 @@ require (
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
@@ -87,7 +83,6 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.9 // indirect
-	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

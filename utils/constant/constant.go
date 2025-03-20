@@ -16,6 +16,7 @@ const (
 	Logger         = "logger"
 	TraceID        = "trace_id"
 	MetaData       = "meta_data"
+	SessionID      = "session_id"
 
 	// These are general constant for config file
 	Service              = "Service"

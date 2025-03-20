@@ -15,6 +15,8 @@ const (
 	IPHeader            = "X-IP"
 	MessageIdHeader     = "Message-ID"
 	ErrorHeader         = "X-Error"
+	CSRFTokenHeader     = "X-CSRF-Token" // #nosec G101
+	CSRFTokenCookie     = "X-CSRF-Token" // #nosec G101
 )
 
 // These are middlewares or plugin constant for the application
