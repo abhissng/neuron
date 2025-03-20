@@ -1,30 +1,30 @@
-# Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.24-alpine AS base
 
-WORKDIR /neuron
+# Install git and necessary build tools
+RUN apk add --no-cache git make build-base
 
-# Copy module files first for efficient dependency caching
-COPY go.mod go.sum ./
+# Set up Go environment
+ENV GO111MODULE=on \
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
+
+WORKDIR /go/deps
+
+# Create a minimal module to download neuron dependencies
+RUN echo 'package main\n\nimport (\n\t_ "github.com/abhissng/core-structures"\n\t_ "github.com/abhissng/neuron"\n)\n\nfunc main() {}\n' > main.go
+
+# Set up token-based authentication (will be passed at build time)
+ARG GITHUB_TOKEN
+RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+# Download dependencies
 RUN go mod download
 
-# Copy all source code
-COPY . .
+# Create directories and ensure they exist for later use
+RUN mkdir -p /go/pkg/mod/github.com/abhissng
 
-# Optional: build your internal package (if needed)
-# RUN go build -o /internal-app ./cmd/main.go
-
-# Final image
-FROM golang:1.24-alpine
-
-WORKDIR /neuron
-
-# Copy from builder
-COPY --from=builder /go/pkg/mod /go/pkg/mod
-COPY --from=builder /neuron /neuron
-
-# Set up environment variables
-ENV GOPATH=/go
-ENV GOMODCACHE=/go/pkg/mod
-
-# Set entrypoint if needed
-# ENTRYPOINT ["/internal-app"]
+# List the downloaded modules for verification
+RUN ls -la /go/pkg/mod/github.com/abhissng/ 
+RUN go list -m github.com/abhissng/neuron
+RUN go list -m github.com/abhissng/core-structures
