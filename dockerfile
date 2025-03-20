@@ -28,8 +28,25 @@ COPY . .
 RUN go mod tidy -v \
     && go mod download
 
+RUN cat > go.mod <<EOF
+ module github.com/yourusername/neuron-deps/test
+ 
+ go 1.24
+ 
+ require (
+    github.com/abhissng/neuron ${NEURON_TAG}
+    github.com/abhissng/core-structures ${CORE_TAG}
+)
+EOF
+
+# Download dependencies explicitly
+RUN go mod tidy -v \
+    && go mod download
+
+
 # Verify that the dependencies were downloaded
-RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not found"
+RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not found github.com"
+RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not found github.com/abhissng"
 
 # Create a new stage to ensure clean environment
 FROM golang:1.24-alpine
@@ -47,4 +64,5 @@ ENV GO111MODULE=on \
     GOARCH=amd64
 
 # Verify modules
-RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies not copied properly" 
+RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not copied properly for github.com"
+RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not copied properly for github.com/abhissng"
