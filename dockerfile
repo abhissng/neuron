@@ -32,6 +32,8 @@ RUN go env -w GOPRIVATE="github.com/abhissng*"
 
 COPY go.mod go.sum ./
 
+COPY . .
+
 # Download dependencies explicitly
 RUN go mod tidy -v -go=1.24 && \
     # go get -v github.com/abhissng/core-structures@${CORE_TAG} && \
