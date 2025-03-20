@@ -18,6 +18,7 @@ ARG CORE_TAG
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
 # Create a minimal module to download neuron dependencies
+RUN go env -w GOPRIVATE="github.com/abhissng*"
 RUN cat > go.mod <<EOF
 module github.com/yourusername/neuron-deps/test
 
