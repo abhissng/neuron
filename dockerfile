@@ -19,16 +19,18 @@ RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "htt
 
 # Create a minimal module to download neuron dependencies
 RUN go env -w GOPRIVATE="github.com/abhissng*"
-RUN cat > go.mod <<EOF
-module github.com/yourusername/neuron-deps/test
+# RUN cat > go.mod <<EOF
+# module github.com/yourusername/neuron-deps/test
 
-go 1.24
+# go 1.24
 
-require (
-    github.com/abhissng/neuron ${NEURON_TAG}
-    github.com/abhissng/core-structures ${CORE_TAG}
-)
-EOF
+# require (
+#     github.com/abhissng/neuron ${NEURON_TAG}
+#     github.com/abhissng/core-structures ${CORE_TAG}
+# )
+# EOF
+
+COPY go.mod go.sum ./
 
 # Download dependencies explicitly
 RUN go mod tidy && \
