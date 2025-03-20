@@ -23,9 +23,9 @@ ARG GITHUB_TOKEN
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
 # Download dependencies
-# RUN go get github.com/abhissng/neuron
-# RUN go get github.com/abhissng/core-structures
-RUN go mod tidy
+RUN go get -v github.com/abhissng/neuron
+RUN go get -v github.com/abhissng/core-structures
+# RUN go mod tidy
 RUN ls -la /go/pkg/mod/
 RUN ls -la $HOME/go/pkg/mod/
 # RUN go mod download
