@@ -22,8 +22,8 @@ module github.com/yourusername/neuron-deps/test
 go 1.24
 
 require (
-    github.com/abhissng/neuron
-    github.com/abhissng/core-structures
+    github.com/abhissng/neuron ${NEURON_TAG}
+    github.com/abhissng/core-structures ${CORE_TAG}
 )
 EOF
 
