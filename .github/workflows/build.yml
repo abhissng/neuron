@@ -21,6 +21,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Required to get all tags
+
+      - name: Get latest tag or default to 1.0.0
+        id: get_version
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null)
+          if [[ -z "$latest_tag" ]]; then
+            echo "::set-output name=version::1.0.0" # Default if no tags exist
+          else
+            version=$(echo "$latest_tag" | sed 's/^v//') # remove the leading v if it exists
+            echo "::set-output name=version::$version"
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -38,6 +51,8 @@ jobs:
           context: .
           file: ./dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
