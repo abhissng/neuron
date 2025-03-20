@@ -13,6 +13,8 @@ WORKDIR /go/deps
 
 # Set up token-based authentication (will be passed at build time)
 ARG GITHUB_TOKEN
+ARG NEURON_TAG
+ARG CORE_TAG
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
 # Create a minimal module to download neuron dependencies
