@@ -14,11 +14,15 @@ WORKDIR /go/deps
 # Create a minimal module to download neuron dependencies
 RUN echo 'package main\n\nimport (\n\t_ "github.com/abhissng/core-structures"\n\t_ "github.com/abhissng/neuron"\n)\n\nfunc main() {}\n' > main.go
 
+# Initialize go module
+RUN go mod init example.com/temp
+
 # Set up token-based authentication (will be passed at build time)
 ARG GITHUB_TOKEN
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
 # Download dependencies
+RUN go mod tidy
 RUN go mod download
 
 # Create directories and ensure they exist for later use
