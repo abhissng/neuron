@@ -11,30 +11,36 @@ ENV GO111MODULE=on \
 
 WORKDIR /go/deps
 
-# Create a minimal module to download neuron dependencies
-RUN echo 'package main\n\nimport (\n\t_ "github.com/abhissng/core-structures"\n\t_ "github.com/abhissng/neuron"\n)\n\nfunc main() {}\n' > main.go
-
-# Initialize go module
-RUN go mod init example.com/temp
-
-
 # Set up token-based authentication (will be passed at build time)
 ARG GITHUB_TOKEN
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
-# Download dependencies
-RUN go env -w GOPRIVATE="github.com/abhissng/*"
-RUN go get -v github.com/abhissng/neuron
-RUN go get -v github.com/abhissng/core-structures
-# RUN go mod tidy
-RUN ls -la /go/pkg/mod/
-RUN ls -la $HOME/go/pkg/mod/
-# RUN go mod download
+# Create a minimal module to download neuron dependencies
+RUN echo 'module neuron-deps\n\ngo 1.24\n\nrequire (\n\tgithub.com/abhissng/neuron\n\tgithub.com/abhissng/core-structures\n\t)\n' > go.mod
 
-# Create directories and ensure they exist for later use
+# Download dependencies explicitly
+RUN go mod tidy && \
+    # go get -v github.com/abhissng/core-structures@v0.0.1-20250303-08f02b3 && \
+    # go get -v github.com/abhissng/neuron@v0.0.1-20250320-205c58c && \
+    go mod download
+
+# Verify that the dependencies were downloaded
+RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not found"
+
+# Create a new stage to ensure clean environment
+FROM golang:1.24-alpine
+
+# Copy the downloaded modules from the previous stage
+COPY --from=base /go/pkg/mod/ /go/pkg/mod/
+
+# Create directory structure for validation
 RUN mkdir -p /go/pkg/mod/github.com/abhissng
 
-# List the downloaded modules for verification
-RUN ls -la /go/pkg/mod/github.com/abhissng/ 
-RUN go list -m github.com/abhissng/neuron
-RUN go list -m github.com/abhissng/core-structures
+# Set up Go environment in this stage too
+ENV GO111MODULE=on \
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
+
+# Verify modules
+RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies not copied properly" 
