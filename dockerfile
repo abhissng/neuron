@@ -35,7 +35,7 @@ COPY go.mod go.sum ./
 COPY . .
 
 # Download dependencies explicitly
-RUN go mod tidy -v -go=1.24 && \
+RUN go mod tidy -v && \
     # go get -v github.com/abhissng/core-structures@${CORE_TAG} && \
     # go get -v github.com/abhissng/neuron@${NEURON_TAG} && \
     go mod download
