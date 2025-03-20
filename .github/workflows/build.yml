@@ -34,27 +34,7 @@ jobs:
             version=$(echo "$latest_tag" | sed 's/^v//') # remove the leading v if it exists
             echo "::set-output name=version::$version"
           fi
-
-      - name: Get Neuron Latest Tag
-        id: get_neuron_tag
-        run: |
-          neuron_tag=$(git ls-remote --tags --sort=-v 'https://github.com/abhissng/neuron.git' | grep -o 'refs/tags/.*' | sed 's/refs\/tags\///' | head -n 1)
-          if [[ -n "$neuron_tag" ]]; then
-            echo "::set-output name=neuron_tag::$neuron_tag"
-          else
-            echo "::set-output name=neuron_tag::latest" # Default if no tag
-          fi
-
-      - name: Get Core-Structures Latest Tag
-        id: get_core_tag
-        run: |
-          core_tag=$(git ls-remote --tags --sort=-v 'https://github.com/abhissng/core-structures.git' | grep -o 'refs/tags/.*' | sed 's/refs\/tags\///' | head -n 1)
-          if [[ -n "$core_tag" ]]; then
-            echo "::set-output name=core_tag::$core_tag"
-          else
-            echo "::set-output name=core_tag::latest" # Default if no tag
-          fi
-
+          
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -65,7 +45,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push neuron-base image
+      - name: Build neuron-base image
+        id: build_image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./dockerfile
+          push: false # Do not push in this step
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            NEURON_TAG=${{ steps.get_neuron_tag.outputs.neuron_tag }}
+            CORE_TAG=${{ steps.get_core_tag.outputs.core_tag }}
+            GITHUB_TOKEN=${{ secrets.PERSONAL_TOKEN }}
+        
+      - name: Push neuron-base image
+        if: ${{ success() }} # Only push if build is successful
         uses: docker/build-push-action@v4
         with:
           context: .
