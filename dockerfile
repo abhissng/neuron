@@ -16,7 +16,16 @@ ARG GITHUB_TOKEN
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
 # Create a minimal module to download neuron dependencies
-RUN echo 'module neuron-deps/test\n\ngo 1.24\n\nrequire (\n\tgithub.com/abhissng/neuron\n\tgithub.com/abhissng/core-structures\n\t)\n' > go.mod
+RUN cat > go.mod <<EOF
+module github.com/yourusername/neuron-deps/test
+
+go 1.24
+
+require (
+    github.com/abhissng/neuron
+    github.com/abhissng/core-structures
+)
+EOF
 
 # Download dependencies explicitly
 RUN go mod tidy && \
