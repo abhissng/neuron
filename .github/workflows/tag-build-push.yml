@@ -184,18 +184,11 @@ jobs:
             exit 1
           fi
 
-      # Push the image only if build was successful
+     # Push the image only if build was successful
       - name: Push Docker image
         if: steps.verify_image.outputs.build_success == 'true'
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: ./dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          build-args: |
-            NEURON_TAG=${{ steps.get_neuron_tag.outputs.neuron_tag }}
-            CORE_TAG=${{ steps.get_core_tag.outputs.core_tag }}
-            GITHUB_TOKEN=${{ secrets.PERSONAL_TOKEN }} 
+        run: |
+          echo "Pushing Docker image to registry..."
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.version }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          echo "Image successfully pushed to ${{ env.REGISTRY }} registry!"
