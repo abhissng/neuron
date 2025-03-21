@@ -31,7 +31,7 @@ RUN go mod tidy -v \
 RUN cat > go.mod <<EOF
  module github.com/yourusername/neuron-deps/test
  
- go 1.24
+ go 1.24.1
  
  require (
     github.com/abhissng/neuron ${NEURON_TAG}
