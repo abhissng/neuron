@@ -1,10 +1,10 @@
 name: Build and Push Neuron Base Image
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'dockerfile'
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'dockerfile'
   workflow_dispatch:  # Allow manual triggering
 
 env:

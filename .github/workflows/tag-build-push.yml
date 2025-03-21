@@ -1,0 +1,201 @@
+name: Tag, Build and Push Neuron Base Image
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual triggering
+  push:
+    paths:
+      - 'dockerfile'  # Trigger on dockerfile changes
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/neuron-base
+
+jobs:
+  tag-on-merge:
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.tag.outputs.TAG }}
+      tagging_occurred: ${{ steps.tag.outputs.tagging_occurred }}
+    
+    steps:
+      # Step 1: Check out the repository with full commit history
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch the entire commit history
+
+      # Step 2: Set up Git user for tagging
+      - name: Set up Git user
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      # Step 3: Ensure the PR is merged (not just closed) or workflow was manually triggered
+      - name: Check if PR merged or workflow manually triggered
+        id: check_trigger
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Workflow manually triggered, proceeding with tagging."
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.merged }}" == "true" ]]; then
+            echo "Pull request was merged, proceeding with tagging."
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Pull request was not merged, skipping tag creation."
+            echo "proceed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Step 4: Generate custom tag
+      - name: Generate tag
+        id: tag
+        if: steps.check_trigger.outputs.proceed == 'true'
+        run: |
+          # Define the base version (can be dynamically fetched if needed)
+          BASE_VERSION="v0.0.1"
+
+          # Get current date in YYYYMMDD format
+          DATE=$(date +%Y%m%d)
+
+          # Get the latest short commit hash from the merged PR
+          SHORT_COMMIT=$(git rev-parse --short HEAD)
+
+          # Combine into custom tag format
+          TAG="$BASE_VERSION-$DATE-$SHORT_COMMIT"
+
+          # Output tag for later steps
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          echo "tagging_occurred=true" >> $GITHUB_OUTPUT
+          
+          echo "Generated tag: $TAG"
+
+      # Step 5: Push the tag to the repository
+      - name: Push tag to origin
+        if: steps.check_trigger.outputs.proceed == 'true'
+        run: |
+          git tag ${{ steps.tag.outputs.TAG }}
+          git push origin ${{ steps.tag.outputs.TAG }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-push:
+    needs: tag-on-merge
+    runs-on: ubuntu-latest
+    if: always() && (needs.tag-on-merge.outputs.tagging_occurred == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to get all tags
+          # If a new tag was just created, make sure we fetch it
+          ref: ${{ needs.tag-on-merge.outputs.new_tag || 'main' }}
+
+      - name: Get latest tag or default to 1.0.0
+        id: get_version
+        run: |
+          if [[ -n "${{ needs.tag-on-merge.outputs.new_tag }}" ]]; then
+            # Use the tag that was just created
+            echo "version=${{ needs.tag-on-merge.outputs.new_tag }}" >> $GITHUB_OUTPUT
+            echo "Using newly created tag: ${{ needs.tag-on-merge.outputs.new_tag }}"
+          else
+            # Find the latest tag
+            latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+            version=$(echo "$latest_tag" | sed 's/^v//')  # remove the leading v if it exists
+            echo "version=$version" >> $GITHUB_OUTPUT
+            echo "Using latest existing tag: $latest_tag"
+          fi
+
+      - name: Get Neuron Latest Tag
+        id: get_neuron_tag
+        run: |
+          # Authenticate with GitHub token for private repos
+          neuron_tag=$(git ls-remote --tags  'https://github.com/abhissng/neuron.git' |  grep -o 'refs/tags/.*' |  sed 's/refs\/tags\///' | sort -V | tail -n 1)
+          if [[ -n "$neuron_tag" ]]; then
+            echo "neuron_tag=$neuron_tag" >> $GITHUB_OUTPUT
+            echo "Found neuron tag: $neuron_tag"
+          else
+            echo "neuron_tag=v0.0.1-20250320-205c58c" >> $GITHUB_OUTPUT
+            echo "Using default neuron tag: v0.0.1-20250320-205c58c"
+          fi
+
+      - name: Get Core-Structures Latest Tag
+        id: get_core_tag
+        run: |
+          # Authenticate with GitHub token for private repos
+          core_tag=$(git ls-remote --tags  'https://github.com/abhissng/core-structures.git' |  grep -o 'refs/tags/.*' |  sed 's/refs\/tags\///' | sort -V | tail -n 1)
+          if [[ -n "$core_tag" ]]; then
+            echo "core_tag=$core_tag" >> $GITHUB_OUTPUT
+            echo "Found core-structures tag: $core_tag"
+          else
+            echo "core_tag=v0.0.1-20250303-08f02b3" >> $GITHUB_OUTPUT
+            echo "Using default core-structures tag: v0.0.1-20250303-08f02b3"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build the image first without pushing
+      - name: Build Docker image
+        id: build_image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./dockerfile
+          push: false  # Build only, don't push yet
+          load: true   # Load the image into Docker
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            NEURON_TAG=${{ steps.get_neuron_tag.outputs.neuron_tag }}
+            CORE_TAG=${{ steps.get_core_tag.outputs.core_tag }}
+            GITHUB_TOKEN=${{ secrets.PERSONAL_TOKEN }}
+      
+      # Verify the image was built correctly
+      - name: Verify Docker image
+        id: verify_image
+        run: |
+          echo "Verifying Docker image..."
+          # List the built images to confirm they exist
+          docker images | grep ${{ env.IMAGE_NAME }}
+          
+          # Set success flag if the image exists
+          if docker image inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.version }} &>/dev/null; then
+            echo "Docker image build successful!"
+            echo "build_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "Docker image build failed!"
+            echo "build_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # Push the image only if build was successful
+      - name: Push Docker image
+        if: steps.verify_image.outputs.build_success == 'true'
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            NEURON_TAG=${{ steps.get_neuron_tag.outputs.neuron_tag }}
+            CORE_TAG=${{ steps.get_core_tag.outputs.core_tag }}
+            GITHUB_TOKEN=${{ secrets.PERSONAL_TOKEN }} 
