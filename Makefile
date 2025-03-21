@@ -1,25 +1,34 @@
 # Makefile to run tests
 
 # Variables
-RUN_INITIAL_BUILD_SCRIPT = build.sh
+RUN_INITIAL_LINT_SCRIPT = lint.sh
 
 # Colors
-BLUE := \033[0;34m
-YELLOW := \033[0;33m
-GREEN := \033[0;32m
-RED := \033[0;31m
-RESET := \033[0m
+RESET  := $(shell tput sgr0)
+BLUE   := $(shell tput setaf 4)
+GREEN  := $(shell tput setaf 2)
+YELLOW := $(shell tput setaf 3)
+RED    := $(shell tput setaf 1)
+BOLD   := $(shell tput bold)
 
-# Progress function
+# Get terminal width dynamically
+TERM_WIDTH := $(shell tput cols)
+
+# Define run_with_progress function with dynamic width progress bar
 define run_with_progress
-	@printf "###############################################################################################################################################\n"
-	@printf "$(BLUE)⏳ Task: \"$(1)\"$(RESET)\n"
+	@TERM_WIDTH=$$(tput cols); \
+	PROGRESS_BAR=$$(printf "%*s" "$$TERM_WIDTH" | tr ' ' '='); \
+	printf "$$PROGRESS_BAR\n"
+	@printf "$(BLUE)$(BOLD)⏳ Task: $(1)$(RESET)\n"
 	@echo
 	$(eval START_TIME := $(shell date +%s))
 	@$(2)
-	@printf "$(GREEN)✅ Task Complete: \"$(1)\"$(RESET)\n"
+	@printf "$(GREEN)$(BOLD)✅ Task Complete: $(1)$(RESET)\n"
 	@echo
 	@printf "$(GREEN)⏱️  Time taken: $$(($$(date +%s) - $(START_TIME))) seconds$(RESET)\n"
+	@# @TERM_WIDTH=$$(tput cols); \
+	@# PROGRESS_BAR=$$(printf "%*s" "$$TERM_WIDTH" | tr ' ' '='); \
+	@# printf "$$PROGRESS_BAR\n"
 endef
 
 # Default target
@@ -28,7 +37,7 @@ all: run_build_checks run_initial_build_script
 # Run tests
 run_build_checks:
 	@printf "$(BLUE)🚀 Running build checks$(RESET)\n"
-	$(call run_with_progress,'Checking for updates and dependencies',\
+	$(call run_with_progress,Checking for updates and dependencies,\
 		go mod tidy && \
 		if go list -m -u all | grep -v '^module' | grep -B 2 Update > /dev/null 2>&1; then \
 			printf "$(YELLOW)⚡️ Updates available. Upgrading Go modules$(RESET)\n" && \
@@ -40,8 +49,8 @@ run_build_checks:
 # Run initial build script
 run_initial_build_script:
 	@echo ;
-	@chmod +x "$(RUN_INITIAL_BUILD_SCRIPT)"
-	$(call run_with_progress,'Running build script', "./$(RUN_INITIAL_BUILD_SCRIPT)");
+	@chmod +x "$(RUN_INITIAL_LINT_SCRIPT)"
+	$(call run_with_progress,Running linter and security checks, "./$(RUN_INITIAL_LINT_SCRIPT)");
 	@echo ;
 
 # Clean up generated files
@@ -57,5 +66,5 @@ help:
 	@printf "  🧹 clean              - Clean up generated files\n"
 	@printf "  💡 help               - Show this help message\n"
 
-.PHONY: all run_build_checks clean docker-build docker-push help
+.PHONY: all run_build_checks clean help
 
