@@ -50,20 +50,24 @@ RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not found github.com"
 RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not found github.com/abhissng"
 
+# RUN chmod -R 755 /go/pkg/mod 
+
 # Create a new stage to ensure clean environment
 FROM golang:1.24-alpine
 
 # Copy the downloaded modules from the previous stage
 COPY --from=base /go/pkg/mod/ /go/pkg/mod/
 
-# Create directory structure for validation
-RUN mkdir -p /go/pkg/mod/github.com/abhissng
+# # Create directory structure for validation
+# RUN mkdir -p /go/pkg/mod/github.com/abhissng
 
 # Set up Go environment in this stage too
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \
     GOARCH=amd64
+
+RUN chmod -R 755 /go/pkg/mod 
 
 # Verify modules
 RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not copied properly for github.com"
