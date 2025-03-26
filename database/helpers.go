@@ -11,10 +11,10 @@ import (
 )
 
 // BuildDSN constructs a DSN (Data Source Name) string based on input parameters.
+// host should be in the format "host:port" or the domain if it
 func BuildDSN(
 	dbType types.DBType,
 	host string,
-	port int,
 	dbName,
 	user,
 	password string,
@@ -24,7 +24,8 @@ func BuildDSN(
 	switch dbType {
 	case constant.PostgreSQL:
 		// For PostgreSQL: format is "postgresql://user:password@host:port/dbname?options"
-		dsn := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", user, password, host, port, dbName)
+		dsn := fmt.Sprintf("postgresql://%s:%s@%s/%s", user, password, host, dbName)
+		// dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", user, password, host, dbName)
 		if len(options) > 0 {
 			dsn += "?"
 			for key, value := range options {
@@ -36,7 +37,8 @@ func BuildDSN(
 
 	case constant.MySQL:
 		// For MySQL: format is "user:password@tcp(host:port)/dbname?options"
-		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", user, password, host, port, dbName)
+		// dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", user, password, host, port, dbName)
+		dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s", user, password, host, dbName)
 		if len(options) > 0 {
 			dsn += "?"
 			for key, value := range options {
