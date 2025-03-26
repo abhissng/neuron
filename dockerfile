@@ -43,6 +43,8 @@ EOF
 RUN go mod tidy -v \
     && go mod download
 
+RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest 
+
 
 # Verify that the dependencies were downloaded
 RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not found github.com"

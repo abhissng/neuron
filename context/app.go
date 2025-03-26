@@ -1,7 +1,6 @@
 package context
 
 import (
-	"context"
 	"os"
 
 	"github.com/abhissng/neuron/adapters/events/nats"
@@ -11,6 +10,7 @@ import (
 	"github.com/abhissng/neuron/adapters/vault"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/database"
+	"github.com/abhissng/neuron/utils/cache"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/structures/service"
@@ -27,6 +27,7 @@ type AppContext struct {
 	*http.HttpClientWrapper
 	*vault.Vault
 	database.Database
+	cache.Cache[string, any]
 	serviceId      string
 	isDebugEnabled bool
 	// Add other fields as needed (e.g., user ID, authentication information)
@@ -84,12 +85,12 @@ func WithLogger(logger *log.Log) AppContextOption {
 	}
 }
 
-// WithContext sets the context for the AppContext.
-func WithContext(newCtx context.Context) AppContextOption {
-	return func(ctx *AppContext) {
-		// ctx.Context = newCtx
-	}
-}
+// // WithContext sets the context for the AppContext.
+// func WithContext(newCtx context.Context) AppContextOption {
+// 	return func(ctx *AppContext) {
+// 		ctx.Context = newCtx
+// 	}
+// }
 
 // WithDatabase sets the database for the AppContext.
 func WithDatabase(database database.Database) AppContextOption {
@@ -135,5 +136,16 @@ func WithHttpClientWrapper(url string, opts ...http.RequestOption) AppContextOpt
 func WithVault(vlt *vault.Vault) AppContextOption {
 	return func(ctx *AppContext) {
 		ctx.Vault = vlt
+	}
+}
+
+// WithCacheManager sets the cache manager for the AppContext.
+func WithCacheManager(config *cache.CacheConfig) AppContextOption {
+	return func(ctx *AppContext) {
+		if config != nil {
+			ctx.Cache = cache.NewCacheManagerWithConfig(*config).CreateCache("default")
+			return
+		}
+		ctx.Cache = cache.NewCacheManager().CreateCache("default")
 	}
 }

@@ -55,7 +55,7 @@ func DefaultLRUConfig() CacheConfig {
 // CacheManager provides a factory for creating and managing different types of caches
 type CacheManager struct {
 	// Store active caches to ensure they can be properly stopped when needed
-	caches map[string]Cache[string, interface{}]
+	caches map[string]Cache[string, any]
 	// configuration to use when none is provided
 	config CacheConfig
 }
@@ -68,29 +68,29 @@ func NewCacheManager() *CacheManager {
 // NewCacheManagerWithConfig creates a new cache manager with the specified default configuration
 func NewCacheManagerWithConfig(config CacheConfig) *CacheManager {
 	return &CacheManager{
-		caches: make(map[string]Cache[string, interface{}]),
+		caches: make(map[string]Cache[string, any]),
 		config: config,
 	}
 }
 
 // CreateCache creates a new cache with the given name using the default configuration
-func (m *CacheManager) CreateCache(name string) Cache[string, interface{}] {
+func (m *CacheManager) CreateCache(name string) Cache[string, any] {
 	return m.CreateCacheWithConfig(name, m.config)
 }
 
 // CreateCacheWithConfig creates a new cache with the given name and specific configuration
-// The key type is string and value type is interface{} for maximum flexibility
-func (m *CacheManager) CreateCacheWithConfig(name string, config CacheConfig) Cache[string, interface{}] {
-	var cache Cache[string, interface{}]
+// The key type is string and value type is any for maximum flexibility
+func (m *CacheManager) CreateCacheWithConfig(name string, config CacheConfig) Cache[string, any] {
+	var cache Cache[string, any]
 
 	switch config.Type {
 	case LRU:
 		if config.MaxSize <= 0 {
 			config.MaxSize = 1000 // Default size if not specified
 		}
-		cache = NewLRUCacheWithCleanupInterval[string, interface{}](config.MaxSize, config.CleanupInterval)
+		cache = NewLRUCacheWithCleanupInterval[string, any](config.MaxSize, config.CleanupInterval)
 	default: // Basic cache is the default
-		cache = NewBasicCacheWithCleanupInterval[string, interface{}](config.CleanupInterval)
+		cache = NewBasicCacheWithCleanupInterval[string, any](config.CleanupInterval)
 	}
 
 	// Store the cache for later cleanup
@@ -101,7 +101,7 @@ func (m *CacheManager) CreateCacheWithConfig(name string, config CacheConfig) Ca
 
 // GetOrCreateCache returns an existing cache or creates a new one if it doesn't exist
 // Uses the default configuration if it needs to create the cache
-func (m *CacheManager) GetOrCreateCache(name string) Cache[string, interface{}] {
+func (m *CacheManager) GetOrCreateCache(name string) Cache[string, any] {
 	if cache, exists := m.caches[name]; exists {
 		return cache
 	}
@@ -110,7 +110,7 @@ func (m *CacheManager) GetOrCreateCache(name string) Cache[string, interface{}] 
 }
 
 // GetOrCreateCacheWithConfig returns an existing cache or creates a new one with specified config
-func (m *CacheManager) GetOrCreateCacheWithConfig(name string, config CacheConfig) Cache[string, interface{}] {
+func (m *CacheManager) GetOrCreateCacheWithConfig(name string, config CacheConfig) Cache[string, any] {
 	if cache, exists := m.caches[name]; exists {
 		return cache
 	}
@@ -119,7 +119,7 @@ func (m *CacheManager) GetOrCreateCacheWithConfig(name string, config CacheConfi
 }
 
 // GetCache retrieves a cache by name
-func (m *CacheManager) GetCache(name string) (Cache[string, interface{}], bool) {
+func (m *CacheManager) GetCache(name string) (Cache[string, any], bool) {
 	cache, exists := m.caches[name]
 	return cache, exists
 }
@@ -137,7 +137,7 @@ func (m *CacheManager) StopAll() {
 	for _, cache := range m.caches {
 		cache.StopCleanup()
 	}
-	m.caches = make(map[string]Cache[string, interface{}])
+	m.caches = make(map[string]Cache[string, any])
 }
 
 // Getconfig returns the current default configuration
