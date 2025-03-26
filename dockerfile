@@ -72,4 +72,3 @@ RUN chmod -R 755 /go/pkg/mod
 # Verify modules
 RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not copied properly for github.com"
 RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not copied properly for github.com/abhissng"
-RUN ls -la /go/pkg/mod/github.com/abhissng/neuron@${NEURON_TAG}/assets || echo "Dependencies directory not copied properly for github.com/abhissng/neuron"

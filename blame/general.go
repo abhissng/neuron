@@ -37,6 +37,16 @@ func initLocalBlames() ([]BlameDefinition, error) {
 	// Construct the path to the errors file
 	errorsFilePath := filepath.Join(parentDir+"/assets", "libraryErrors.json")
 
+	// Check if the file exists
+	_, err := os.Stat(errorsFilePath)
+	if os.IsNotExist(err) {
+		// File doesn't exist, fallback to current working directory (.)
+		helpers.Println(constant.ERROR, "File not found, falling back to current working directory")
+
+		// Use current directory (`.`) and keep the folder structure intact
+		errorsFilePath = filepath.Join("."+parentDir, "assets", "libraryErrors.json")
+	}
+
 	var localBlames []BlameDefinition
 
 	// Read the JSON file
