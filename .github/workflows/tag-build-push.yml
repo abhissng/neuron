@@ -7,9 +7,9 @@ on:
     branches:
       - main
   workflow_dispatch:  # Allow manual triggering
-  push:
-    paths:
-      - 'dockerfile'  # Trigger on dockerfile changes
+  # push:
+  #   paths:
+  #     - 'dockerfile'  # Trigger on dockerfile changes
 
 env:
   REGISTRY: ghcr.io
