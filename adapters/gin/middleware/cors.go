@@ -22,7 +22,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		// Check for preflight request
 		if isCORSPreflightRequest(r) {
 			if handlePreflightRequest(r, w) {
-				// c.Status(http.StatusOK)
+				c.Status(http.StatusOK)
 				c.Next()
 				return
 			}
