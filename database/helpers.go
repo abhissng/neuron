@@ -11,7 +11,7 @@ import (
 )
 
 // BuildDSN constructs a DSN (Data Source Name) string based on input parameters.
-// host should be in the format "host:port" or the domain if it
+// host should be in the format "host:port" or the domain if it is available
 func BuildDSN(
 	dbType types.DBType,
 	host string,
