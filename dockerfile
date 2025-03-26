@@ -50,7 +50,7 @@ RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not found github.com"
 RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not found github.com/abhissng"
 
-RUN chmod -R 755 /go/pkg/mod 
+# RUN chmod -R 755 /go/pkg/mod 
 
 # Create a new stage to ensure clean environment
 FROM golang:1.24-alpine
@@ -72,3 +72,4 @@ RUN chmod -R 755 /go/pkg/mod
 # Verify modules
 RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not copied properly for github.com"
 RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not copied properly for github.com/abhissng"
+RUN ls -la /go/pkg/mod/github.com/abhissng/neuron@${NEURON_TAG}/assets || echo "Dependencies directory not copied properly for github.com/abhissng/neuron"
