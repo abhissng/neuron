@@ -59,7 +59,7 @@ jobs:
           BASE_VERSION="v0.0.1"
 
           # Get current date in YYYYMMDD format
-          DATE=$(date +%Y%m%d)
+          DATE=$(date +%Y%m%d-%H%M%S)
 
           # Get the latest short commit hash from the merged PR
           SHORT_COMMIT=$(git rev-parse --short HEAD)
@@ -122,8 +122,8 @@ jobs:
             echo "neuron_tag=$neuron_tag" >> $GITHUB_OUTPUT
             echo "Found neuron tag: $neuron_tag"
           else
-            echo "neuron_tag=v0.0.1-20250329-e7cc658" >> $GITHUB_OUTPUT
-            echo "Using default neuron tag: v0.0.1-20250329-e7cc658"
+            echo "neuron_tag=v0.0.1-20250329-bb3a0c3" >> $GITHUB_OUTPUT
+            echo "Using default neuron tag: v0.0.1-20250329-bb3a0c3"
           fi
 
       - name: Get core-hub Latest Tag
