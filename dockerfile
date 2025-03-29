@@ -43,7 +43,7 @@ EOF
 RUN go mod tidy -v \
     && go mod download
 
-RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest 
+# RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest 
 
 
 # Verify that the dependencies were downloaded
@@ -67,7 +67,7 @@ ENV GO111MODULE=on \
     GOOS=linux \
     GOARCH=amd64
 
-RUN chmod -R 755 /go/pkg/mod 
+RUN chmod -R 755 /go/pkg/mod/github.com/abhissng
 
 # Verify modules
 RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not copied properly for github.com"

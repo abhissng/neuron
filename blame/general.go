@@ -41,7 +41,7 @@ func initLocalBlames() ([]BlameDefinition, error) {
 	_, err := os.Stat(errorsFilePath)
 	if os.IsNotExist(err) {
 		// File doesn't exist, fallback to current working directory (.)
-		helpers.Println(constant.ERROR, "File not found, falling back to current working directory")
+		helpers.Println(constant.WARN, "File not found, falling back to current working directory")
 
 		// Use current directory (`.`) and keep the folder structure intact
 		errorsFilePath = filepath.Join("."+parentDir, "assets", "libraryErrors.json")
