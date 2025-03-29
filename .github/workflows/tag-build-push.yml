@@ -122,21 +122,21 @@ jobs:
             echo "neuron_tag=$neuron_tag" >> $GITHUB_OUTPUT
             echo "Found neuron tag: $neuron_tag"
           else
-            echo "neuron_tag=v0.0.1-20250320-205c58c" >> $GITHUB_OUTPUT
-            echo "Using default neuron tag: v0.0.1-20250320-205c58c"
+            echo "neuron_tag=v0.0.1-20250329-e7cc658" >> $GITHUB_OUTPUT
+            echo "Using default neuron tag: v0.0.1-20250329-e7cc658"
           fi
 
-      - name: Get Core-Structures Latest Tag
+      - name: Get core-hub Latest Tag
         id: get_core_tag
         run: |
           # Authenticate with GitHub token for private repos
-          core_tag=$(git ls-remote --tags  'https://github.com/abhissng/core-structures.git' |  grep -o 'refs/tags/.*' |  sed 's/refs\/tags\///' | sort -V | tail -n 1)
+          core_tag=$(git ls-remote --tags  'https://github.com/abhissng/core-hub.git' |  grep -o 'refs/tags/.*' |  sed 's/refs\/tags\///' | sort -V | tail -n 1)
           if [[ -n "$core_tag" ]]; then
             echo "core_tag=$core_tag" >> $GITHUB_OUTPUT
-            echo "Found core-structures tag: $core_tag"
+            echo "Found core-hub tag: $core_tag"
           else
-            echo "core_tag=v0.0.1-20250303-08f02b3" >> $GITHUB_OUTPUT
-            echo "Using default core-structures tag: v0.0.1-20250303-08f02b3"
+            echo "core_tag=v0.0.1-20250329-496a1a8" >> $GITHUB_OUTPUT
+            echo "Using default core-hub tag: v0.0.1-20250329-496a1a8"
           fi
 
       - name: Set up Docker Buildx

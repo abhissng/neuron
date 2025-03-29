@@ -3,7 +3,7 @@ module github.com/abhissng/neuron
 go 1.24.1
 
 require (
-	github.com/abhissng/core-structures v0.0.1-20250303-08f02b3
+	github.com/abhissng/core-hub v0.0.1-20250329-496a1a8
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/gzip v1.2.2
 	github.com/gin-gonic/gin v1.10.0

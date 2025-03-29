@@ -1,7 +1,7 @@
 package discovery
 
 import (
-	"github.com/abhissng/core-structures/core"
+	"github.com/abhissng/core-hub/core"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/structures"
 	"github.com/abhissng/neuron/utils/structures/message"
@@ -17,7 +17,7 @@ type DiscoveryMessagePayload struct {
 }
 
 // NewDiscoveryMessagePayload creates a new DiscoveryMessagePayload
-// with the given correlation ID and ("github.com/abhissng/core-structures/core") Core payload
+// with the given correlation ID and ("github.com/abhissng/core-hub/core") Core payload
 // with action set as execute and status set as pending
 func NewDiscoveryMessagePayload(
 	correlationId types.CorrelationID,

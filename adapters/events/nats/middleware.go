@@ -4,7 +4,7 @@ import (
 	"errors"
 	"runtime/debug"
 
-	"github.com/abhissng/core-structures/core"
+	"github.com/abhissng/core-hub/core"
 	"github.com/abhissng/neuron/adapters/jwt"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/blame"

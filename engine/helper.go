@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"github.com/abhissng/core-structures/core"
+	"github.com/abhissng/core-hub/core"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/context"
