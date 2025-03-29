@@ -9,7 +9,7 @@ import (
 )
 
 // Message represents the structure of a transaction message.
-// use core.Core from "github.com/abhissng/core-structures/core" for payload Type
+// use core.Core from "github.com/abhissng/core-hub/core" for payload Type
 // or you can use your custom Type if needed
 type Message[T any] struct {
 	CorrelationID types.CorrelationID `json:"correlation_id"`

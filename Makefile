@@ -63,8 +63,8 @@ help:
 	@printf "$(BLUE)📖 Makefile targets:$(RESET)\n\n"
 	@printf "  🎯 all                 - Run static and security tests\n"
 	@printf "  🔍 run_build_checks    - Run build checks\n"
-	@printf "  🧹 clean              - Clean up generated files\n"
-	@printf "  💡 help               - Show this help message\n"
+	@printf "  🧹 clean               - Clean up generated files\n"
+	@printf "  💡 help                - Show this help message\n"
 
 .PHONY: all run_build_checks clean help
 
