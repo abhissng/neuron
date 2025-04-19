@@ -90,8 +90,8 @@ func WithLogger(logger *log.Log) AppContextOption {
 	}
 }
 
-// WithRedisWrapper sets the redis wrapper for the AppContext.
-func WithRedisWrapper(manager *redis.RedisManager) AppContextOption {
+// WithRedisManager sets the redis manager for the AppContext.
+func WithRedisManager(manager *redis.RedisManager) AppContextOption {
 	return func(ctx *AppContext) {
 		ctx.RedisManager = manager
 	}
