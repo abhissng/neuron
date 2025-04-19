@@ -3,10 +3,12 @@ package context
 import (
 	"os"
 
+	"github.com/abhissng/neuron/adapters/aws"
 	"github.com/abhissng/neuron/adapters/events/nats"
 	"github.com/abhissng/neuron/adapters/http"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/adapters/paseto"
+	"github.com/abhissng/neuron/adapters/redis"
 	"github.com/abhissng/neuron/adapters/vault"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/database"
@@ -26,8 +28,11 @@ type AppContext struct {
 	*service.Services
 	*http.HttpClientWrapper
 	*vault.Vault
+	*redis.RedisManager
+	*aws.AWSManager
 	database.Database
 	cache.Cache[string, any]
+
 	serviceId      string
 	isDebugEnabled bool
 	// Add other fields as needed (e.g., user ID, authentication information)
@@ -85,12 +90,19 @@ func WithLogger(logger *log.Log) AppContextOption {
 	}
 }
 
-// // WithContext sets the context for the AppContext.
-// func WithContext(newCtx context.Context) AppContextOption {
-// 	return func(ctx *AppContext) {
-// 		ctx.Context = newCtx
-// 	}
-// }
+// WithRedisWrapper sets the redis wrapper for the AppContext.
+func WithRedisWrapper(manager *redis.RedisManager) AppContextOption {
+	return func(ctx *AppContext) {
+		ctx.RedisManager = manager
+	}
+}
+
+// WithAWSManager sets the aws manager for the AppContext.
+func WithAWSManager(manager *aws.AWSManager) AppContextOption {
+	return func(ctx *AppContext) {
+		ctx.AWSManager = manager
+	}
+}
 
 // WithDatabase sets the database for the AppContext.
 func WithDatabase(database database.Database) AppContextOption {

@@ -1,6 +1,6 @@
 # Neuron Package - Internal Libraries and Wrappers
 
-This repository contains internal libraries and wrappers designed for use within our projects.
+This repository contains libraries and wrappers designed for use within go projects.
 
 ## Setup
 

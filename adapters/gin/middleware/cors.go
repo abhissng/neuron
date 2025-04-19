@@ -11,7 +11,7 @@ import (
 )
 
 // CORSMiddleware returns a gin.HandlerFunc that handles CORS requests
-func CORSMiddleware() gin.HandlerFunc {
+func CORSMiddleware(additionalHeaders ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		r := c.Request
 		w := c.Writer
@@ -22,8 +22,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		// Check for preflight request
 		if isCORSPreflightRequest(r) {
 			if handlePreflightRequest(r, w) {
-				c.Status(http.StatusOK)
-				c.Next()
+				c.JSON(http.StatusOK, gin.H{"message": "OK"})
 				return
 			}
 		}
@@ -53,14 +52,18 @@ func isCORSPreflightRequest(r *http.Request) bool {
 }
 
 // handlePreflightRequest handles preflight requests
-func handlePreflightRequest(r *http.Request, w http.ResponseWriter) bool {
+func handlePreflightRequest(r *http.Request, w http.ResponseWriter, additionalHeaders ...string) bool {
 	// Handle preflight request and allow methods
 	method := r.Header.Get("Access-Control-Request-Method")
 	if ok := isMethodAllowed(method); ok {
 		origin := getAllowedOrigin(r)
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", getAllowedMethods())
-		w.Header().Set("Access-Control-Allow-Headers", getAllowedHeaders())
+		headers := getAllowedHeaders()
+		if len(additionalHeaders) > 0 {
+			headers += ", " + strings.Join(additionalHeaders, ", ")
+		}
+		w.Header().Set("Access-Control-Allow-Headers", headers)
 		w.Header().Set("Access-Control-Allow-Credentials", "true") // If you allow credentials
 		w.Header().Add("Vary", "Origin")
 		return true
