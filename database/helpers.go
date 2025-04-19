@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/abhissng/neuron/utils/codec"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/types"
 )
@@ -82,7 +83,7 @@ func ExtractDBNameFromDSN(dbType types.DBType, dsn string) (string, error) {
 // and an error if any occurs during the conversion process.
 func RowsToSlice(rows Rows) ([][]string, error) {
 	// 1. Get column names from the result set
-	columns, err := getColumns(rows)
+	columns, err := GetColumns(rows)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get columns: %w", err)
 	}
@@ -116,7 +117,7 @@ func RowsToSlice(rows Rows) ([][]string, error) {
 
 // Helper function to check if the rows implement the ExtendedRows interface
 // This interface is required to access column names from the result set
-func getColumns(rows Rows) ([]string, error) {
+func GetColumns(rows Rows) ([]string, error) {
 	extRows, ok := rows.(ExtendedRows)
 	if !ok {
 		return nil, fmt.Errorf("rows does not implement ExtendedRows")
@@ -170,6 +171,9 @@ func convertToString(value any) string {
 	switch v := value.(type) {
 	case nil:
 		return ""
+	case []byte:
+		// If it's a byte slice (JSON data), convert it directly to a string
+		return string(v)
 	case string:
 		return v // Already a string, return directly
 	case int, int8, int16, int32, int64:
@@ -180,6 +184,13 @@ func convertToString(value any) string {
 		return v.Format(time.RFC3339) // Format time as RFC3339
 	case fmt.Stringer:
 		return v.String() // Use the String() method if the value implements it
+	case map[string]any:
+		// Marshal map to JSON string
+		jsonStr, err := codec.Encode(v, codec.JSON)
+		if err != nil {
+			return fmt.Sprintf("Error marshalling JSON: %v", err)
+		}
+		return string(jsonStr)
 	default:
 		return fmt.Sprintf("%v", v) // Default formatting for unknown types
 	}

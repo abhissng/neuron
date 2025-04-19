@@ -1,6 +1,7 @@
 package viper
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -35,6 +36,34 @@ func NewViper(configName, configType, configPath string) *Viper {
 }
 
 // InitialiseViper initialises the viper client
+func (v *Viper) InitialiseViper() error {
+	viper.SetConfigName(v.configName) // Name of configuration file
+	viper.SetConfigType(v.configType) // Configuration file type
+	viper.AddConfigPath(v.configPath) // Look for configuration file in the given directory
+
+	// Enable Viper to read environment variables
+	viper.AutomaticEnv()
+
+	// Attempt to read configuration file
+	if err := viper.ReadInConfig(); err != nil {
+		err = fmt.Errorf("error reading configuration file: %s", err)
+		return err
+	}
+
+	return nil
+}
+
+// LoadDynamicConfig loads the configuration and replaces placeholders with values fetched from Vault
+func (v *Viper) LoadDynamicConfig(vault *vault.Vault) error {
+	if vault == nil {
+		return errors.New("vault cannot be nil in case of loading the dynamic configuration")
+	}
+
+	return loadAndReplaceConfig(vault)
+}
+
+/*
+// InitialiseViper initialises the viper client
 // if vaultFlag is true, it will load the configuration and replace placeholders with values fetched from Vault
 // constants ProjectId and VaultPath are required if vaultFlag is true
 func (v *Viper) InitialiseViper(vaultFlag bool) (*vault.Vault, error) {
@@ -62,6 +91,7 @@ func (v *Viper) InitialiseViper(vaultFlag bool) (*vault.Vault, error) {
 
 	return nil, nil
 }
+*/
 
 // Function to load configuration and replace placeholders with values fetched from Vault
 func loadAndReplaceConfig(vlt *vault.Vault) error {
@@ -75,9 +105,10 @@ func loadAndReplaceConfig(vlt *vault.Vault) error {
 			if err != nil {
 				helpers.Println(constant.ERROR, "Error fetching secret from Vault for key ", key, ": ", err)
 				continue
+			} else {
+				// Update the Viper configuration with the new value
+				viper.Set(key, updatedValue)
 			}
-			// Update the Viper configuration with the new value
-			viper.Set(key, updatedValue)
 		}
 	}
 	return nil
