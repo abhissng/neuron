@@ -330,6 +330,21 @@ func GetEnvironment() string {
 	return os.Getenv(constant.Environment)
 }
 
+func GetEnvironmentSlug(environment string) string {
+	switch strings.ToLower(environment) {
+	case "dev", "development":
+		return "dev"
+	case "test", "testing":
+		return "test"
+	case "staging":
+		return "staging"
+	case "prod", "production":
+		return "prod"
+	default:
+		return "dev"
+	}
+}
+
 // GetAvailablePort finds an available port for the given protocol (TCP or UDP).
 func GetAvailablePort(protocol types.Protocol, preferredPort string) (string, error) {
 	// If preferredPort is "0", find any free port dynamically
