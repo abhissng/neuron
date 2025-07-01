@@ -10,10 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Acquire acquires a connection from the connection pool.
-func (db PostgresDB[T]) Acquire(ctx context.Context) (*pgxpool.Conn, error) {
-	return db.pool.Acquire(ctx)
-}
+// // Acquire acquires a connection from the connection pool.
+// func (db PostgresDB[T]) Acquire(ctx context.Context) (*pgxpool.Conn, error) {
+// 	db.monitorMu.Unlock()
+// 	return db.pool.Acquire(ctx)
+// }
 
 // Stat returns statistics about the connection pool.
 func (db *PostgresDB[T]) Stat() *pgxpool.Stat {
@@ -21,11 +22,12 @@ func (db *PostgresDB[T]) Stat() *pgxpool.Stat {
 }
 
 // Close closes the connection pool.
-func (db *PostgresDB[T]) Close() {
+func (db *PostgresDB[T]) Close() error {
 	if db.pool != nil {
 		db.pool.Close()
 		close(db.stopChan)
 	}
+	return nil
 }
 
 // FetchStopChannel returns a channel that is closed when the database connection is closed.

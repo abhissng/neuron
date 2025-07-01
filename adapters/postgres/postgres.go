@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/abhissng/neuron/adapters/log"
@@ -20,6 +21,9 @@ type PostgresDB[T any] struct {
 	factory            database.PostgresQueriesFactory[T]
 	stopChan           chan struct{}
 	checkAliveInterval time.Duration
+	monitorCancel      context.CancelFunc
+	monitorRunning     bool
+	monitorMu          sync.Mutex
 }
 
 // NewPostgresFactory creates a new PostgresDB with a custom factory.
@@ -124,4 +128,36 @@ func (p *PostgresDB[T]) checkDatabaseExists(ctx context.Context) error {
 		return fmt.Errorf("database '%s' does not exist", dbName)
 	}
 	return nil
+}
+
+func (p *PostgresDB[T]) StartMonitor() {
+	p.monitorMu.Lock()
+	defer p.monitorMu.Unlock()
+
+	// If already running, stop the previous one
+	if p.monitorRunning {
+		p.StopMonitor()
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	p.monitorCancel = cancel
+	p.stopChan = make(chan struct{})
+
+	p.monitorRunning = true
+	go database.MonitorDB[database.Database](ctx, p)
+}
+
+func (p *PostgresDB[T]) StopMonitor() {
+	p.monitorMu.Lock()
+	defer p.monitorMu.Unlock()
+
+	if p.monitorRunning {
+		if p.monitorCancel != nil {
+			p.monitorCancel()
+		}
+		if p.stopChan != nil {
+			close(p.stopChan)
+		}
+		p.monitorRunning = false
+	}
 }
