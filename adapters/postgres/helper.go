@@ -21,11 +21,12 @@ func (db *PostgresDB[T]) Stat() *pgxpool.Stat {
 }
 
 // Close closes the connection pool.
-func (db *PostgresDB[T]) Close() {
+func (db *PostgresDB[T]) Close() error {
 	if db.pool != nil {
 		db.pool.Close()
 		close(db.stopChan)
 	}
+	return nil
 }
 
 // FetchStopChannel returns a channel that is closed when the database connection is closed.

@@ -4,9 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 	"time"
-
-	// "log"
 
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/database"
@@ -22,6 +21,9 @@ type MySQLDB[T any] struct {
 	factory            database.MySqlQueriesFactory[T]
 	stopChan           chan struct{}
 	checkAliveInterval time.Duration
+	monitorCancel      context.CancelFunc
+	monitorRunning     bool
+	monitorMu          sync.Mutex
 }
 
 // NewMySQLFactory creates a new MySQLDB factory with the given options.
@@ -105,4 +107,36 @@ func (m *MySQLDB[T]) checkDatabaseExists(ctx context.Context) error {
 		return fmt.Errorf("database '%s' does not exist", dbName)
 	}
 	return nil
+}
+
+func (m *MySQLDB[T]) StartMonitor() {
+	m.monitorMu.Lock()
+	defer m.monitorMu.Unlock()
+
+	// If already running, stop the previous one
+	if m.monitorRunning {
+		m.StopMonitor()
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	m.monitorCancel = cancel
+	m.stopChan = make(chan struct{})
+
+	m.monitorRunning = true
+	go database.MonitorDB[database.Database](ctx, m)
+}
+
+func (m *MySQLDB[T]) StopMonitor() {
+	m.monitorMu.Lock()
+	defer m.monitorMu.Unlock()
+
+	if m.monitorRunning {
+		if m.monitorCancel != nil {
+			m.monitorCancel()
+		}
+		if m.stopChan != nil {
+			close(m.stopChan)
+		}
+		m.monitorRunning = false
+	}
 }

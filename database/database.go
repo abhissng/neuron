@@ -13,7 +13,7 @@ import (
 // Database defines a common interface for different database backends.
 type Database interface {
 	Connect(ctx context.Context) error
-	Close()
+	Close() error
 	Query(ctx context.Context, query string, args ...any) (Rows, error)
 	QueryRow(ctx context.Context, query string, args ...any) Row
 	Exec(ctx context.Context, query string, args ...any) (ExecResult, error)
@@ -25,6 +25,8 @@ type Database interface {
 	IsQueryProviderAvailable() bool
 	FetchStopChannel() <-chan struct{}
 	FetchCheckAliveInterval() time.Duration
+	StartMonitor()
+	StopMonitor()
 }
 
 // DBOptions defines a generic interface for database-specific options.
@@ -46,7 +48,8 @@ func NewDatabase[T Database, O DBOptions, Q any](
 	if err := db.Connect(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to connect to the database: %w", err)
 	}
-	go MonitorDB[Database](context.Background(), db)
+	// go MonitorDB[Database](context.Background(), db)
+	db.StartMonitor()
 
 	return db, nil
 }
@@ -130,9 +133,10 @@ func MonitorDB[T Database](ctx context.Context, dbInstance T) {
 		case <-ticker.C:
 			if err := dbInstance.Ping(); err != nil {
 				logger.Error(constant.SystemWarning, log.Any("message", log.Sprintf("Database connection failed: %s", err.Error())))
-				if err := dbInstance.Connect(ctx); err != nil {
-					logger.Error(constant.SystemError, log.Any("message", log.Sprintf("failed to connect to the database: %s", err.Error())))
-				}
+				//pgxpool will connect automaticaaly if the database disconnects
+				// if err := dbInstance.Connect(ctx); err != nil {
+				// 	logger.Error(constant.SystemError, log.Any("message", log.Sprintf("failed to connect to the database: %s", err.Error())))
+				// }
 			}
 		}
 	}
