@@ -1,18 +1,18 @@
 package blame
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"runtime"
 
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/types"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
+
+//go:embed error_definition.json
+var embeddedBlameData []byte
 
 // localBlameWrapper is a local instance of the BlameWrapper struct.
 var (
@@ -26,7 +26,7 @@ func getLocalBlameWrapper() *BlameWrapper {
 
 // initLocalBlames initializes the local error blames from a JSON file.
 func initLocalBlames() ([]BlameDefinition, error) {
-
+	/* TODO OLD logic Needs to be removed
 	// Get the absolute path of the current file
 	_, currentFile, _, _ := runtime.Caller(0)
 	currentFilePath := filepath.Dir(currentFile)
@@ -69,6 +69,12 @@ func initLocalBlames() ([]BlameDefinition, error) {
 	// Unmarshal the JSON data
 	err = json.Unmarshal(data, &localBlames)
 	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal local blame definition file: %w", err)
+	}
+	*/
+
+	var localBlames []BlameDefinition
+	if err := json.Unmarshal(embeddedBlameData, &localBlames); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal local blame definition file: %w", err)
 	}
 
