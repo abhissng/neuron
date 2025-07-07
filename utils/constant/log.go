@@ -20,4 +20,5 @@ const (
 	WARN  types.LogMode = "warn"
 	ERROR types.LogMode = "error"
 	DEBUG types.LogMode = "debug"
+	FATAL types.LogMode = "fatal"
 )

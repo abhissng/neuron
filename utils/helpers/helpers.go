@@ -510,7 +510,7 @@ func Println(mode types.LogMode, args ...any) {
 		color = constant.GreenColor
 	case constant.WARN:
 		color = constant.YellowColor
-	case constant.ERROR:
+	case constant.ERROR, constant.FATAL:
 		color = constant.RedColor
 	case constant.DEBUG:
 		color = constant.BlueColor
@@ -522,6 +522,9 @@ func Println(mode types.LogMode, args ...any) {
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 
 	fmt.Println(color + "[" + timestamp + "] [" + mode.String() + "] " + fmt.Sprint(args...) + constant.ResetColor)
+	if mode == constant.FATAL {
+		os.Exit(1)
+	}
 }
 
 // Printf prints a formatted message with the specified log mode and color
