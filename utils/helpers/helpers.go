@@ -2,12 +2,10 @@ package helpers
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -286,12 +284,7 @@ func RecoverException(panic interface{}) {
 
 // GetGoROOT returns the Go root directory
 func GetGoROOT() string {
-	out, err := exec.Command("go", "env", "GOROOT").Output()
-	if err != nil {
-		log.Println("error", "Error getting GOROOT:", err)
-		return ""
-	}
-	return strings.TrimSpace(string(out))
+	return os.Getenv("GOROOT")
 }
 
 // GetHealthyMessageFor returns the healthy message for the given dependency

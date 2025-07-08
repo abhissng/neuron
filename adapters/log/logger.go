@@ -52,7 +52,7 @@ func NewLogger(isProd bool, options ...zap.Option) (*Log, error) {
 
 	defaultOptions := []zap.Option{
 		zap.Fields(
-			zap.String("environment", "production"),
+			zap.String("environment", helpers.GetEnvironment()),
 			zap.String("service", helpers.GetServiceName()),
 		),
 		zap.AddCaller(),
