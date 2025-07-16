@@ -21,7 +21,7 @@ func CORSMiddleware(additionalHeaders ...string) gin.HandlerFunc {
 
 		// Check for preflight request
 		if isCORSPreflightRequest(r) {
-			if handlePreflightRequest(r, w) {
+			if handlePreflightRequest(r, w, additionalHeaders...) {
 				c.JSON(http.StatusOK, gin.H{"message": "OK"})
 				return
 			}
@@ -124,6 +124,7 @@ func getAllowedHeaders() string {
 	 accept,
 	 origin,
 	 Cache-Control,
+	 X-Correlation-ID,
 	 X-Requested-With,
 	 X-Subject,
 	 X-Signature,

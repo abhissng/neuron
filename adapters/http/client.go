@@ -90,6 +90,7 @@ func (c *fastHTTPClient) Do(config *HttpClientWrapper, body []byte, contentType 
 func DoRequest[T any](payload any, config *HttpClientWrapper) result.Result[T] {
 	// If you see this message check on all places where logging can be added for proper checks
 	config.Log.Info(constant.TransactionMessage, log.Any("url", config.URL))
+	defer config.Clear()
 
 	err := helpers.ValidateURL(config.URL)
 	if err != nil {

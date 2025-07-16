@@ -3,7 +3,6 @@ module github.com/abhissng/neuron
 go 1.24.1
 
 require (
-	github.com/abhissng/core-hub v0.0.1-20250329-496a1a8
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.60

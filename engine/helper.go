@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"github.com/abhissng/core-hub/core"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/context"
@@ -15,20 +14,21 @@ import (
 
 // encodeErrorRespondMesage encodes a error response map to a message
 func encodeErrorRespondMesage[T any](ctx *context.ServiceContext, action types.Action, msg *nats.Msg, blameInfo blame.Blame) T {
-
+	var zero T
 	coreMessage := message.NewMessage(
 		action,
 		constant.Failed,
 		types.CorrelationID(helpers.CorrelationIDFromNatsMsg(msg)),
-		core.NewNilCore(),
+		zero,
 	)
 	coreMessage.AddError(blameInfo.FetchErrorResponse(blame.WithTranslation()))
 	// Ensure coreMessage is of the correct type
 	if result, ok := any(coreMessage).(T); ok {
 		return result
 	}
+
 	ctx.Log.Error(constant.ServiceHandlerMessage, log.Any("helpers", "encodeErrorRespondMesage"), log.Any("type", "TypeCast error"))
-	var zero T
+
 	return zero
 }
 

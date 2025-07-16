@@ -129,5 +129,5 @@ func processResult[T any](res result.Result[T], ctx *context.ServiceContext) {
 	}
 
 	data, _ := res.Value()
-	ctx.JSON(http.StatusOK, acknowledgment.NewAPIResponse[*T](true, types.CorrelationID(ctx.GetGinContextCorrelationID()), data))
+	ctx.JSON(http.StatusOK, acknowledgment.NewAPIResponse[*T](true, ctx.GetGinContextCorrelationID(), data))
 }

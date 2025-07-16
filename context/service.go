@@ -54,7 +54,7 @@ func NewServiceContext(opts ...ServiceContextOption) *ServiceContext {
 func (ctx *ServiceContext) FetchGinRequestAndCorrelationField() []types.Field {
 	fields := make([]types.Field, 2)
 	fields[0] = log.String(constant.RequestID, ctx.GetGinContextRequestID().String())
-	fields[1] = log.String(constant.CorrelationIDHeader, ctx.GetGinContextCorrelationID().String())
+	fields[1] = log.String(constant.CorrelationID, ctx.GetGinContextCorrelationID().String())
 	return fields
 }
 
@@ -69,7 +69,7 @@ func (ctx *ServiceContext) GetGinContextRequestID() types.RequestID {
 // GetGinContextCorrelationID returns the correlation ID from the Gin context.
 func (ctx *ServiceContext) GetGinContextCorrelationID() types.CorrelationID {
 	if ctx.Context != nil {
-		return types.CorrelationID(ctx.GetString(constant.CorrelationIDHeader))
+		return types.CorrelationID(ctx.GetString(constant.CorrelationID))
 	}
 	return ""
 }

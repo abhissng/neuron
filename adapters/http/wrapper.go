@@ -27,6 +27,15 @@ type HttpClientWrapper struct {
 	UseFastHTTP bool // New flag to enable fastHTTP
 }
 
+func (c *HttpClientWrapper) Clear() {
+	c.Headers = make(map[string]string)
+	c.QueryParams = make(map[string]any)
+	c.Files = make(map[string]string)
+	c.FormValues = make(map[string]string)
+	c.SkipVerify = false
+	c.UseFastHTTP = false
+}
+
 // NewHttpClientWrapper initializes a new HttpClientWrapper with default values
 func NewHttpClientWrapper(requestURL string, opts ...RequestOption) *HttpClientWrapper {
 	// **Default HttpClientWrapper**
@@ -51,4 +60,48 @@ func NewHttpClientWrapper(requestURL string, opts ...RequestOption) *HttpClientW
 		config.Log.Warn("Logger not provided, using default logger")
 	}
 	return config
+}
+
+func (c *HttpClientWrapper) AddHeaders(headers map[string]string) {
+	c.Headers = headers
+}
+
+func (c *HttpClientWrapper) AddQueryParams(params map[string]any) {
+	c.QueryParams = params
+}
+
+func (c *HttpClientWrapper) AddFiles(files map[string]string) {
+	c.Files = files
+}
+
+func (c *HttpClientWrapper) AddFormValues(values map[string]string) {
+	c.FormValues = values
+}
+
+func (c *HttpClientWrapper) AddTimeout(timeout time.Duration) {
+	c.Timeout = timeout
+}
+
+func (c *HttpClientWrapper) AddContentType(contentType types.ContentType) {
+	c.ContentType = contentType
+}
+
+func (c *HttpClientWrapper) AddIsTLS(isTLS bool) {
+	c.IsTLS = isTLS
+}
+
+func (c *HttpClientWrapper) AddCertFile(certFile string) {
+	c.CertFile = certFile
+}
+
+func (c *HttpClientWrapper) AddKeyFile(keyFile string) {
+	c.KeyFile = keyFile
+}
+
+func (c *HttpClientWrapper) AddSkipVerify(skipVerify bool) {
+	c.SkipVerify = skipVerify
+}
+
+func (c *HttpClientWrapper) AddFastHTTP() {
+	c.UseFastHTTP = true
 }

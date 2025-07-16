@@ -189,7 +189,11 @@ func PasetoVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 
 // **Gin Middleware for Correlation ID**
 func VerifyCorrelationId(ctx *context.ServiceContext) result.Result[bool] {
-	if ctx.GetGinContextCorrelationID() == "" {
+	if ctx.Context == nil {
+		return result.NewFailure[bool](blame.MissingCorrelationID())
+	}
+
+	if ctx.Context.GetHeader(constant.CorrelationIDHeader) == "" {
 		return result.NewFailure[bool](blame.MissingCorrelationID())
 	}
 	valid := true

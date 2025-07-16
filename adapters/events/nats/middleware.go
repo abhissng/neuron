@@ -4,7 +4,6 @@ import (
 	"errors"
 	"runtime/debug"
 
-	"github.com/abhissng/core-hub/core"
 	"github.com/abhissng/neuron/adapters/jwt"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/blame"
@@ -78,11 +77,12 @@ func (w *NATSManager) WrapNATSMsgProcessor(handler nats.MsgHandler) NATSMsgProce
 
 // sendErrorResponse sends an error response message back through NATS
 func sendErrorResponse(msg *nats.Msg, err error) {
+	var zero any
 	message := message.NewMessage(
 		constant.Execute,
 		constant.Failed,
 		types.CorrelationID(helpers.CorrelationIDFromNatsMsg(msg)),
-		core.Core{},
+		zero,
 	)
 	message.Error = blame.HeadersNotFound(err).FetchErrorResponse(blame.WithTranslation())
 
@@ -108,7 +108,7 @@ func validateAuthToken(msg *nats.Msg) blame.Blame {
 }
 
 // ValidateHeadersMiddleware checks for the existence and validity of required headers.
-func ValidateHeadersMiddleware(next NATSMsgProcessor) MiddlewareFunc {
+func ValidateHeadersMiddleware() MiddlewareFunc {
 	defer helpers.RecoverException(recover())
 	return func(next NATSMsgProcessor) NATSMsgProcessor {
 		return func(msg *nats.Msg) blame.Blame {

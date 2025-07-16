@@ -126,19 +126,6 @@ jobs:
             echo "Using default neuron tag: v0.0.1-20250329-bb3a0c3"
           fi
 
-      - name: Get core-hub Latest Tag
-        id: get_core_tag
-        run: |
-          # Authenticate with GitHub token for private repos
-          core_tag=$(git ls-remote --tags  'https://github.com/abhissng/core-hub.git' |  grep -o 'refs/tags/.*' |  sed 's/refs\/tags\///' | sort -V | tail -n 1)
-          if [[ -n "$core_tag" ]]; then
-            echo "core_tag=$core_tag" >> $GITHUB_OUTPUT
-            echo "Found core-hub tag: $core_tag"
-          else
-            echo "core_tag=v0.0.1-20250329-496a1a8" >> $GITHUB_OUTPUT
-            echo "Using default core-hub tag: v0.0.1-20250329-496a1a8"
-          fi
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -163,7 +150,6 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
             NEURON_TAG=${{ steps.get_neuron_tag.outputs.neuron_tag }}
-            CORE_TAG=${{ steps.get_core_tag.outputs.core_tag }}
             GITHUB_TOKEN=${{ secrets.PERSONAL_TOKEN }}
       
       # Verify the image was built correctly

@@ -13,14 +13,14 @@ import (
 	"github.com/abhissng/neuron/utils/structures/discovery"
 )
 
-type CommunicateResult struct {
-	DiscoveryResult *discovery.DiscoveryMessagePayload
+type CommunicateResult[T any] struct {
+	DiscoveryResult *discovery.DiscoveryMessagePayload[T]
 	ErrorResult     blame.ErrorResponse
 	Err             error
 }
 
-func NewCommunicateResult() CommunicateResult {
-	return CommunicateResult{
+func NewCommunicateResult[T any]() CommunicateResult[T] {
+	return CommunicateResult[T]{
 		DiscoveryResult: nil,
 		ErrorResult:     blame.ErrorResponse{},
 		Err:             nil,
@@ -28,9 +28,9 @@ func NewCommunicateResult() CommunicateResult {
 }
 
 // CommunicateWithDiscovery handles communication with the discovery service.
-func CommunicateWithDiscovery(ctx *http.HttpClientWrapper, payload *discovery.DiscoveryMessagePayload) result.Result[CommunicateResult] {
+func CommunicateWithDiscovery[T any](ctx *http.HttpClientWrapper, payload *discovery.DiscoveryMessagePayload[T]) result.Result[CommunicateResult[T]] {
 
-	communicateResult := NewCommunicateResult()
+	communicateResult := NewCommunicateResult[T]()
 
 	// Make the request
 	res := http.DoRequest[acknowledgment.APIResponse[any]](payload, ctx)
@@ -39,18 +39,18 @@ func CommunicateWithDiscovery(ctx *http.HttpClientWrapper, payload *discovery.Di
 	if !res.IsSuccess() {
 		_, blameInfo := res.Value()
 		ctx.Log.Error(constant.APICallMessage, log.Any("error", blameInfo.FetchCauses()))
-		return result.NewFailure[CommunicateResult](blameInfo)
+		return result.NewFailure[CommunicateResult[T]](blameInfo)
 	}
 
 	if res.ToValue().Result == nil {
 		ctx.Log.Error(constant.APICallMessage, log.Any("error", "discovery response result is nil"))
-		return result.NewFailure[CommunicateResult](blame.ResponseResultError(errors.New("discovery response result is nil")))
+		return result.NewFailure[CommunicateResult[T]](blame.ResponseResultError(errors.New("discovery response result is nil")))
 	}
 
 	response, err := codec.Encode(res.ToValue().Result, codec.JSON)
 	if err != nil {
 		ctx.Log.Error(constant.AdaptersMessage, log.Err(err))
-		return result.NewFailure[CommunicateResult](blame.UnMarshalError(codec.JSON, err))
+		return result.NewFailure[CommunicateResult[T]](blame.UnMarshalError(codec.JSON, err))
 	}
 
 	ctx.Log.Info(constant.CommunicatorMessage, log.Any("response", string(response)))
@@ -66,7 +66,7 @@ func CommunicateWithDiscovery(ctx *http.HttpClientWrapper, payload *discovery.Di
 		return result.NewSuccess(&communicateResult)
 	}
 
-	if resMap, err := codec.Decode[*discovery.DiscoveryMessagePayload](response, codec.JSON); err == nil {
+	if resMap, err := codec.Decode[*discovery.DiscoveryMessagePayload[T]](response, codec.JSON); err == nil {
 		ctx.Log.Info(constant.AdaptersMessage, log.Any("message", "succesfully decoded to *discovery.DiscoveryMessagePayload"))
 		communicateResult.DiscoveryResult = resMap
 		return result.NewSuccess(&communicateResult)
@@ -74,5 +74,5 @@ func CommunicateWithDiscovery(ctx *http.HttpClientWrapper, payload *discovery.Di
 
 	// If casting fails, return an error
 	ctx.Log.Error(constant.CommunicatorMessage, log.Any("error", "unable to determine communicate discovery response type"))
-	return result.NewFailure[CommunicateResult](blame.ResponseResultError(errors.New("unable to determine communicate discovery response type")))
+	return result.NewFailure[CommunicateResult[T]](blame.ResponseResultError(errors.New("unable to determine communicate discovery response type")))
 }

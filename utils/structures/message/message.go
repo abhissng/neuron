@@ -9,15 +9,13 @@ import (
 )
 
 // Message represents the structure of a transaction message.
-// use core.Core from "github.com/abhissng/core-hub/core" for payload Type
 // or you can use your custom Type if needed
 type Message[T any] struct {
-	CorrelationID types.CorrelationID `json:"correlation_id"`
-	RequestId     types.RequestID     `json:"request_id"`
-	Payload       T                   `json:"payload"`
-	Status        types.Status        `json:"status"` // "pending", "completed or success", "failed"
-	Action        types.Action        `json:"action"` // "execute", "rollback"
-	// Error          error               `json:"error,omitempty"`
+	CorrelationID  types.CorrelationID `json:"correlation_id"`
+	RequestId      types.RequestID     `json:"request_id"`
+	Payload        T                   `json:"payload"`
+	Status         types.Status        `json:"status"` // "pending", "completed or success", "failed"
+	Action         types.Action        `json:"action"` // "execute", "rollback"
 	Error          blame.ErrorResponse `json:"error,omitempty"`
 	Timestamp      time.Time           `json:"timestamp"`
 	CurrentService string              `json:"current_service,omitempty"`

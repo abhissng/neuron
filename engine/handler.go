@@ -29,11 +29,11 @@ func WrapServiceWithNATSHandler[T any](ctx *context.ServiceContext, handler Serv
 			natsInternal.AddHeaderMiddleware(constant.IPHeader, helpers.IPHeaderFromNatsMsg(msg)),
 			natsInternal.AddHeaderMiddleware(constant.CorrelationIDHeader, helpers.CorrelationIDFromNatsMsg(msg)),
 		}
-		var response T
+		var response any
 		defer func() {
 
 			if blameInfo != nil {
-				response = encodeErrorRespondMesage[T](ctx, constant.Execute, msg, blameInfo)
+				response = encodeErrorRespondMesage[any](ctx, constant.Execute, msg, blameInfo)
 			}
 			ctx.Log.Info(constant.ServiceHandlerMessage, ctx.SlogEvent(msg, log.String("handlers", "WrapServiceWithNATSHandler"), log.Any("response", response))...)
 			// Use the NATS connection to send a response

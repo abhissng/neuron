@@ -30,7 +30,7 @@ func patternToRegex(pattern string) string {
 	return "^" + wildcard + "$"
 }
 
-// Find files matching any of the patterns
+// Find files matching any of the patterns and return both path and filename with spaces replaced by underscores
 func findMatchingFiles(root string, patterns []string) ([]string, error) {
 	var matches []string
 	compiledPatterns := make([]*regexp.Regexp, len(patterns))
@@ -55,7 +55,8 @@ func findMatchingFiles(root string, patterns []string) ([]string, error) {
 		filename := filepath.Base(path)
 		for _, re := range compiledPatterns {
 			if re.MatchString(filename) {
-				matches = append(matches, path)
+				// Add both the original path and the filename with spaces replaced by underscores
+				matches = append(matches, path, strings.ReplaceAll(filename, " ", "_"))
 				break
 			}
 		}
