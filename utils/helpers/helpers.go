@@ -157,7 +157,7 @@ func FetchHTTPStatusCode(response types.ResponseErrorType) int {
 
 // IsProdEnvironment returns true if Environment is set to "prod" or "production"
 func IsProdEnvironment() bool {
-	switch viper.GetString(constant.Environment) {
+	switch GetEnvironment() {
 	case "prod", "production":
 		return true
 	default:
