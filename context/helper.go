@@ -25,11 +25,21 @@ func NewDependencyStatus(
 
 // DependencyDetails struct to represent the health of multiple dependencies
 type DependencyDetails struct {
-	Logger   DependencyStatus `json:"logger,omitempty"`
-	Database DependencyStatus `json:"database,omitempty"`
-	Nats     DependencyStatus `json:"nats,omitempty"`
-	Blame    DependencyStatus `json:"blame,omitempty"`
-	Paseto   DependencyStatus `json:"paseto,omitempty"`
+	Logger   DependencyStatus `json:"logger,omitzero"`
+	Database DependencyStatus `json:"database,omitzero"`
+	Nats     DependencyStatus `json:"nats,omitzero"`
+	Blame    DependencyStatus `json:"blame,omitzero"`
+	Paseto   DependencyStatus `json:"paseto,omitzero"`
+}
+
+func NewDependencyDetails() DependencyDetails {
+	return DependencyDetails{
+		Logger:   DependencyStatus{},
+		Database: DependencyStatus{},
+		Nats:     DependencyStatus{},
+		Blame:    DependencyStatus{},
+		Paseto:   DependencyStatus{},
+	}
 }
 
 // CheckDependencies checks the health of the dependencies and returns the overall status

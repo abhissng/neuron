@@ -49,39 +49,45 @@ func NewBlameWrapper(localeDir string, languageTag string) (*BlameWrapper, error
 		return nil, fmt.Errorf("failed to initialise local blame wrapper: %w", err)
 	}
 
-	// Load error definitions from JSON file
-	file, err := os.Open(filepath.Clean(localeDir))
-	if err != nil {
-		return nil, fmt.Errorf("failed to open error definitions file: %w", err)
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			helpers.Println(constant.ERROR, "Error closing file: ", err)
-		}
-	}()
-
 	var blameDefinitions []BlameDefinition
-	if err := json.NewDecoder(file).Decode(&blameDefinitions); err != nil {
-		return nil, fmt.Errorf("failed to decode error definitions: %w", err)
-	}
-
-	// Create a map of error definitions
-	blameDefinitionsMap := make(map[types.ErrorCode]Blame)
-	for index, def := range blameDefinitions {
-		if helpers.IsEmpty(def.StatusCode) {
-			def.StatusCode = helpers.GenerateStatusCode(helpers.GetServiceName(), 100+index)
+	// Load error definitions from JSON file
+	if !helpers.IsEmpty(localeDir) {
+		file, err := os.Open(filepath.Clean(localeDir))
+		if err != nil {
+			return nil, fmt.Errorf("failed to open error definitions file: %w", err)
 		}
-		blameDefinitionsMap[types.ErrorCode(def.Code)] =
-			NewBlame(def.StatusCode, types.ErrorCode(def.Code), def.Message, def.Description).
-				WithComponent(types.ComponentErrorType(def.Component)).
-				WithResponseType(types.ResponseErrorType(def.ResponseType)).
-				WithBundle(bundle)
+		defer func() {
+			if err := file.Close(); err != nil {
+				helpers.Println(constant.ERROR, "Error closing file: ", err)
+			}
+		}()
+
+		if err := json.NewDecoder(file).Decode(&blameDefinitions); err != nil {
+			return nil, fmt.Errorf("failed to decode error definitions: %w", err)
+		}
 	}
 
-	return &BlameWrapper{
-		BlameDefinitions: blameDefinitionsMap,
-		// Bundle:           i18n.NewBundle(language),
-	}, nil
+	if len(blameDefinitions) > 0 {
+		// Create a map of error definitions
+		blameDefinitionsMap := make(map[types.ErrorCode]Blame)
+		for index, def := range blameDefinitions {
+			if helpers.IsEmpty(def.StatusCode) {
+				def.StatusCode = helpers.GenerateStatusCode(helpers.GetServiceName(), 100+index)
+			}
+			blameDefinitionsMap[types.ErrorCode(def.Code)] =
+				NewBlame(def.StatusCode, types.ErrorCode(def.Code), def.Message, def.Description).
+					WithComponent(types.ComponentErrorType(def.Component)).
+					WithResponseType(types.ResponseErrorType(def.ResponseType)).
+					WithBundle(bundle)
+		}
+
+		return &BlameWrapper{
+			BlameDefinitions: blameDefinitionsMap,
+			// Bundle:           i18n.NewBundle(language),
+		}, nil
+	}
+	return localBlameWrapper, nil
+
 }
 
 // BlameOption defines an option for modifying Blame creation.

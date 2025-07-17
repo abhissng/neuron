@@ -10,8 +10,6 @@ import (
 // DiscoveryMessagepayload represents the structure of a discovery message request.
 type DiscoveryMessagePayload[T any] struct {
 	// TODO add additionalInformation Later also add binding to metadata
-	// MetaData *structures.MetaData `json:"meta_data" binding:"required"`
-	// Message  *message.Message[*core.Core] `json:"message" binding:"required"`
 	Message  *message.Message[T]  `json:"message" binding:"required"`
 	MetaData *structures.MetaData `json:"meta_data"`
 }
