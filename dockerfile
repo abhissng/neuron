@@ -35,7 +35,6 @@ RUN cat > go.mod <<EOF
  
  require (
     github.com/abhissng/neuron ${NEURON_TAG}
-    github.com/abhissng/core-hub ${CORE_TAG}
 )
 EOF
 
