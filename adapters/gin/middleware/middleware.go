@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/abhissng/neuron/adapters/gin/request"
+	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/adapters/paseto"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/context"
@@ -19,7 +20,7 @@ import (
 )
 
 // Middleware to generate requestId and correlationId
-func RequestIDMiddleware(ctx *context.AppContext) gin.HandlerFunc {
+func RequestIDMiddleware(log *log.Log) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Generate a unique requestId
 		requestId := random.GenerateUUID()
@@ -35,7 +36,7 @@ func RequestIDMiddleware(ctx *context.AppContext) gin.HandlerFunc {
 		c.Set(constant.CorrelationID, correlationId)
 
 		// Log the IDs
-		ctx.Log.Info(helpers.FormatRequestAndCorrelationIDs(requestId, correlationId))
+		log.Info(helpers.FormatRequestAndCorrelationIDs(requestId, correlationId))
 		// Pass control to the next middleware/handler
 		c.Next()
 	}
