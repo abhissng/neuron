@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/abhissng/neuron/adapters/opensearch"
 	"github.com/abhissng/neuron/utils/helpers"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -14,23 +15,27 @@ import (
 // Log struct holds the zap Logger instance.
 type Log struct {
 	*zap.Logger
-	mu sync.Mutex // Mutex for thread-safe logging
+	mu       sync.Mutex   // Mutex for thread-safe logging
+	closeLog func() error // Function to gracefully shut down the logger
 }
 
 // It creates basic logger for utilities function and by default it will carry default confinguration
-func NewBasicLogger(isProd bool) *Log {
-	basicLogger, _ := NewLogger(isProd)
+func NewBasicLogger(isProd, isOpenSearchDisabled bool) *Log {
+	basicLogger, _ := NewLogger(NewLoggerConfig(isProd, WithDisableOpenSearch(isOpenSearchDisabled)))
 	return &Log{
 		Logger: basicLogger.Logger,
+		closeLog: func() error {
+			return basicLogger.Sync()
+		},
 	}
 }
 
 // NewLogger creates a new Log instance with the specified log level and options.
-func NewLogger(isProd bool, options ...zap.Option) (*Log, error) {
+func NewLogger(cfg *LoggerConfig) (*Log, error) {
 
 	// ✅ 1. Set the log level
 	atomicLevel := zap.NewAtomicLevel()
-	if isProd {
+	if cfg.IsProd {
 		atomicLevel.SetLevel(zapcore.InfoLevel)
 	} else {
 		atomicLevel.SetLevel(zapcore.DebugLevel) // Debug mode for development
@@ -52,17 +57,17 @@ func NewLogger(isProd bool, options ...zap.Option) (*Log, error) {
 
 	defaultOptions := []zap.Option{
 		zap.Fields(
-			zap.String("environment", helpers.GetEnvironment()),
-			zap.String("service", helpers.GetServiceName()),
+			zap.String("environment", cfg.Environment),
+			zap.String("service", cfg.ServiceName),
 		),
 		zap.AddCaller(),
 		zap.AddCallerSkip(1),
 	}
-	options = append(defaultOptions, options...)
+	options := append(defaultOptions, cfg.ZapOptions...)
 
 	// ✅ 3. Select the encoder based on mode
 	var encoder zapcore.Encoder
-	if isProd {
+	if cfg.IsProd {
 		encoder = zapcore.NewJSONEncoder(encoderConfig) // JSON logs for production
 	} else {
 		encoder = zapcore.NewConsoleEncoder(encoderConfig) // Readable console logs
@@ -74,10 +79,27 @@ func NewLogger(isProd bool, options ...zap.Option) (*Log, error) {
 	// ✅ 5. Create the logger core
 	core := zapcore.NewCore(encoder, logOutput, atomicLevel)
 
-	// ✅ 6. Build the logger with additional options
-	l := zap.New(core, options...)
+	// ✅ 6. Create OpenSearch core
+	var closeFunc func() error
 
-	return &Log{Logger: l}, nil
+	// ✅ 7. Create a list of all cores. Start with the local one.
+	cores := []zapcore.Core{core}
+
+	// ✅ 8. Add OpenSearch core if enabled
+	osCore, closer := opensearch.GetOpenSearchLogCore(atomicLevel, cfg.OpenSearchOptions...)
+	if osCore != nil {
+		cores = append(cores, osCore)
+		closeFunc = closer
+	}
+
+	// ✅ 9. Combine all cores using NewTee.
+	// Every log message will now be sent to every core in the 'cores' slice.
+	finalCore := zapcore.NewTee(cores...)
+
+	// ✅ 10. Build the logger with additional options
+	l := zap.New(finalCore, options...)
+
+	return &Log{Logger: l, closeLog: closeFunc}, nil
 }
 
 // GetEncoderPool returns a sync.Pool of zapcore.Encoder instances.
@@ -169,7 +191,19 @@ func (l *Log) Printf(level zapcore.Level, msg string, v ...interface{}) {
 // Sync flushes any buffered log entries. Applications should take care to call
 // Sync before exiting.
 func (l *Log) Sync() error {
-	return l.Logger.Sync()
+	err := l.Logger.Sync()
+
+	// Then, gracefully close our custom async writer if it exists
+	if l.closeLog != nil {
+		if closeErr := l.closeLog(); closeErr != nil {
+			// Combine errors if both operations fail
+			if err != nil {
+				return fmt.Errorf("zap sync error: %w; async close error: %v", err, closeErr)
+			}
+			return closeErr
+		}
+	}
+	return err
 }
 
 // getLumberjackLogger returns a WriteSyncer for file logging if rotation is enabled

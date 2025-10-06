@@ -150,7 +150,6 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
             NEURON_TAG=${{ steps.get_neuron_tag.outputs.neuron_tag }}
-            CORE_TAG=${{ steps.get_core_tag.outputs.core_tag }}
             GITHUB_TOKEN=${{ secrets.PERSONAL_TOKEN }}
       
       # Verify the image was built correctly

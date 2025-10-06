@@ -106,7 +106,7 @@ func NewServer(opts ...Option) (*Server, error) {
 		opt(&config)
 	}
 	if config.log == nil {
-		config.log = log.NewBasicLogger(helpers.IsProdEnvironment())
+		config.log = log.NewBasicLogger(helpers.IsProdEnvironment(), true)
 		config.log.Warn("Logger not provided, using default logger")
 	}
 

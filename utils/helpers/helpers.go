@@ -581,3 +581,69 @@ func ConstructDiscoveryURL(URL string, serviceName string) string {
 	}
 	return u.String()
 }
+
+// GetIsOpenSearchEnabled checks if OpenSearch logging is enabled via environment variable.
+func GetIsOpenSearchEnabled() bool {
+	if os.Getenv(constant.OpenSearchEnabled) != "" {
+		return os.Getenv(constant.OpenSearchEnabled) == "true"
+	}
+
+	if viper.GetString(constant.OpenSearchEnabled) != "" {
+		return viper.GetString(constant.OpenSearchEnabled) == "true"
+	}
+
+	return false
+}
+
+// GetOpenSearchAddresses returns a list of OpenSearch node addresses.
+func GetOpenSearchAddresses() []string {
+	// Example: "http://localhost:9200,http://localhost:9201"
+	addresses := os.Getenv(constant.OpenSearchAddresses)
+	if addresses == "" {
+		addresses = viper.GetString(constant.OpenSearchAddresses)
+	}
+	if addresses == "" {
+		return []string{"http://localhost:9200"} // Default for local dev
+	}
+	return strings.Split(addresses, ",")
+}
+
+// GetOpenSearchIndexName returns the index name for logs.
+func GetOpenSearchIndexName() string {
+	return formatIndexName(GetServiceName())
+}
+
+// GetOpenSearchUsername returns the username for authentication.
+func GetOpenSearchUsername() string {
+	if os.Getenv(constant.OpenSearchUsername) != "" {
+		return os.Getenv(constant.OpenSearchUsername)
+	}
+
+	if viper.GetString(constant.OpenSearchUsername) != "" {
+		return viper.GetString(constant.OpenSearchUsername)
+	}
+
+	return ""
+}
+
+// GetOpenSearchPassword returns the password for authentication.
+func GetOpenSearchPassword() string {
+	if os.Getenv(constant.OpenSearchPassword) != "" {
+		return os.Getenv(constant.OpenSearchPassword)
+	}
+
+	if viper.GetString(constant.OpenSearchPassword) != "" {
+		return viper.GetString(constant.OpenSearchPassword)
+	}
+
+	return ""
+}
+
+// formatIndex name format the index name for the service
+func formatIndexName(serviceName string) string {
+	environment := GetEnvironmentSlug(GetEnvironment())
+	if strings.HasSuffix(serviceName, "-service") {
+		return serviceName + "-" + environment + "-logs"
+	}
+	return serviceName + "-service-" + environment + "-logs"
+}

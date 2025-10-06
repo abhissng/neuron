@@ -18,6 +18,9 @@ func StartServer(opts ...ServerOption) error {
 	for _, opt := range opts {
 		opt(options)
 	}
+	if options.log == nil {
+		return errors.New("logger is nil, you need to provide a logger")
+	}
 
 	if helpers.IsProdEnvironment() {
 		gin.SetMode(gin.ReleaseMode)

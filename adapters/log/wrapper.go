@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/abhissng/neuron/adapters/opensearch"
+	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/types"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -141,4 +143,87 @@ func GetCallerFunctionName(skip int) string {
 // Sprintf is a wrapper around fmt.Sprintf
 func Sprintf(format string, a ...any) string {
 	return fmt.Sprintf(format, a...)
+}
+
+type LoggerConfig struct {
+	// IsProd enables production mode (JSON output, Info level)
+	IsProd bool
+
+	// ZapOptions are the standard zap logger options
+	ZapOptions []zap.Option
+
+	// OpenSearchOptions are the OpenSearch-specific options
+	OpenSearchOptions []opensearch.Option
+
+	// ServiceName overrides the default service name
+	ServiceName string
+
+	// Environment overrides the default environment
+	Environment string
+}
+
+// LoggerOption defines a function that modifies LoggerConfig
+type LoggerOption func(*LoggerConfig)
+
+// NewLoggerConfig creates a new LoggerConfig with default values
+func NewLoggerConfig(isProd bool, opts ...LoggerOption) *LoggerConfig {
+	cfg := &LoggerConfig{
+		ServiceName: helpers.GetServiceName(),
+		Environment: helpers.GetEnvironment(),
+		IsProd:      isProd,
+	}
+
+	// Apply all options
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	return cfg
+}
+
+// WithZapOptions adds zap logger options
+func WithZapOptions(opts ...zap.Option) LoggerOption {
+	return func(c *LoggerConfig) {
+		if c.ZapOptions == nil {
+			c.ZapOptions = make([]zap.Option, 0)
+		}
+		c.ZapOptions = append(c.ZapOptions, opts...)
+	}
+}
+
+// WithOpenSearchOptions adds OpenSearch options
+func WithOpenSearchOptions(opts ...opensearch.Option) LoggerOption {
+	return func(c *LoggerConfig) {
+		if c.OpenSearchOptions == nil {
+			c.OpenSearchOptions = make([]opensearch.Option, 0)
+		}
+		c.OpenSearchOptions = append(c.OpenSearchOptions, opts...)
+	}
+}
+
+// WithServiceName sets the service name
+func WithServiceName(name string) LoggerOption {
+	return func(c *LoggerConfig) {
+		if name != "" {
+			c.ServiceName = name
+		}
+	}
+}
+
+// WithEnvironment sets the environment
+func WithEnvironment(env string) LoggerOption {
+	return func(c *LoggerConfig) {
+		if env != "" {
+			c.Environment = env
+		}
+	}
+}
+
+// WithDisableOpenSearch disables OpenSearch logging
+func WithDisableOpenSearch(disable bool) LoggerOption {
+	return func(c *LoggerConfig) {
+		if disable {
+			c.OpenSearchOptions = append(c.OpenSearchOptions, opensearch.WithDisableOpenSearch())
+		}
+	}
 }

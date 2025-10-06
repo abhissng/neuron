@@ -20,7 +20,10 @@ type ServerOption func(*ServerOptions)
 // Shutdown gracefully shuts down the server
 func (s *ServerOptions) Shutdown(ctx context.DefaultContext) error {
 	// Retrieve the value safely using the comma-ok idiom
-	logs := log.NewBasicLogger(helpers.IsProdEnvironment())
+	logs := s.log
+	if logs == nil {
+		logs = log.NewBasicLogger(helpers.IsProdEnvironment(), true)
+	}
 	logs.Info("Gracefully Shutting down server......")
 
 	// Channel to notify when shutdown is complete
@@ -162,5 +165,12 @@ func configureRouteGroups(baseGroup *gin.RouterGroup, routeGroups []RouteGroupCo
 				helpers.Println(constant.ERROR, fmt.Sprintf("Unsupported method: %s\n", route.Method))
 			}
 		}
+	}
+}
+
+// WithLogger sets the logger for the server
+func WithLogger(log *log.Log) ServerOption {
+	return func(o *ServerOptions) {
+		o.log = log
 	}
 }

@@ -59,7 +59,7 @@ func WithMaxConns(maxConns int) DBOption {
 func WithDebugMode(debug bool) DBOption {
 	var logs = &log.Log{}
 	if debug {
-		logs = log.NewBasicLogger(false)
+		logs = log.NewBasicLogger(false, true)
 	}
 	return func(c DBConfig) {
 		c.setDebugMode(debug)

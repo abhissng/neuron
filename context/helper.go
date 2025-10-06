@@ -57,7 +57,7 @@ func (ctx *ServiceContext) CheckDependencies() (string, DependencyDetails) {
 	logHealth := NewDependencyStatus("OK", helpers.GetHealthyMessageFor("Logger"))
 	if ctx.Log == nil {
 		err = errors.New("logger is empty")
-		ctx.Log = log.NewBasicLogger(helpers.IsProdEnvironment())
+		ctx.Log = log.NewBasicLogger(helpers.IsProdEnvironment(), true)
 		ctx.Log.Error(constant.ControllerMessage, log.Err(err))
 		logHealth.Status = "FAIL"
 		logHealth.Message = err.Error()

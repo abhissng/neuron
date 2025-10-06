@@ -26,52 +26,6 @@ func getLocalBlameWrapper() *BlameWrapper {
 
 // initLocalBlames initializes the local error blames from a JSON file.
 func initLocalBlames() ([]BlameDefinition, error) {
-	/* TODO OLD logic Needs to be removed
-	// Get the absolute path of the current file
-	_, currentFile, _, _ := runtime.Caller(0)
-	currentFilePath := filepath.Dir(currentFile)
-
-	// Go one directory back
-	parentDir := filepath.Dir(currentFilePath)
-
-	// Construct the path to the errors file
-	errorsFilePath := filepath.Join(parentDir+"/assets", "libraryErrors.json")
-
-	// Check if the file exists
-	_, err := os.Stat(errorsFilePath)
-	if os.IsNotExist(err) {
-		// File doesn't exist, fallback to current working directory (.)
-		helpers.Println(constant.WARN, "File not found, falling back to current working directory")
-
-		// Use current directory (`.`) and keep the folder structure intact
-		errorsFilePath = filepath.Join("."+parentDir, "assets", "libraryErrors.json")
-	}
-
-	var localBlames []BlameDefinition
-
-	// Read the JSON file
-	file, err := os.Open(filepath.Clean(errorsFilePath))
-	if err != nil {
-		return nil, fmt.Errorf("failed to open local blame definition file: %w", err)
-
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			helpers.Println(constant.ERROR, "Error closing file: ", err)
-		}
-	}()
-	// Read the file contents
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read local blame definition file: %w", err)
-	}
-
-	// Unmarshal the JSON data
-	err = json.Unmarshal(data, &localBlames)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal local blame definition file: %w", err)
-	}
-	*/
 
 	var localBlames []BlameDefinition
 	if err := json.Unmarshal(embeddedBlameData, &localBlames); err != nil {
