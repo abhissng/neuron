@@ -63,7 +63,10 @@ func (p *PostgresDB[T]) Connect(ctx context.Context) error {
 	}
 
 	if p.options.IsDebugMode() {
-		logs := log.NewBasicLogger(helpers.IsProdEnvironment())
+		logs := p.options.GetLogger()
+		if logs == nil {
+			logs = log.NewBasicLogger(helpers.IsProdEnvironment(), true)
+		}
 		logs.Info("Connected to PostgreSQL")
 		_ = logs.Sync()
 	}
@@ -160,4 +163,8 @@ func (p *PostgresDB[T]) StopMonitor() {
 		}
 		p.monitorRunning = false
 	}
+}
+
+func (p *PostgresDB[T]) GetLogger() *log.Log {
+	return p.options.GetLogger()
 }

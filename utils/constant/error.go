@@ -25,3 +25,7 @@ const (
 	InternalServer types.ResponseErrorType = "InternalServerError"
 	Unauthorized   types.ResponseErrorType = "Unauthorized"
 )
+
+const (
+	OpenSearchDisabledError types.ErrorCode = "open search is disabled"
+)

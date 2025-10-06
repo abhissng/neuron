@@ -54,7 +54,7 @@ foo.>: Matches subjects like foo.bar, foo.bar.baz, foo.baz.qux, etc.
 
 // NewNATSManager initializes a new generic NATS wrapper
 func NewNATSManager(url string, options ...Option) (*NATSManager, error) {
-	defaultLog := log.NewBasicLogger(helpers.IsProdEnvironment())
+	defaultLog := log.NewBasicLogger(helpers.IsProdEnvironment(), true)
 
 	// Configure NATS options for reliability
 	opts := []nats.Option{

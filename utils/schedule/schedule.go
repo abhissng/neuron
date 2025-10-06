@@ -35,7 +35,7 @@ type Schedule struct {
 func NewSchedule(processor ScheduleProcessor, opts ...Option) *Schedule {
 	s := &Schedule{
 		StopChannel:    make(chan struct{}),
-		log:            log.NewBasicLogger(helpers.IsProdEnvironment()),
+		log:            log.NewBasicLogger(helpers.IsProdEnvironment(), true),
 		processor:      processor,
 		name:           DefaultName,
 		timeZone:       DefaultTimeZone,

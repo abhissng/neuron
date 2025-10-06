@@ -53,7 +53,10 @@ func (m *MySQLDB[T]) Connect(ctx context.Context) error {
 	m.checkAliveInterval = m.options.GetCheckAliveInterval()
 
 	if m.options.IsDebugMode() {
-		logs := log.NewBasicLogger(helpers.IsProdEnvironment())
+		logs := m.options.GetLogger()
+		if logs == nil {
+			logs = log.NewBasicLogger(helpers.IsProdEnvironment(), true)
+		}
 		logs.Info("Connected to MySQL")
 		_ = logs.Sync()
 	}
@@ -139,4 +142,8 @@ func (m *MySQLDB[T]) StopMonitor() {
 		}
 		m.monitorRunning = false
 	}
+}
+
+func (m *MySQLDB[T]) GetLogger() *log.Log {
+	return m.options.GetLogger()
 }

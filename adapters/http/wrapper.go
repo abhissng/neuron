@@ -56,7 +56,7 @@ func NewHttpClientWrapper(requestURL string, opts ...RequestOption) *HttpClientW
 		opt(config)
 	}
 	if config.Log == nil {
-		config.Log = log.NewBasicLogger(helpers.IsProdEnvironment())
+		config.Log = log.NewBasicLogger(helpers.IsProdEnvironment(), true)
 		config.Log.Warn("Logger not provided, using default logger")
 	}
 	return config

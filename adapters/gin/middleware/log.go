@@ -59,6 +59,8 @@ func GinRequestLogger(logger *log.Log) gin.HandlerFunc {
 		fields := []types.Field{
 			log.Int("status_code", c.Writer.Status()),
 			log.String("latency", latency.String()),
+			log.String("request-id", c.GetString(constant.RequestID)),
+			log.String("correlation-id", c.GetString(constant.CorrelationID)),
 		}
 
 		if logResponseBody {

@@ -31,16 +31,16 @@ type WorkerPool[T any, U any] struct {
 func NewWorkerPool[T any, U any](processor TaskProcessor[T, U], options ...Option[T, U]) *WorkerPool[T, U] {
 	// Default configuration
 	wp := &WorkerPool[T, U]{
-		numWorkers:   5,                                               // Default number of workers
-		taskQueue:    make(chan result.Task[T], 100),                  // Default task queue size
-		resultQueue:  make(chan result.TaskResult[U], 100),            // Default result queue size
-		batchSize:    5,                                               // Default batch size
-		batchDone:    make(chan int),                                  // Channel to signal batch completion (with batch ID)
-		batchCounter: 1,                                               // Start batch IDs from 1
-		taskCounter:  1,                                               // Start task IDs from 1
-		batchTasks:   make(map[int]int),                               // Initialize batch task tracker
-		processor:    processor,                                       // Task processor
-		log:          log.NewBasicLogger(helpers.IsProdEnvironment()), // Basic Logger (by default production)
+		numWorkers:   5,                                                     // Default number of workers
+		taskQueue:    make(chan result.Task[T], 100),                        // Default task queue size
+		resultQueue:  make(chan result.TaskResult[U], 100),                  // Default result queue size
+		batchSize:    5,                                                     // Default batch size
+		batchDone:    make(chan int),                                        // Channel to signal batch completion (with batch ID)
+		batchCounter: 1,                                                     // Start batch IDs from 1
+		taskCounter:  1,                                                     // Start task IDs from 1
+		batchTasks:   make(map[int]int),                                     // Initialize batch task tracker
+		processor:    processor,                                             // Task processor
+		log:          log.NewBasicLogger(helpers.IsProdEnvironment(), true), // Basic Logger (by default production)
 	}
 
 	// Apply options to override defaults
@@ -90,9 +90,9 @@ func WithBatchSize[T any, U any](batchSize int) Option[T, U] {
 }
 
 // WithLogger sets logger for worker pool.
-func WithLogger[T any, U any](isProd bool) Option[T, U] {
+func WithLogger[T any, U any](log *log.Log) Option[T, U] {
 	return func(wp *WorkerPool[T, U]) {
-		wp.log = log.NewBasicLogger(isProd)
+		wp.log = log
 	}
 }
 

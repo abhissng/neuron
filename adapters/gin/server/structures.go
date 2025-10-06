@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/gin-gonic/gin"
 )
@@ -19,6 +20,7 @@ type ServerOptions struct {
 	RouteGroups       []RouteGroupConfig
 	// A custom routing configurator allows complete control over route registration.
 	RoutingConfigurator func(*gin.Engine)
+	log                 *log.Log
 }
 
 // DefaultServerOptions returns the default server options

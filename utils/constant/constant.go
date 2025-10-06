@@ -34,6 +34,11 @@ const (
 	ProjectId            = "ProjectId"
 	VaultPath            = "VaultPath"
 	IssuerKey            = "IssuerKey"
+	OpenSearchEnabled    = "OPENSEARCH_ENABLED"
+	OpenSearchAddresses  = "OPENSEARCH_ADDRESSES"
+	OpenSearchIndex      = "OPENSEARCH_INDEX"
+	OpenSearchUsername   = "OPENSEARCH_USERNAME"
+	OpenSearchPassword   = "OPENSEARCH_PASSWORD"
 )
 
 // These are generic constant status and action

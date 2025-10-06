@@ -10,6 +10,10 @@ import (
 	"github.com/abhissng/neuron/utils/helpers"
 )
 
+// TODO: what if there are muliple database that needs to be connected how to handle that
+// at the same time mongo also needs to be connected with the same system is it currently possible no ?
+// a new context needs to be created with the current implementation
+
 // Database defines a common interface for different database backends.
 type Database interface {
 	Connect(ctx context.Context) error
@@ -27,6 +31,7 @@ type Database interface {
 	FetchCheckAliveInterval() time.Duration
 	StartMonitor()
 	StopMonitor()
+	GetLogger() *log.Log
 }
 
 // DBOptions defines a generic interface for database-specific options.
@@ -118,10 +123,14 @@ func MonitorDB[T Database](ctx context.Context, dbInstance T) {
 	ticker := time.NewTicker(dbInstance.FetchCheckAliveInterval())
 	defer ticker.Stop()
 
-	logger := log.NewBasicLogger(helpers.IsProdEnvironment())
+	logger := dbInstance.GetLogger()
+	if logger == nil {
+		logger = log.NewBasicLogger(helpers.IsProdEnvironment(), true)
+	}
 	defer func() {
 		_ = logger.Sync()
 	}()
+
 	for {
 		select {
 		case <-ctx.Done():

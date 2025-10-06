@@ -20,7 +20,7 @@ import (
 )
 
 // Middleware to generate requestId and correlationId
-func RequestIDMiddleware(log *log.Log) gin.HandlerFunc {
+func RequestIDMiddleware(log1 *log.Log) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Generate a unique requestId
 		requestId := random.GenerateUUID()
@@ -36,7 +36,7 @@ func RequestIDMiddleware(log *log.Log) gin.HandlerFunc {
 		c.Set(constant.CorrelationID, correlationId)
 
 		// Log the IDs
-		log.Info(helpers.FormatRequestAndCorrelationIDs(requestId, correlationId))
+		log1.Info("Request ID and Correlation ID", log.String("request-id", requestId), log.String("correlation-id", correlationId))
 		// Pass control to the next middleware/handler
 		c.Next()
 	}
