@@ -66,9 +66,11 @@ func (p *PostgresDB[T]) Connect(ctx context.Context) error {
 		logs := p.options.GetLogger()
 		if logs == nil {
 			logs = log.NewBasicLogger(helpers.IsProdEnvironment(), true)
+			defer func() {
+				_ = logs.Sync()
+			}()
 		}
 		logs.Info("Connected to PostgreSQL")
-		_ = logs.Sync()
 	}
 	return nil
 }
