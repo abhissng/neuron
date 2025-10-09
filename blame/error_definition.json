@@ -437,6 +437,13 @@
     "Description": "The correlation ID is missing.",
     "Component": "adaptors",
     "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-missing-records-name",
+    "Message": "Records name is missing",
+    "Description": "The required records name is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
   }
 
 ]

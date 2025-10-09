@@ -73,4 +73,5 @@ const (
 	ErrorDecodeResponseFailed            types.ErrorCode = "error-decode-response-failed"
 	ErrorResponseResultError             types.ErrorCode = "error-response-result-error"
 	ErrorMissingCorrelationID            types.ErrorCode = "error-missing-correlation-id"
+	ErrorMissingRecordsName              types.ErrorCode = "error-missing-records-name"
 )

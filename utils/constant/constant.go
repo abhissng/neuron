@@ -39,6 +39,7 @@ const (
 	OpenSearchIndex      = "OPENSEARCH_INDEX"
 	OpenSearchUsername   = "OPENSEARCH_USERNAME"
 	OpenSearchPassword   = "OPENSEARCH_PASSWORD"
+	Records              = "Records"
 )
 
 // These are generic constant status and action

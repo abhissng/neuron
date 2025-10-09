@@ -7,6 +7,7 @@ import (
 	"github.com/abhissng/neuron/adapters/gin/request"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/adapters/paseto"
+	"github.com/abhissng/neuron/adapters/session"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/context"
 	"github.com/abhissng/neuron/result"
@@ -153,17 +154,12 @@ func AutoRefreshMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 // **Gin Middleware for Paseto Verification**
 func PasetoVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 
-	if ctx.PasetoMiddlewareOption().HasExcludedService() {
-
-		serviceName, err := ctx.GetGinCtxServiceName()
-		if err != nil {
-			return result.NewFailure[bool](blame.MissingServiceName(err))
+	if ctx.PasetoMiddlewareOption().HasExcludedOption() {
+		blame := handleExcludedOptions(ctx)
+		if blame != nil {
+			return result.NewFailure[bool](blame)
 		}
-
-		if helpers.IsFoundInSlice(serviceName.String(), ctx.PasetoMiddlewareOption().ExcludedServices()) {
-			validToken := true
-			return result.NewSuccess(&validToken)
-		}
+		return result.NewSuccess(helpers.Valid())
 	}
 
 	tokenResult := request.FetchPasetoBearerToken(ctx.Context)
@@ -201,19 +197,47 @@ func VerifyCorrelationId(ctx *context.ServiceContext) result.Result[bool] {
 	return result.NewSuccess(&valid)
 }
 
-// func SessionMiddleware(sm *session.SessionManager) gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		sessionID, err := c.Cookie(constant.SessionID)
-// 		if err != nil {
+func SessionMiddleware(sm *session.SessionManager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		sessionID, err := c.Cookie(constant.SessionID)
+		if err != nil {
 
-// 		}
-// 		if sessionID != "" {
-// 			sessionData, err := sm.GetSession(c, sessionID)
-// 			if err == nil {
-// 				// Add session data to context
-// 				c.Set("session", sessionData)
-// 			}
-// 		}
-// 		c.Next()
-// 	}
-// }
+		}
+		if sessionID != "" {
+			sessionData, err := sm.GetSession(c, sessionID)
+			if err == nil {
+				// Add session data to context
+				c.Set("session", sessionData)
+			}
+		}
+		c.Next()
+	}
+}
+
+func handleExcludedOptions(ctx *context.ServiceContext) blame.Blame {
+	excluded := ctx.PasetoMiddlewareOption().ExcludedOptions()
+
+	if excluded.HasExcludedService() {
+		serviceName, err := ctx.GetGinCtxServiceName()
+		if err != nil {
+			return blame.MissingServiceName(err)
+		}
+
+		if helpers.IsFoundInSlice(serviceName.String(), excluded.ExcludedServices()) {
+			return nil
+		}
+	}
+
+	if excluded.HasExcludedRecords() {
+		recordsName, err := ctx.GetGinCtxRecordsName()
+		if err != nil {
+			return blame.MissingRecordsName(err)
+		}
+
+		if helpers.IsFoundInSlice(*recordsName, excluded.ExcludedRecords()) {
+			return nil
+		}
+	}
+
+	return nil
+}

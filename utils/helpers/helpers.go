@@ -293,10 +293,25 @@ func GetHealthyMessageFor(dependency string) string {
 }
 
 // IsFoundInSlice checks if the given key is found in the slice
-func IsFoundInSlice(key string, slice []string) bool {
-	for _, s := range slice {
-		if strings.EqualFold(s, key) {
-			return true
+// IsFoundInSlice checks if a key exists in a slice of strings or a slice of string pointers, ignoring case.
+func IsFoundInSlice[T []string | []*string](key string, slice T) bool {
+	// We use a type switch on the generic slice `T`.
+	// The `any` cast is required to enable the type switch.
+	switch s := any(slice).(type) {
+	case []string:
+		// The slice is of type []string.
+		for _, v := range s {
+			if strings.EqualFold(v, key) {
+				return true
+			}
+		}
+	case []*string:
+		// The slice is of type []*string.
+		for _, v := range s {
+			// We must check for nil pointers and then dereference the pointer `*v` for the comparison.
+			if v != nil && strings.EqualFold(*v, key) {
+				return true
+			}
 		}
 	}
 	return false
@@ -333,6 +348,8 @@ func GetEnvironmentSlug(environment string) string {
 		return "staging"
 	case "prod", "production":
 		return "prod"
+	case "uat":
+		return "uat"
 	default:
 		return "dev"
 	}
@@ -646,4 +663,9 @@ func formatIndexName(serviceName string) string {
 		return serviceName + "-" + environment + "-logs"
 	}
 	return serviceName + "-service-" + environment + "-logs"
+}
+
+func Valid() *bool {
+	valid := true
+	return &valid
 }

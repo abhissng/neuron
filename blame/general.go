@@ -523,3 +523,8 @@ func ResponseResultError(cause error) Blame {
 func MissingCorrelationID() Blame {
 	return getLocalBlameWrapper().FetchBlameForError(ErrorMissingCorrelationID)
 }
+
+// MissingRecordsName is an error when the records name is missing.
+func MissingRecordsName(cause error) Blame {
+	return getLocalBlameWrapper().FetchBlameForError(ErrorMissingRecordsName, WithCauses(cause))
+}
