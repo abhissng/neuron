@@ -51,7 +51,10 @@ func (w *OpenSearchWriter) Sync() error {
 func (w *OpenSearchWriter) start() {
 	w.wg.Add(1)
 	go func() {
-		defer w.wg.Done()
+		defer func() {
+			helpers.Println(constant.INFO, "OpenSearch writer stopped")
+			w.wg.Done()
+		}()
 
 		batch := make([][]byte, 0, w.batchSize)
 		ticker := time.NewTicker(w.flushTimeout)
@@ -63,6 +66,7 @@ func (w *OpenSearchWriter) start() {
 				if !ok {
 					// Channel closed, flush remaining batch and exit
 					w.flush(batch)
+					helpers.Println(constant.ERROR, "channel closed existing now")
 					return
 				}
 				batch = append(batch, logData)
