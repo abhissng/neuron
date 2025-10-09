@@ -167,6 +167,7 @@ func (v *Vault) FetchVaultValue(key string) (string, error) {
 	// var source string
 	ctx := context.Background()
 	key = strings.Replace(key, ":enc:", ":", 1)
+	key = strings.Replace(key, "enc:", "", 1)
 
 	switch {
 	case strings.HasPrefix(key, SecretsManagerPrefix):
@@ -208,7 +209,7 @@ func (v *Vault) DecryptVaultValues(key, value string) (string, error) {
 		if v.cryptoManager == nil {
 			return value, errors.New("cryptoManager is not provided, values will not be decrypted")
 		}
-		decrypted, err := v.cryptoManager.Decrypt([]byte(value))
+		decrypted, err := v.cryptoManager.Decrypt(value)
 		if err != nil {
 			return "", err
 		}

@@ -26,6 +26,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -91,7 +92,7 @@ func WithHash(hash crypto.Hash) Option {
 func NewCryptoManager(opts ...Option) (*CryptoManager, error) {
 	cm := &CryptoManager{
 		hash:    crypto.SHA256,
-		keyBits: 4096,
+		keyBits: 2048,
 	}
 	for _, opt := range opts {
 		if err := opt(cm); err != nil {
@@ -124,47 +125,52 @@ func (c *CryptoManager) PrivateKey() *rsa.PrivateKey {
 //   - Encrypts plaintext using AES-GCM
 //   - Encrypts AES key using RSA-OAEP(SHA-256)
 //   - Returns concatenation: [2-byte len][encKey][12-byte nonce][ciphertext+tag]
-func (c *CryptoManager) Encrypt(plaintext []byte) ([]byte, error) {
+func (c *CryptoManager) Encrypt(plaintext []byte) (string, error) {
 	aesKey := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, aesKey); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, err
+		return "", err
 	}
 	ciphertext := gcm.Seal(nil, nonce, plaintext, nil)
 
 	hash := sha256.New()
 	encKey, err := rsa.EncryptOAEP(hash, rand.Reader, c.publicKey, aesKey, nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	var out bytes.Buffer
 	if err := binary.Write(&out, binary.BigEndian, uint16(len(encKey))); err != nil {
-		return nil, err
+		return "", err
 	}
 	out.Write(encKey)
 	out.Write(nonce)
 	out.Write(ciphertext)
-	return out.Bytes(), nil
+	return base64.StdEncoding.EncodeToString(out.Bytes()), nil
 }
 
 // Decrypt reverses Encrypt:
 //   - Reads encKey length + encKey
 //   - Decrypts encKey using RSA-OAEP to obtain AES key
 //   - Uses AES-GCM with nonce to decrypt ciphertext
-func (c *CryptoManager) Decrypt(blob []byte) ([]byte, error) {
+func (c *CryptoManager) Decrypt(value string) ([]byte, error) {
+	blob, err := base64.StdEncoding.DecodeString(value)
+	if err != nil {
+		return nil, err
+	}
+
 	reader := bytes.NewReader(blob)
 	var encKeyLen uint16
 	if err := binary.Read(reader, binary.BigEndian, &encKeyLen); err != nil {
