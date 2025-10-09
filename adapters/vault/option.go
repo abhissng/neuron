@@ -6,6 +6,7 @@ import (
 
 	"github.com/abhissng/neuron/adapters/aws"
 	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/cryptography"
 	"github.com/abhissng/neuron/utils/helpers"
 )
 
@@ -56,5 +57,19 @@ func WithDefaultSource(source string) Option {
 func WithTimeout(timeout time.Duration) Option {
 	return func(v *Vault) {
 		v.timeOut = timeout
+	}
+}
+
+// WithCryptoManager sets the crypto manager
+func WithCryptoManager(cryptoManager *cryptography.CryptoManager) Option {
+	return func(v *Vault) {
+		v.cryptoManager = cryptoManager
+	}
+}
+
+// WithSiteURL sets the siteURL
+func WithSiteURL(url string) Option {
+	return func(v *Vault) {
+		v.siteURL = url
 	}
 }

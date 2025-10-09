@@ -10,6 +10,7 @@ import (
 
 	neuron_aws "github.com/abhissng/neuron/adapters/aws"
 	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/cryptography"
 	"github.com/abhissng/neuron/utils/helpers"
 	infisical "github.com/infisical/go-sdk"
 )
@@ -20,6 +21,7 @@ const (
 	SecretsManagerPrefix = "aws-sm:"
 	ParameterStorePrefix = "aws-ssm:"
 	AWSKMSPrefix         = "aws-kms:"
+	EncryptedPrefix      = "enc:"
 	timeout              = 30 * time.Second
 )
 
@@ -34,15 +36,23 @@ type Vault struct {
 	projectID     string
 	path          string
 	defaultSource string
+	siteURL       string
+	cryptoManager *cryptography.CryptoManager
 	timeOut       time.Duration
 }
 
 // NewVault creates a new Vault with options
+// If the valut is Infisicial
+// In case of blank client id and client secret
+// These values needs to be passed in environment variables with below key
+// INFISICAL_UNIVERSAL_AUTH_CLIENT_ID
+// INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET
 func NewVault(opts ...Option) *Vault {
 	v := &Vault{
 		// Set default values here
 		timeOut:       timeout,
 		defaultSource: "infisical", // Default to Infisical if not specified
+		siteURL:       "https://app.infisical.com",
 	}
 
 	// Apply all options
@@ -57,8 +67,8 @@ func NewVault(opts ...Option) *Vault {
 
 	if v.defaultSource == "infisical" {
 		v.infisicalClient = infisical.NewInfisicalClient(context.Background(), infisical.Config{
-			SiteUrl:          "https://app.infisical.com", // Optional, default is https://app.infisical.com
-			AutoTokenRefresh: true,                        // Whether or not to let the SDK handle the access token lifecycle. Defaults to true if not specified.
+			SiteUrl:          v.siteURL, // Optional, default is https://app.infisical.com
+			AutoTokenRefresh: true,      // Whether or not to let the SDK handle the access token lifecycle. Defaults to true if not specified.
 		})
 		// In case of blank client id and client secret
 		// These values needs to be passed in environment variables with below key
@@ -156,6 +166,7 @@ func (v *Vault) FetchVaultValue(key string) (string, error) {
 	var actualKey string
 	// var source string
 	ctx := context.Background()
+	key = strings.Replace(key, ":enc:", ":", 1)
 
 	switch {
 	case strings.HasPrefix(key, SecretsManagerPrefix):
@@ -190,6 +201,20 @@ func (v *Vault) FetchVaultValue(key string) (string, error) {
 		// helpers.Println(constant.DEBUG, "Fetching from", source, "(default) - Key:", actualKey)
 		return v.retrieveInfisicalSecret(actualKey)
 	}
+}
+
+func (v *Vault) DecryptVaultValues(key, value string) (string, error) {
+	if strings.Contains(key, EncryptedPrefix) {
+		if v.cryptoManager == nil {
+			return value, errors.New("cryptoManager is not provided, values will not be decrypted")
+		}
+		decrypted, err := v.cryptoManager.Decrypt([]byte(value))
+		if err != nil {
+			return "", err
+		}
+		return string(decrypted), nil
+	}
+	return value, nil
 }
 
 // OLD code for vault

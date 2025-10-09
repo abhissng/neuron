@@ -101,7 +101,7 @@ func loadAndReplaceConfig(vlt *vault.Vault) error {
 		// Check if the value is a string and contains placeholders like {{.ENV.DBPASSWORD}}
 		if strValue, ok := value.(string); ok {
 			// Replace placeholders in the string
-			updatedValue, err := replacePlaceholdersWithVault(strValue, vlt)
+			updatedValue, err := getSecretsFromVault(strValue, vlt)
 			if err != nil {
 				helpers.Println(constant.ERROR, "Error fetching secret from Vault for key ", key, ": ", err)
 				continue
@@ -114,8 +114,8 @@ func loadAndReplaceConfig(vlt *vault.Vault) error {
 	return nil
 }
 
-// Function to replace placeholders with values from Vault
-func replacePlaceholdersWithVault(configContent string, vault *vault.Vault) (string, error) {
+// Function to get secrets from vault
+func getSecretsFromVault(configContent string, vaultManager *vault.Vault) (string, error) {
 	// Define the regular expression to match placeholders like {{.DBPASSWORD}}
 	re := regexp.MustCompile(`{{\s*\.[^}]+\s*}}`)
 
@@ -125,9 +125,15 @@ func replacePlaceholdersWithVault(configContent string, vault *vault.Vault) (str
 		key := placeholder[3 : len(placeholder)-2]
 
 		// Fetch the value from Vault (you can fetch other secrets depending on your Vault setup)
-		value, err := vault.FetchVaultValue(key)
+		value, err := vaultManager.FetchVaultValue(key)
 		if err != nil {
 			helpers.Println(constant.ERROR, "Error fetching secret ", key, " from Vault: ", err)
+			return "" // Return empty string if fetching fails
+		}
+
+		value, err = vaultManager.DecryptVaultValues(key, value)
+		if err != nil {
+			helpers.Println(constant.ERROR, "Error decrypting secret ", key, " from Vault: ", err)
 			return "" // Return empty string if fetching fails
 		}
 

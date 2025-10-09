@@ -137,9 +137,18 @@ func WithRefreshThreshold(duration time.Duration) PasetoMiddlewareOption {
 	}
 }
 
+/*
 // WithExcludedServices sets the excluded services for the PASETO wrapper.
 func WithExcludedServices(services []string) PasetoMiddlewareOption {
 	return func(o *PasetoMiddlewareOptions) {
 		o.excludedServices = services
+	}
+}
+*/
+
+// WithExcludedOptions sets the excluded options for the PASETO wrapper.
+func WithExcludedOptions(options *ExcludedOptions) PasetoMiddlewareOption {
+	return func(o *PasetoMiddlewareOptions) {
+		o.excludedOptions = options
 	}
 }

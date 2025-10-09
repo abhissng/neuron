@@ -121,3 +121,25 @@ func LoadEd25519PublicKey(filePath string, content []byte) (ed25519.PublicKey, e
 
 	return publicKey, nil
 }
+
+// GenerateAndSaveEd25519KeyPair generates a new Ed25519 key pair and saves
+// the PEM-encoded keys to the specified files.
+func GenerateAndSaveEd25519KeyPair(publicKeyPath, privateKeyPath string) error {
+	privateKey, publicKey, err := GenerateEd25519KeyPair()
+	if err != nil {
+		return fmt.Errorf("failed to generate Ed25519 key pair: %w", err)
+	}
+	// Save the private key to a file with restricted permissions.
+	// 0600 means only the owner can read and write the file.
+	if err := os.WriteFile(privateKeyPath, []byte(privateKey), 0600); err != nil {
+		return fmt.Errorf("failed to write private key to file: %w", err)
+	}
+
+	// Save the public key to a file with standard read permissions.
+	// 0644 means owner can read/write, others can only read.
+	if err := os.WriteFile(publicKeyPath, []byte(publicKey), 0644); err != nil {
+		return fmt.Errorf("failed to write public key to file: %w", err)
+	}
+
+	return nil
+}

@@ -207,3 +207,13 @@ func DefaultContextWithTimeout(timeout time.Duration) (DefaultContext, context.C
 		Context: ctx,
 	}, cancel
 }
+
+func (ctx *ServiceContext) GetGinCtxRecordsName() (*string, error) {
+
+	records, exists := ctx.Get(constant.Records)
+	if !exists {
+		return nil, errors.New("records name not found in gin.Context")
+	}
+
+	return records.(*string), nil
+}
