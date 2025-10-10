@@ -40,6 +40,8 @@ const (
 	OpenSearchUsername   = "OPENSEARCH_USERNAME"
 	OpenSearchPassword   = "OPENSEARCH_PASSWORD"
 	Records              = "Records"
+	RSA_PRIVATE_KEY_PATH = "RSA_PRIVATE_KEY_PATH"
+	RSA_PUBLIC_KEY_PATH  = "RSA_PUBLIC_KEY_PATH"
 )
 
 // These are generic constant status and action
