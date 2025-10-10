@@ -545,7 +545,7 @@ func Printf(mode types.LogMode, format string, args ...interface{}) {
 		color = constant.GreenColor
 	case constant.WARN:
 		color = constant.YellowColor
-	case constant.ERROR:
+	case constant.ERROR, constant.FATAL:
 		color = constant.RedColor
 	case constant.DEBUG:
 		color = constant.BlueColor
@@ -558,6 +558,9 @@ func Printf(mode types.LogMode, format string, args ...interface{}) {
 
 	format = "[" + timestamp + "] [" + mode.String() + "] " + format
 	fmt.Printf(color+format+constant.ResetColor, args...)
+	if mode == constant.FATAL {
+		os.Exit(1)
+	}
 }
 
 // CorrelationIDFromNatsMsg returns the correlation ID from a nats.Msg.
@@ -668,4 +671,19 @@ func formatIndexName(serviceName string) string {
 func Valid() *bool {
 	valid := true
 	return &valid
+}
+
+// MustGetEnv retrieves the environment variable named by the key.
+// If the variable is not set or is empty after trimming whitespace,
+// the function logs a fatal error and exits the program.
+func MustGetEnv(key string) string {
+	value := os.Getenv(key)
+
+	if value == "" || strings.TrimSpace(value) == "" {
+		// In a real application, you would use a proper logging system (like Zap)
+		// and maybe the logging's Fatal method here.
+		Printf(constant.FATAL, "FATAL ERROR: Required environment variable '%s' is not set or is empty.\n", key)
+	}
+
+	return value
 }

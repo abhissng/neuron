@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS base
+FROM golang:1.25.2-alpine AS base
 
 # Install git and necessary build tools
 RUN apk add --no-cache git make build-base
@@ -31,7 +31,7 @@ RUN go mod tidy -v \
 RUN cat > go.mod <<EOF
  module github.com/yourusername/neuron-deps/test
  
- go 1.24.1
+ go 1.25.2
  
  require (
     github.com/abhissng/neuron ${NEURON_TAG}
@@ -52,7 +52,7 @@ RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not 
 # RUN chmod -R 755 /go/pkg/mod 
 
 # Create a new stage to ensure clean environment
-FROM golang:1.24-alpine
+FROM golang:1.25.2-alpine
 
 # Copy the downloaded modules from the previous stage
 COPY --from=base /go/pkg/mod/ /go/pkg/mod/

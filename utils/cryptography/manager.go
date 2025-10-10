@@ -31,6 +31,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/helpers"
 )
 
 // CryptoManager wraps RSA key management, encryption, and signing.
@@ -45,7 +48,24 @@ type CryptoManager struct {
 type Option func(*CryptoManager) error
 
 // WithKeyPair allows providing existing RSA keys.
+// If both private and public keys are provided, they will be used as is.
+// If neither private nor public key is provided, we will need a environment variable to get the private and public key path
+// MUST have the environment variable RSA_PRIVATE_KEY_PATH and RSA_PUBLIC_KEY_PATH set
 func WithKeyPair(priv *rsa.PrivateKey, pub *rsa.PublicKey) Option {
+	if priv == nil {
+		rsaPrivateKey, err := LoadRSAPrivateKeyPEM(helpers.MustGetEnv(constant.RSA_PRIVATE_KEY_PATH))
+		if err != nil {
+			helpers.Printf(constant.FATAL, "Failed to load rsa private key %v", err)
+		}
+		priv = rsaPrivateKey
+	}
+	if pub == nil {
+		rsaPublicKey, err := LoadRSAPublicKeyPEM(helpers.MustGetEnv(constant.RSA_PUBLIC_KEY_PATH))
+		if err != nil {
+			helpers.Printf(constant.FATAL, "Failed to load rsa public key %v", err)
+		}
+		pub = rsaPublicKey
+	}
 	return func(c *CryptoManager) error {
 		c.privateKey = priv
 		c.publicKey = pub
@@ -54,7 +74,15 @@ func WithKeyPair(priv *rsa.PrivateKey, pub *rsa.PublicKey) Option {
 }
 
 // WithPrivateKey allows providing existing RSA private key.
+// MUST have the environment variable RSA_PRIVATE_KEY_PATH set if the priv is nil
 func WithPrivateKey(priv *rsa.PrivateKey) Option {
+	if priv == nil {
+		rsaPrivateKey, err := LoadRSAPrivateKeyPEM(helpers.MustGetEnv(constant.RSA_PRIVATE_KEY_PATH))
+		if err != nil {
+			helpers.Printf(constant.FATAL, "Failed to load rsa private key %v", err)
+		}
+		priv = rsaPrivateKey
+	}
 	return func(c *CryptoManager) error {
 		c.privateKey = priv
 		return nil
@@ -62,7 +90,15 @@ func WithPrivateKey(priv *rsa.PrivateKey) Option {
 }
 
 // WithPublicKey allows providing existing RSA public key.
+// MUST have the environment variable RSA_PUBLIC_KEY_PATH set if the pub is nil
 func WithPublicKey(pub *rsa.PublicKey) Option {
+	if pub == nil {
+		rsaPublicKey, err := LoadRSAPublicKeyPEM(helpers.MustGetEnv(constant.RSA_PUBLIC_KEY_PATH))
+		if err != nil {
+			helpers.Printf(constant.FATAL, "Failed to load rsa public key %v", err)
+		}
+		pub = rsaPublicKey
+	}
 	return func(c *CryptoManager) error {
 		c.publicKey = pub
 		return nil
