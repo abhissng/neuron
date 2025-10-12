@@ -1,6 +1,10 @@
 package types
 
 import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -207,7 +211,83 @@ func MillisRefToTimeRef(millisRef *int64) *time.Time {
 
 // CastTo is a generic function to safely cast a value to a specific type.
 // It returns the cast value and a boolean indicating whether the cast was successful.
+// CastTo tries to cast or convert any value to the given type T.
 func CastTo[T any](value any) (T, bool) {
-	castValue, ok := value.(T)
-	return castValue, ok
+	var zero T
+
+	// If value is already the right type
+	if v, ok := value.(T); ok {
+		return v, true
+	}
+
+	// Handle conversions via reflection
+	val := reflect.ValueOf(value)
+	targetType := reflect.TypeOf(zero)
+
+	if !val.IsValid() {
+		return zero, false
+	}
+
+	// Handle string conversions
+	switch targetType.Kind() {
+	case reflect.String:
+		switch v := value.(type) {
+		case string:
+			return any(v).(T), true
+		case fmt.Stringer:
+			return any(v.String()).(T), true
+		default:
+			return any(fmt.Sprintf("%v", v)).(T), true
+		}
+
+	case reflect.Bool:
+		switch v := value.(type) {
+		case bool:
+			return any(v).(T), true
+		case string:
+			b, err := strconv.ParseBool(v)
+			if err == nil {
+				return any(b).(T), true
+			}
+		case int, int64, float64:
+			return any(val.Float() != 0).(T), true
+		}
+
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		switch v := value.(type) {
+		case string:
+			i, err := strconv.ParseInt(v, 10, 64)
+			if err == nil {
+				return any(reflect.ValueOf(i).Convert(targetType).Interface()).(T), true
+			}
+		case float64, float32:
+			return any(reflect.ValueOf(int64(val.Float())).Convert(targetType).Interface()).(T), true
+		case int, int8, int16, int32, int64:
+			return any(reflect.ValueOf(v).Convert(targetType).Interface()).(T), true
+		}
+
+	case reflect.Float32, reflect.Float64:
+		switch v := value.(type) {
+		case string:
+			f, err := strconv.ParseFloat(v, 64)
+			if err == nil {
+				return any(reflect.ValueOf(f).Convert(targetType).Interface()).(T), true
+			}
+		case int, int64:
+			return any(reflect.ValueOf(float64(val.Int())).Convert(targetType).Interface()).(T), true
+		case float32, float64:
+			return any(reflect.ValueOf(v).Convert(targetType).Interface()).(T), true
+		}
+	}
+
+	// Last resort: try JSON re-marshal
+	b, err := json.Marshal(value)
+	if err == nil {
+		var t T
+		if err := json.Unmarshal(b, &t); err == nil {
+			return t, true
+		}
+	}
+
+	return zero, false
 }

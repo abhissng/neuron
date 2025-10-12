@@ -12,22 +12,62 @@ import (
 
 // ErrNotFound is returned when a key is not found in Redis.
 // This provides a distinct error type compared to the underlying redis.Nil.
-var ErrNotFound = errors.New("rediswrapper: key not found")
+// The error message will include the key that was not found.
+func ErrNotFound(key string) error {
+	return fmt.Errorf("rediswrapper: key not found: %s", key)
+}
 
 // Config holds the configuration for the Redis wrapper.
 type Config struct {
-	Addr     string // e.g., "localhost:6379"
-	Password string // Leave empty if no password
-	DB       int    // Default is 0
-	// DefaultTTL is used for cache-specific methods if no TTL is provided.
-	// Set to 0 to disable default TTL (meaning keys persist unless TTL specified).
-	DefaultTTL time.Duration
+	Addr       string        // e.g., "localhost:6379"
+	Password   string        // Leave empty if no password
+	DB         int           // Default is 0
+	DefaultTTL time.Duration // Default TTL for cache operations (0 means no TTL)
 }
 
-func NewConfig() *Config {
-	return &Config{
-		DefaultTTL: 0,
+// Option defines a function type that modifies Config
+type Option func(*Config)
+
+// WithAddress sets the Redis server address (e.g., "localhost:6379")
+func WithAddress(addr string) Option {
+	return func(c *Config) {
+		c.Addr = addr
 	}
+}
+
+// WithPassword sets the Redis password
+func WithPassword(password string) Option {
+	return func(c *Config) {
+		c.Password = password
+	}
+}
+
+// WithDB sets the Redis database number
+func WithDB(db int) Option {
+	return func(c *Config) {
+		c.DB = db
+	}
+}
+
+// WithDefaultTTL sets the default TTL for cache operations
+func WithDefaultTTL(ttl time.Duration) Option {
+	return func(c *Config) {
+		c.DefaultTTL = ttl
+	}
+}
+
+// NewConfig creates a new Config with the provided options
+func NewConfig(opts ...Option) *Config {
+	cfg := &Config{
+		DB:         0, // Default Redis DB
+		DefaultTTL: 0, // No default TTL by default
+	}
+
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	return cfg
 }
 
 // RedisManager provides a simplified interface over the go-redis client.
@@ -36,9 +76,9 @@ type RedisManager struct {
 	defaultTTL time.Duration
 }
 
-// NewRedisWrapper creates and initializes a new RedisManager.
+// NewRedisManager creates and initializes a new RedisManager.
 // It pings the Redis server to ensure connectivity.
-func NewRedisWrapper(cfg Config) (*RedisManager, error) {
+func NewRedisManager(cfg *Config) (*RedisManager, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.Addr,
 		Password: cfg.Password,
@@ -90,7 +130,7 @@ func (rw *RedisManager) Get(ctx context.Context, key string) (string, error) {
 	val, err := rw.client.Get(ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return "", ErrNotFound
+			return "", ErrNotFound(key)
 		}
 		return "", fmt.Errorf("failed to get key %s: %w", key, err)
 	}
@@ -151,7 +191,7 @@ func (rw *RedisManager) GetJSON(ctx context.Context, key string, dest interface{
 	jsonData, err := rw.client.Get(ctx, key).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return ErrNotFound
+			return ErrNotFound(key)
 		}
 		return fmt.Errorf("failed to get JSON for key %s: %w", key, err)
 	}

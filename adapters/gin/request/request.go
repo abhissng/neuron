@@ -206,7 +206,7 @@ func ParseUnixTimeFromParams(key string, mandatory bool, c *gin.Context) result.
 		value, _ := paramResult.Value()
 		if value != nil {
 			unixTime := types.Milliseconds(*value)
-			return result.NewSuccess[types.Milliseconds](&unixTime)
+			return result.NewSuccess(&unixTime)
 		}
 		return result.NewSuccess[types.Milliseconds](nil)
 	}
