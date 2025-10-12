@@ -129,29 +129,42 @@ func getAllowedHeaders() string {
 	 X-Subject,
 	 X-Signature,
 	 X-Paseto-Token,
-	 X-Refresh-Token`
+	 X-Refresh-Token,
+	 X-User-Role`
 }
 
-// getAllowedOrigin returns the allowed origin for CORS
+// getAllowedOrigin returns the allowed origin for CORS with wildcard support
 func getAllowedOrigin(r *http.Request) string {
-	// Fetch allowed origin dynamically (configured in environment or file)
 	allowedOrigins := viper.GetStringSlice(constant.CorsAllowedOriginsKey)
 
-	// If "*" is set, allow all origins
 	if len(allowedOrigins) == 0 || slices.Contains(allowedOrigins, "*") {
 		return "*"
 	}
 
-	// If request is made and the origin matches the allowed origins
-	if r != nil {
-		origin := r.Header.Get("Origin")
-		for _, allowedOrigin := range allowedOrigins {
-			if strings.Contains(origin, allowedOrigin) {
+	if r == nil {
+		return "*"
+	}
+
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return "*"
+	}
+
+	for _, allowedOrigin := range allowedOrigins {
+		// Exact match
+		if allowedOrigin == origin {
+			return origin
+		}
+
+		// Wildcard pattern like https://*.abhishek.com
+		if strings.Contains(allowedOrigin, "*") {
+			prefix := strings.Split(allowedOrigin, "*")[0]
+			suffix := strings.Split(allowedOrigin, "*")[1]
+			if strings.HasPrefix(origin, prefix) && strings.HasSuffix(origin, suffix) {
 				return origin
 			}
 		}
 	}
 
-	// Default to "*" if no valid origin found
 	return "*"
 }

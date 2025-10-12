@@ -17,6 +17,7 @@ const (
 	ErrorHeader         = "X-Error"
 	CSRFTokenHeader     = "X-CSRF-Token" // #nosec G101
 	CSRFTokenCookie     = "X-CSRF-Token" // #nosec G101
+	XUserRole           = "X-User-Role"
 )
 
 // These are middlewares or plugin constant for the application

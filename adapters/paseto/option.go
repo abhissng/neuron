@@ -17,7 +17,9 @@ type PasetoOption func(*PasetoWrapper)
 
 // **Constructor Using Option Pattern**
 func NewPasetoWrapper(opts ...PasetoOption) *PasetoWrapper {
-	pw := &PasetoWrapper{}
+	pw := &PasetoWrapper{
+		basicTokenExpiry: time.Minute * 5,
+	}
 
 	for _, opt := range opts {
 		opt(pw)
@@ -76,6 +78,13 @@ func WithAccessTokenExpiry(accessToken time.Duration) PasetoOption {
 func WithRefreshTokenExpiry(refreshToken time.Duration) PasetoOption {
 	return func(p *PasetoWrapper) {
 		p.refreshTokenExpiry = refreshToken
+	}
+}
+
+// WithBasicTokenExpiry sets the basic token expiry for the PASETO wrapper.
+func WithBasicTokenExpiry(basicToken time.Duration) PasetoOption {
+	return func(p *PasetoWrapper) {
+		p.basicTokenExpiry = basicToken
 	}
 }
 

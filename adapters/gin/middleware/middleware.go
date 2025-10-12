@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"errors"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/abhissng/neuron/adapters/gin/request"
@@ -11,6 +13,7 @@ import (
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/context"
 	"github.com/abhissng/neuron/result"
+	"github.com/abhissng/neuron/utils/codec"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/random"
@@ -240,4 +243,56 @@ func handleExcludedOptions(ctx *context.ServiceContext) blame.Blame {
 	}
 
 	return nil
+}
+
+// BasicAuthMiddleware implements simple HTTP Basic Auth
+func BasicAuthMiddleware(username, password string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader(constant.AuthorizationHeader)
+
+		// Check if Authorization header is present
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Basic ") {
+			c.Header("WWW-Authenticate", `Basic realm="Restricted"`)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "Authorization header missing or invalid",
+			})
+			return
+		}
+
+		// Decode the base64 credentials
+		payload, err := codec.Decode[string]([]byte(strings.TrimPrefix(authHeader, "Basic ")), codec.Base64)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid base64 credentials"})
+			return
+		}
+
+		// Split "username:password"
+		parts := strings.SplitN(string(payload), ":", 2)
+		if len(parts) != 2 {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid credential format"})
+			return
+		}
+
+		reqUser, reqPass := parts[0], parts[1]
+
+		// Validate credentials
+		if reqUser != username || reqPass != password {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+			return
+		}
+
+		// Auth successful → continue
+		c.Next()
+	}
+}
+
+// Middleware to Inject anything in the gin context
+func InjectMiddleware(key string, value any) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Initialize ServiceContext
+		c.Set(key, value)
+
+		// Pass control to the next middleware/handler
+		c.Next()
+	}
 }

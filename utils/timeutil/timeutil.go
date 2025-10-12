@@ -130,19 +130,19 @@ func LoadLocation(location string) (*time.Location, error) {
 }
 
 // Now returns current time
-func Now() TimeWrapper {
-	return TimeWrapper{time.Now()}
+func Now() *TimeWrapper {
+	return &TimeWrapper{time.Now().UTC()}
 }
 
 // NewTime creates a new TimeWrapper instance
-func NewTime(year int, month time.Month, day, hour, min, sec, nsec int, loc *time.Location) TimeWrapper {
-	return TimeWrapper{
+func NewTime(year int, month time.Month, day, hour, min, sec, nsec int, loc *time.Location) *TimeWrapper {
+	return &TimeWrapper{
 		time.Date(year, month, day, hour, min, sec, nsec, loc),
 	}
 }
 
 // Format converts strftime-style directives to Go's layout format
-func (t TimeWrapper) Format(format string) string {
+func (t *TimeWrapper) Format(format string) string {
 	// goLayout := convertLayout(format)
 	// formattedTime := t.Time.Format(goLayout)
 
@@ -203,11 +203,11 @@ func ConvertLayout(format string) string {
 }
 
 // In returns time in different location
-func (t TimeWrapper) In(loc *time.Location) TimeWrapper {
-	return TimeWrapper{t.Time.In(loc)}
+func (t *TimeWrapper) In(loc *time.Location) *TimeWrapper {
+	return &TimeWrapper{t.Time.In(loc)}
 }
 
 // AddDate adds years/months/days
-func (t TimeWrapper) AddDate(years, months, days int) TimeWrapper {
-	return TimeWrapper{t.Time.AddDate(years, months, days)}
+func (t *TimeWrapper) AddDate(years, months, days int) *TimeWrapper {
+	return &TimeWrapper{t.Time.AddDate(years, months, days)}
 }

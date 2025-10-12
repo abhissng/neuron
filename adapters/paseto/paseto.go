@@ -16,6 +16,7 @@ type PasetoWrapper struct {
 	privateKey             ed25519.PrivateKey // For auth service (token generation)
 	publicKey              ed25519.PublicKey  // For other services (token validation)
 	issuer                 string
+	basicTokenExpiry       time.Duration
 	accessTokenExpiry      time.Duration
 	refreshTokenExpiry     time.Duration
 	pasetoMiddlewareOption *PasetoMiddlewareOptions
@@ -31,6 +32,11 @@ func (p *PasetoWrapper) FetchToken(options ...claims.StandardClaimsOption) resul
 // FetchRefreshToken generates a new refresh token
 func (p *PasetoWrapper) FetchRefreshToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
 	return p.createToken(p.issuer, p.refreshTokenExpiry, options...)
+}
+
+// FetchBasicToken generates a new basic token
+func (p *PasetoWrapper) FetchBasicToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
+	return p.createToken(p.issuer, p.basicTokenExpiry, options...)
 }
 
 // createToken generates a new token with the given issuer, expiry, and options
