@@ -15,7 +15,7 @@ import (
 
 // Error struct holds the error information
 type Error struct {
-	statusCode   string          //123
+	reasonCode   string          //123
 	errCode      types.ErrorCode //err-not-found
 	component    types.ComponentErrorType
 	responseType types.ResponseErrorType
@@ -31,15 +31,15 @@ type Error struct {
 
 // NewError creates a new Error instance
 func NewError(
-	statusCode string,
+	reasonCode string,
 	errorCode types.ErrorCode,
 	message, description string,
 ) *Error {
-	if helpers.IsEmpty(statusCode) {
-		statusCode = string(errorCode)
+	if helpers.IsEmpty(reasonCode) {
+		reasonCode = string(errorCode)
 	}
 	return &Error{
-		statusCode:  statusCode,
+		reasonCode:  reasonCode,
 		errCode:     errorCode,
 		message:     message,
 		description: description,
@@ -56,7 +56,7 @@ func NewBasicError(
 	errorCode types.ErrorCode,
 ) *Error {
 	return &Error{
-		statusCode: errorCode.String(),
+		reasonCode: errorCode.String(),
 		errCode:    errorCode,
 		language:   helpers.GetDefaultLanguageTag(),
 		fields:     map[string]any{},
@@ -66,9 +66,9 @@ func NewBasicError(
 	}
 }
 
-// FetchStatusCode returns the status code of the error as a string
-func (e *Error) FetchStatusCode() string {
-	return e.statusCode
+// FetchReasonCode returns the reason code of the error as a string
+func (e *Error) FetchReasonCode() string {
+	return e.reasonCode
 }
 
 // FetchErrCode returns the error code of the error as a ErrorCode
@@ -304,13 +304,13 @@ func (e *Error) Translate() (string, string) {
 
 // ErrorResponse struct holds the error information for sending as a response
 type ErrorResponse struct {
-	StatusCode   string                   `json:"statusCode,omitempty"`
-	ErrorCode    types.ErrorCode          `json:"errorCode,omitempty"`
+	ReasonCode   string                   `json:"reason_code,omitempty"`
+	ErrorCode    types.ErrorCode          `json:"error_code,omitempty"`
 	Message      string                   `json:"message,omitempty"`
 	Description  string                   `json:"description,omitempty"`
 	Fields       map[string]any           `json:"fields,omitempty"`
 	Component    types.ComponentErrorType `json:"component,omitempty"`
-	ResponseType types.ResponseErrorType  `json:"responseType,omitempty"`
+	ResponseType types.ResponseErrorType  `json:"response_type,omitempty"`
 	Causes       []string                 `json:"causes,omitempty"`
 }
 
@@ -333,7 +333,7 @@ func (e *ErrorResponse) NewErrorResponseBlame(bw *BlameManager) Blame {
 	}
 
 	if !ok {
-		blameInfo = NewBlame(e.StatusCode, e.ErrorCode, e.Message, e.Description).
+		blameInfo = NewBlame(e.ReasonCode, e.ErrorCode, e.Message, e.Description).
 			WithComponent(e.Component).
 			WithResponseType(e.ResponseType).
 			WithBundle(helpers.NewBundle(helpers.GetDefaultLanguageTag()))
@@ -353,7 +353,7 @@ func (e *ErrorResponse) NewErrorResponseBlame(bw *BlameManager) Blame {
 // FetchErrorResponse sends the error as a map[string]any with translated message
 func (err *Error) FetchErrorResponse(options ...SendErrorResponseOption) ErrorResponse {
 	response := ErrorResponse{
-		StatusCode:   err.FetchStatusCode(),
+		ReasonCode:   err.FetchReasonCode(),
 		ErrorCode:    err.FetchErrCode(),
 		Message:      err.FetchMessage(),
 		Description:  err.FetchDescription(),

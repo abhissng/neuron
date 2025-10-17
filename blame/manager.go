@@ -14,7 +14,7 @@ import (
 
 // BlameDefinition represents a blame definition.
 type BlameDefinition struct {
-	StatusCode   string `json:"StatusCode"`
+	ReasonCode   string `json:"ReasonCode"`
 	Code         string `json:"Code"`
 	Message      string `json:"Message"`
 	Description  string `json:"Description"`
@@ -79,11 +79,11 @@ func NewBlameManager(opt *BlameManagerOption) (*BlameManager, error) {
 
 	if len(blameDefinitions) > 0 {
 		for index, def := range blameDefinitions {
-			if helpers.IsEmpty(def.StatusCode) {
-				def.StatusCode = helpers.GenerateStatusCode(helpers.GetServiceName(), 100+index)
+			if helpers.IsEmpty(def.ReasonCode) {
+				def.ReasonCode = helpers.GenerateReasonCode(helpers.GetServiceName(), 100+index)
 			}
 			blameDefinitionsMap[types.ErrorCode(def.Code)] =
-				NewBlame(def.StatusCode, types.ErrorCode(def.Code), def.Message, def.Description).
+				NewBlame(def.ReasonCode, types.ErrorCode(def.Code), def.Message, def.Description).
 					WithComponent(types.ComponentErrorType(def.Component)).
 					WithResponseType(types.ResponseErrorType(def.ResponseType)).
 					WithBundle(opt.Bundle)

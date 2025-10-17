@@ -114,6 +114,9 @@ func FetchIntParam(c *gin.Context, paramName string, origin ParamOrigin, require
 // String Parameter
 func FetchTextParam(c *gin.Context, paramName string, origin ParamOrigin, required bool) result.Result[string] {
 	return fetchAndConvertParam(c, paramName, required, origin, func(value string) result.Result[string] {
+		if helpers.IsEmpty(value) {
+			return result.NewFailure[string](blame.MissingParameterError(paramName))
+		}
 		return result.NewSuccess(&value)
 	}, nil)
 }
@@ -127,6 +130,9 @@ func FetchValidatedTextParam(
 	validator ParamValidatorFunc[string],
 ) result.Result[string] {
 	return fetchAndConvertParam(c, paramName, required, origin, func(value string) result.Result[string] {
+		if helpers.IsEmpty(value) {
+			return result.NewFailure[string](blame.MissingParameterError(paramName))
+		}
 		return result.NewSuccess(&value)
 	}, validator)
 }
@@ -193,7 +199,7 @@ func FetchBusinessIDFromParams(c *gin.Context) result.Result[types.BusinessID] {
 	idResult := FetchIntParam(c, constant.BusinessID, RouteParam, true)
 	if idResult.IsSuccess() {
 		val, _ := idResult.Value()
-		return result.NewSuccess[types.BusinessID](types.CreateRef(types.BusinessID(*val)))
+		return result.NewSuccess(types.CreateRef(types.BusinessID(*val)))
 	}
 	_, err := idResult.Value()
 	return result.NewFailure[types.BusinessID](blame.BusinessIdPathParamMissing(err.FetchCauses()...))

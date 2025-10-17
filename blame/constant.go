@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	StatusCodeNameSpace = "INTLIB"
-	StatusCodeBase      = 100000
+	ReasonCodeNameSpace = "INTLIB"
+	ReasonCodeBase      = 100000
 )
 
 // Error Identifiers for internal library
