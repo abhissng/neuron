@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/abhissng/neuron/utils/constant"
@@ -66,31 +67,45 @@ func Decode[T any](data []byte, codecType types.CodecType) (T, error) {
 	switch codecType {
 	case JSON:
 		err = json.Unmarshal(data, &result)
+
 	case XML:
 		err = xml.Unmarshal(data, &result)
+
 	case YAML:
 		err = yaml.Unmarshal(data, &result)
+
 	case Gob:
 		buf := bytes.NewBuffer(data)
 		dec := gob.NewDecoder(buf)
 		err = dec.Decode(&result)
+
 	case Base64:
-		decoded, err := base64.StdEncoding.DecodeString(string(data))
+		var decoded []byte
+		decoded, err = base64.StdEncoding.DecodeString(toString(data))
 		if err == nil {
-			result = any(decoded).(T)
+			err = decodeBytes(decoded, &result)
 		}
+
 	case Hex:
-		decoded, err := hex.DecodeString(string(data))
+		var decoded []byte
+		decoded, err = hex.DecodeString(toString(data))
 		if err == nil {
-			result = any(decoded).(T)
+			err = decodeBytes(decoded, &result)
 		}
+
 	case Gzip:
 		buf := bytes.NewBuffer(data)
-		gz, err := gzip.NewReader(buf)
+		var gz *gzip.Reader
+		gz, err = gzip.NewReader(buf)
 		if err == nil {
-			decodedData, _ := io.ReadAll(gz)
-			result = any(decodedData).(T)
+			defer gz.Close()
+			var decodedData []byte
+			decodedData, err = io.ReadAll(gz)
+			if err == nil {
+				err = decodeBytes(decodedData, &result)
+			}
 		}
+
 	default:
 		err = errors.New("unsupported decoding format")
 	}
@@ -109,4 +124,23 @@ func toString[T any](data T) string {
 		bytes, _ := Encode(v, JSON)
 		return string(bytes)
 	}
+}
+
+// decodeBytes handles assigning decoded byte data to result using toString.
+func decodeBytes[T any](decoded []byte, result *T) error {
+	// Use toString() to make it compatible with both string and []byte targets
+	switch any(*result).(type) {
+	case string:
+		*result = any(toString(decoded)).(T)
+	case []byte:
+		*result = any([]byte(toString(decoded))).(T)
+	default:
+		// For structs, maps, slices, etc. try JSON unmarshal
+		if err := json.Unmarshal(decoded, result); err != nil {
+			var zero T
+			*result = zero
+			return fmt.Errorf("decode: unable to map decoded bytes to target type: %w", err)
+		}
+	}
+	return nil
 }

@@ -145,3 +145,7 @@ type TokenDetails struct {
 	ExpiresAt time.Time
 	ID        string // Unique identifier for the token
 }
+
+func NewTokenDetails() *TokenDetails {
+	return &TokenDetails{}
+}
