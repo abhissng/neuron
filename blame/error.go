@@ -315,7 +315,7 @@ type ErrorResponse struct {
 }
 
 // NewErrorResponseBlame creates a new Blame instance from the ErrorResponse
-func (e *ErrorResponse) NewErrorResponseBlame(bw *BlameWrapper) Blame {
+func (e *ErrorResponse) NewErrorResponseBlame(bw *BlameManager) Blame {
 	var blameInfo Blame
 	ok := true
 	islocalWrapper := true
@@ -329,7 +329,7 @@ func (e *ErrorResponse) NewErrorResponseBlame(bw *BlameWrapper) Blame {
 	}
 
 	if islocalWrapper {
-		blameInfo, ok = localBlameWrapper.BlameDefinitions[e.ErrorCode]
+		blameInfo, ok = localBlameManager.BlameDefinitions[e.ErrorCode]
 	}
 
 	if !ok {

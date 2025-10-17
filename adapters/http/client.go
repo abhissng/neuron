@@ -17,14 +17,14 @@ import (
 
 // Client interface for abstraction
 type HTTPClient interface {
-	Do(config *HttpClientWrapper, body []byte, contentType types.ContentType) ([]byte, error)
+	Do(config *HttpClientManager, body []byte, contentType types.ContentType) ([]byte, error)
 }
 
 // Standard HTTP client implementation
 type stdHTTPClient struct{}
 
 // Do implements HTTPClient
-func (c *stdHTTPClient) Do(config *HttpClientWrapper, body []byte, contentType types.ContentType) ([]byte, error) {
+func (c *stdHTTPClient) Do(config *HttpClientManager, body []byte, contentType types.ContentType) ([]byte, error) {
 	req, err := http.NewRequest(config.Method, config.URL, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (c *stdHTTPClient) Do(config *HttpClientWrapper, body []byte, contentType t
 type fastHTTPClient struct{}
 
 // Do implements HTTPClient
-func (c *fastHTTPClient) Do(config *HttpClientWrapper, body []byte, contentType types.ContentType) ([]byte, error) {
+func (c *fastHTTPClient) Do(config *HttpClientManager, body []byte, contentType types.ContentType) ([]byte, error) {
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 	resp := fasthttp.AcquireResponse()
@@ -87,7 +87,7 @@ func (c *fastHTTPClient) Do(config *HttpClientWrapper, body []byte, contentType 
 }
 
 // **Main Function: Do HTTP Request**
-func DoRequest[T any](payload any, config *HttpClientWrapper) result.Result[T] {
+func DoRequest[T any](payload any, config *HttpClientManager) result.Result[T] {
 	// If you see this message check on all places where logging can be added for proper checks
 	config.Log.Info(constant.TransactionMessage, log.Any("url", config.URL))
 	defer config.Clear()
@@ -147,7 +147,7 @@ func DoRequest[T any](payload any, config *HttpClientWrapper) result.Result[T] {
 }
 
 // **Step 2: Create HTTP Client**
-func (config *HttpClientWrapper) createHTTPClient() *http.Client {
+func (config *HttpClientManager) createHTTPClient() *http.Client {
 	client := &http.Client{Timeout: config.Timeout}
 
 	if config.IsTLS {

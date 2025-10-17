@@ -12,7 +12,7 @@ import (
 )
 
 // **Paseto Wrapper Type**
-type PasetoWrapper struct {
+type PasetoManager struct {
 	privateKey             ed25519.PrivateKey // For auth service (token generation)
 	publicKey              ed25519.PublicKey  // For other services (token validation)
 	issuer                 string
@@ -25,22 +25,22 @@ type PasetoWrapper struct {
 // **Token Generation**
 
 // FetchToken generates a new access token
-func (p *PasetoWrapper) FetchToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
+func (p *PasetoManager) FetchToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
 	return p.createToken(p.issuer, p.accessTokenExpiry, options...)
 }
 
 // FetchRefreshToken generates a new refresh token
-func (p *PasetoWrapper) FetchRefreshToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
+func (p *PasetoManager) FetchRefreshToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
 	return p.createToken(p.issuer, p.refreshTokenExpiry, options...)
 }
 
 // FetchBasicToken generates a new basic token
-func (p *PasetoWrapper) FetchBasicToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
+func (p *PasetoManager) FetchBasicToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
 	return p.createToken(p.issuer, p.basicTokenExpiry, options...)
 }
 
 // createToken generates a new token with the given issuer, expiry, and options
-func (p *PasetoWrapper) createToken(issuer string, expiry time.Duration, options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
+func (p *PasetoManager) createToken(issuer string, expiry time.Duration, options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
 
 	// Create standard claims
 	standardClaims := claims.NewStandardClaims(issuer, expiry, options...).WithPid()
@@ -61,7 +61,7 @@ func (p *PasetoWrapper) createToken(issuer string, expiry time.Duration, options
 }
 
 // ValidateToken validates a token
-func (p *PasetoWrapper) ValidateToken(token string, validatePayload func(payload *claims.StandardClaims) error) result.Result[claims.StandardClaims] {
+func (p *PasetoManager) ValidateToken(token string, validatePayload func(payload *claims.StandardClaims) error) result.Result[claims.StandardClaims] {
 	var claim claims.StandardClaims
 	// Decrypt the token
 	err := GetPasetoObj().Verify(token, p.publicKey, &claim, nil)
@@ -93,7 +93,7 @@ func (p *PasetoWrapper) ValidateToken(token string, validatePayload func(payload
 }
 
 // PasetoMiddlewareOption returns the middleware options for the PASETO wrapper.
-func (p *PasetoWrapper) PasetoMiddlewareOption() *PasetoMiddlewareOptions {
+func (p *PasetoManager) PasetoMiddlewareOption() *PasetoMiddlewareOptions {
 	return p.pasetoMiddlewareOption
 }
 

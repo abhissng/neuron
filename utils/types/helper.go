@@ -265,6 +265,18 @@ func CastTo[T any](value any) (T, bool) {
 		case int, int8, int16, int32, int64:
 			return any(reflect.ValueOf(v).Convert(targetType).Interface()).(T), true
 		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		switch v := value.(type) {
+		case string:
+			i, err := strconv.ParseUint(v, 10, 64)
+			if err == nil {
+				return any(reflect.ValueOf(i).Convert(targetType).Interface()).(T), true
+			}
+		case float64, float32:
+			return any(reflect.ValueOf(uint64(val.Float())).Convert(targetType).Interface()).(T), true
+		case int, int8, int16, int32, int64:
+			return any(reflect.ValueOf(v).Convert(targetType).Interface()).(T), true
+		}
 
 	case reflect.Float32, reflect.Float64:
 		switch v := value.(type) {

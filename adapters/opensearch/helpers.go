@@ -102,7 +102,7 @@ func NewClient(addresses []string, username, password string, opts ...Option) (*
 
 	// Configure TLS
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: options.TLS != nil && options.TLS.InsecureSkipVerify,
+		InsecureSkipVerify: options.TLS != nil && options.TLS.InsecureSkipVerify, //#nosec
 	}
 
 	// Load CA certificate if provided

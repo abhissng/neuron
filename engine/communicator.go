@@ -28,7 +28,7 @@ func NewCommunicateResult[T any]() CommunicateResult[T] {
 }
 
 // CommunicateWithDiscovery handles communication with the discovery service.
-func CommunicateWithDiscovery[T any](ctx *http.HttpClientWrapper, payload *discovery.DiscoveryMessagePayload[T]) result.Result[CommunicateResult[T]] {
+func CommunicateWithDiscovery[T any](ctx *http.HttpClientManager, payload *discovery.DiscoveryMessagePayload[T]) result.Result[CommunicateResult[T]] {
 
 	communicateResult := NewCommunicateResult[T]()
 

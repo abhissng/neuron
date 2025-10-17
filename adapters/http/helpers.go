@@ -79,7 +79,7 @@ func tryDecode[T any](decodeFunc func(io.Reader, any) error, reader io.Reader) (
 }
 
 // createRequestBody creates the request body based on the content type
-func (config *HttpClientWrapper) createRequestBody(data any) ([]byte, types.ContentType, error) {
+func (config *HttpClientManager) createRequestBody(data any) ([]byte, types.ContentType, error) {
 	switch config.ContentType {
 	case ContentTypeJSON:
 		return config.handleJSONContent(data)
@@ -97,19 +97,19 @@ func (config *HttpClientWrapper) createRequestBody(data any) ([]byte, types.Cont
 }
 
 // handleJSONContent encodes data as JSON
-func (config *HttpClientWrapper) handleJSONContent(data any) ([]byte, types.ContentType, error) {
+func (config *HttpClientManager) handleJSONContent(data any) ([]byte, types.ContentType, error) {
 	jsonData, err := codec.Encode(data, codec.JSON)
 	return jsonData, ContentTypeJSON, err
 }
 
 // handleXMLContent encodes data as XML
-func (config *HttpClientWrapper) handleXMLContent(data any) ([]byte, types.ContentType, error) {
+func (config *HttpClientManager) handleXMLContent(data any) ([]byte, types.ContentType, error) {
 	xmlData, err := codec.Encode(data, codec.XML)
 	return xmlData, ContentTypeXML, err
 }
 
 // handleFormURLEncodedContent creates form URL encoded content
-func (config *HttpClientWrapper) handleFormURLEncodedContent() ([]byte, types.ContentType, error) {
+func (config *HttpClientManager) handleFormURLEncodedContent() ([]byte, types.ContentType, error) {
 	form := url.Values{}
 	for key, value := range config.FormValues {
 		form.Add(key, value)
@@ -118,7 +118,7 @@ func (config *HttpClientWrapper) handleFormURLEncodedContent() ([]byte, types.Co
 }
 
 // handleMultipartFormData creates multipart form data content
-func (config *HttpClientWrapper) handleMultipartFormData() ([]byte, types.ContentType, error) {
+func (config *HttpClientManager) handleMultipartFormData() ([]byte, types.ContentType, error) {
 	buf := &bytes.Buffer{}
 	writer := multipart.NewWriter(buf)
 
@@ -142,7 +142,7 @@ func (config *HttpClientWrapper) handleMultipartFormData() ([]byte, types.Conten
 }
 
 // addFilesToMultipartForm adds files to the multipart form writer
-func (config *HttpClientWrapper) addFilesToMultipartForm(writer *multipart.Writer) error {
+func (config *HttpClientManager) addFilesToMultipartForm(writer *multipart.Writer) error {
 	for field, path := range config.Files {
 		file, err := os.Open(filepath.Clean(path))
 		if err != nil {
@@ -171,7 +171,7 @@ func (config *HttpClientWrapper) addFilesToMultipartForm(writer *multipart.Write
 }
 
 // handleTextContent handles text-based content types
-func (config *HttpClientWrapper) handleTextContent(data any) ([]byte, types.ContentType, error) {
+func (config *HttpClientManager) handleTextContent(data any) ([]byte, types.ContentType, error) {
 	str, ok := data.(string)
 	if !ok {
 		return nil, "", errors.New("content must be a string for text-based types")

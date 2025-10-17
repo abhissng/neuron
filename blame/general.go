@@ -14,14 +14,14 @@ import (
 //go:embed error_definition.json
 var embeddedBlameData []byte
 
-// localBlameWrapper is a local instance of the BlameWrapper struct.
+// localBlameManager is a local instance of the BlameManager struct.
 var (
-	localBlameWrapper = &BlameWrapper{}
+	localBlameManager = &BlameManager{}
 )
 
-// getLocalBlameWrapper returns the localBlameWrapper instance.
-func getLocalBlameWrapper() *BlameWrapper {
-	return localBlameWrapper
+// getLocalBlameManager returns the localBlameManager instance.
+func getLocalBlameManager() *BlameManager {
+	return localBlameManager
 }
 
 // initLocalBlames initializes the local error blames from a JSON file.
@@ -35,8 +35,8 @@ func initLocalBlames() ([]BlameDefinition, error) {
 	return localBlames, nil
 }
 
-// InitLocalBlameWrapper initializes the local blame wrapper with the given bundle.
-func InitLocalBlameWrapper(bundle *i18n.Bundle) error {
+// InitLocalBlameManager initializes the local blame wrapper with the given bundle.
+func InitLocalBlameManager(bundle *i18n.Bundle) error {
 	blameDefinitions, err := initLocalBlames()
 	if err != nil {
 		helpers.Println(constant.ERROR, "Error initialising local blame definitions: ", err)
@@ -55,7 +55,7 @@ func InitLocalBlameWrapper(bundle *i18n.Bundle) error {
 				WithResponseType(types.ResponseErrorType(def.ResponseType)).
 				WithBundle(bundle)
 	}
-	localBlameWrapper.BlameDefinitions = blameDefinitionsMap
+	localBlameManager.BlameDefinitions = blameDefinitionsMap
 
 	return nil
 
@@ -68,40 +68,40 @@ func InitLocalBlameWrapper(bundle *i18n.Bundle) error {
 
 // InternalServerError is an internal server error.
 func InternalServerError(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorInternalServerError, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorInternalServerError, WithCauses(cause))
 }
 
 // Bucket Errors
 // BucketUploadError is an error when the bucket upload fails.
 func BucketUploadError(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorBucketUploadFailure, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorBucketUploadFailure, WithCauses(cause))
 }
 
 // BucketCredentialError is an error when the bucket credential fails.
 func BucketCredentialError(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorBucketCredentialFail, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorBucketCredentialFail, WithCauses(cause))
 }
 
 // File Errors
 // FileNotFoundError is an error when the file is not found.
 func FileNotFoundError(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorFileUnavailable, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorFileUnavailable, WithCauses(cause))
 }
 
 // Parameter Errors
 // MissingParameterError is an error when a required parameter is missing.
 func MissingParameterError(name string) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ParamMissing, WithField("name", name))
+	return getLocalBlameManager().FetchBlameForError(ParamMissing, WithField("name", name))
 }
 
 // MalformedParameterError is an error when a parameter is malformed.
 func MalformedParameterError(name string) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ParamMalformed, WithField("name", name))
+	return getLocalBlameManager().FetchBlameForError(ParamMalformed, WithField("name", name))
 }
 
 // InvalidSourceError is an error when the source is invalid.
 func InvalidSourceError(source string) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorInvalidSource, WithField("source", source))
+	return getLocalBlameManager().FetchBlameForError(ErrorInvalidSource, WithField("source", source))
 }
 
 // TypeConversionError is an error when the type conversion fails.
@@ -111,7 +111,7 @@ func TypeConversionError(name string, value string, targetType string, cause err
 		"value":      value,
 		"targetType": targetType,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorTypeConversion,
 		WithFields(data),
 		WithCauses(cause),
@@ -120,7 +120,7 @@ func TypeConversionError(name string, value string, targetType string, cause err
 
 // GinContextKeyFetchError is an error when the Gin context key is missing.
 func GinContextKeyFetchError(key string, cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorGinContextKeyMissing,
 		WithField("key", key),
 		WithCauses(cause),
@@ -129,7 +129,7 @@ func GinContextKeyFetchError(key string, cause error) Blame {
 
 // ServiceContextFetchError is an error when the service context is missing.
 func ServiceContextFetchError(key string, cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorServiceContextMissing,
 		WithField("key", key),
 		WithCauses(cause),
@@ -138,7 +138,7 @@ func ServiceContextFetchError(key string, cause error) Blame {
 
 // MarshalingError is an error when marshaling fails.
 func MarshalError(encodingType types.CodecType, cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorMarshalFailed,
 		WithField("type", encodingType.ToUpperCase()),
 		WithCauses(cause),
@@ -147,7 +147,7 @@ func MarshalError(encodingType types.CodecType, cause error) Blame {
 
 // UnMarshalingError is an error when unmarshaling fails.
 func UnMarshalError(encodingType types.CodecType, cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorUnmarshalFailed,
 		WithField("type", encodingType.ToUpperCase()),
 		WithCauses(cause),
@@ -160,7 +160,7 @@ func PublishMessageError(subject, message string, cause error) Blame {
 		"subject": subject,
 		"message": message,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorPublishMessageFailed,
 		WithFields(data),
 		WithCauses(cause),
@@ -169,7 +169,7 @@ func PublishMessageError(subject, message string, cause error) Blame {
 
 // SubscribeToSubjectError is an error when subscribing to a subject fails.
 func SubscribeToSubjectError(subject string, cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorSubscribeToSubjectFailed,
 		WithField("subject", subject),
 		WithCauses(cause),
@@ -178,7 +178,7 @@ func SubscribeToSubjectError(subject string, cause error) Blame {
 
 // AlreadySubscribedToSubjectError is an error when the subject is already subscribed.
 func AlreadySubscribedToSubjectError(subject string) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorAlreadySubscribedToSubject,
 		WithField("subject", subject),
 	)
@@ -186,7 +186,7 @@ func AlreadySubscribedToSubjectError(subject string) Blame {
 
 // SubjectHandlerError is an error when the subject handler fails.
 func SubjectHandlerError(subject string, cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorSubjectHandlerFailed,
 		WithField("subject", subject),
 		WithCauses(cause),
@@ -195,7 +195,7 @@ func SubjectHandlerError(subject string, cause error) Blame {
 
 // UnsubscribeFailedError is an error when unsubscribing from a subject fails.
 func UnsubscribeFailedError(subject string, cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorUnsubscribeFailed,
 		WithField("subject", subject),
 		WithCauses(cause),
@@ -204,7 +204,7 @@ func UnsubscribeFailedError(subject string, cause error) Blame {
 
 // PublishRollbackEventFailedError is an error when publishing a rollback event fails.
 func PublishRollbackEventFailedError(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorPublishRollbackEventFailed,
 		WithCauses(cause),
 	)
@@ -212,7 +212,7 @@ func PublishRollbackEventFailedError(cause error) Blame {
 
 // PublishEventToNextSubjectFailedError is an error when publishing an event to the next subject fails.
 func PublishEventToNextSubjectFailedError(subject string, cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorPublishEventToNextSubjectFailed,
 		WithField("subject", subject),
 		WithCauses(cause),
@@ -225,7 +225,7 @@ func StepRollbackFailedError(step string, correlationId types.CorrelationID, cau
 		"step":           step,
 		"correlation_id": correlationId,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorStepRollbackFailed,
 		WithFields(data),
 		WithCauses(cause),
@@ -234,7 +234,7 @@ func StepRollbackFailedError(step string, correlationId types.CorrelationID, cau
 
 // UnknownCorrelationIDError is an error when an unknown correlation ID is encountered.
 func UnknownCorrelationIDError(correlationID types.CorrelationID, cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorUnknownCorrelationId,
 		WithField("correlation_id", correlationID),
 		WithCauses(cause),
@@ -243,62 +243,62 @@ func UnknownCorrelationIDError(correlationID types.CorrelationID, cause error) B
 
 // CreateTokenFailedError is an error when creating a token fails.
 func CreateTokenFailed() Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorCreateTokenFailed)
+	return getLocalBlameManager().FetchBlameForError(ErrorCreateTokenFailed)
 }
 
 // CreateTokenIdFailedError is an error when creating a token ID fails.
 func CreateTokenIdFailed() Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorCreateTokenIdFailed)
+	return getLocalBlameManager().FetchBlameForError(ErrorCreateTokenIdFailed)
 }
 
 // MissingAuthCredential is an error when an auth credential is missing.
 func MissingAuthCredential(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorMissingAuthCredential, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorMissingAuthCredential, WithCauses(cause))
 }
 
 // MalformedAuthToken is an error when an auth token is malformed.
 func MalformedAuthToken(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorMalformedAuthToken, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorMalformedAuthToken, WithCauses(cause))
 }
 
 // ExpiredAuthToken is an error when an auth token expires.
 func ExpiredAuthToken() Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorExpiredAuthToken)
+	return getLocalBlameManager().FetchBlameForError(ErrorExpiredAuthToken)
 }
 
 // UntrustedTokenIssuer is an error when an auth token issuer is untrusted.
 func UntrustedTokenIssuer() Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorUntrustedTokenIssuer)
+	return getLocalBlameManager().FetchBlameForError(ErrorUntrustedTokenIssuer)
 }
 
 // AuthPayloadInvalid is an error when an auth payload is invalid.
 func AuthPayloadInvalid() Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorAuthPayloadInvalid)
+	return getLocalBlameManager().FetchBlameForError(ErrorAuthPayloadInvalid)
 }
 
 // AuthValidationFailed is an error when an auth validation fails.
 func AuthValidationFailed(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorAuthValidationFailed, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorAuthValidationFailed, WithCauses(cause))
 }
 
 // RequestBodyDataExtractionFailed is an error when request body data extraction fails.
 func RequestBodyDataExtractionFailed(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorRequestBodyDataExtractionFailed, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorRequestBodyDataExtractionFailed, WithCauses(cause))
 }
 
 // RequestFormDataExtractionFailed is an error when request form data extraction fails.
 func RequestFormDataExtractionFailed(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorRequestFormDataExtractionFailed, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorRequestFormDataExtractionFailed, WithCauses(cause))
 }
 
 // BusinessIdPathParamMissing is an error when a business ID path parameter is missing.
 func BusinessIdPathParamMissing(causes ...error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorBusinessIdPathParamMissing, WithCauses(causes...))
+	return getLocalBlameManager().FetchBlameForError(ErrorBusinessIdPathParamMissing, WithCauses(causes...))
 }
 
 // TimeQueryParamInvalid is an error when a time query parameter is invalid.
 func TimeQueryParamInvalid() Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorTimeQueryParamInvalid)
+	return getLocalBlameManager().FetchBlameForError(ErrorTimeQueryParamInvalid)
 }
 
 // UserIdContextMissing is an error when a user ID  is missing from context.
@@ -306,7 +306,7 @@ func UserIdContextMissing(userIdField string, cause ...error) Blame {
 	data := map[string]interface{}{
 		"user_id": userIdField,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorUserIdContextMissing,
 		WithFields(data),
 		WithCauses(cause...),
@@ -318,7 +318,7 @@ func UserIdQueryParamMissing(userIdField string, causes ...error) Blame {
 	data := map[string]interface{}{
 		"user_id": userIdField,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorUserIdQueryParamMissing,
 		WithFields(data),
 		WithCauses(causes...))
@@ -327,9 +327,9 @@ func UserIdQueryParamMissing(userIdField string, causes ...error) Blame {
 // BusinessIdHeaderMissing is an error when a business ID header is missing.
 func BusinessIdHeaderMissing(businessIdField string, cause ...error) Blame {
 	data := map[string]interface{}{
-		"{{.business_id}}": businessIdField,
+		"business_id": businessIdField,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorBusinessIdHeaderMissing,
 		WithFields(data),
 		WithCauses(cause...),
@@ -341,7 +341,7 @@ func UserIdHeaderMissing(userIdField string, causes ...error) Blame {
 	data := map[string]interface{}{
 		"user_id": userIdField,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorUserIdHeaderMissing,
 		WithFields(data),
 		WithCauses(causes...))
@@ -350,9 +350,9 @@ func UserIdHeaderMissing(userIdField string, causes ...error) Blame {
 // CorrelationIDHeaderMissing is an error when a correlation ID header is missing.
 func CorrelationIDHeaderMissing(correlationIdField string, cause ...error) Blame {
 	data := map[string]interface{}{
-		"{{.correlation_id}}": correlationIdField,
+		"correlation_id": correlationIdField,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorCorrelationIDHeaderMissing,
 		WithFields(data),
 		WithCauses(cause...),
@@ -361,56 +361,56 @@ func CorrelationIDHeaderMissing(correlationIdField string, cause ...error) Blame
 
 // AuthSignatureMissing is an error when an auth signature is missing.
 func AuthSignatureMissing() Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorAuthSignatureMissing,
 	)
 }
 
 // AuthSignatureInvalid is an error when an auth signature is invalid.
 func AuthSignatureInvalid() Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorAuthSignatureInvalid,
 	)
 }
 
 // XSubjectHeaderMissing is an error when an X-Subject header is missing.
 func XSubjectHeaderMissing(causes ...error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorXSubjectHeaderMissing,
 		WithCauses(causes...))
 }
 
 // ServerStartFailed is an error when the server fails to start.
 func ServerStartFailed(causes error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorServerStartFailed,
 		WithCauses(causes))
 }
 
 // RequestBodyInvalid is an error when the request body is invalid.
 func RequestBodyInvalid(causes error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorRequestBodyInvalid,
 		WithCauses(causes))
 }
 
 // BusinessNotFound is an error when the business is not found.
 func BusinessNotFound(causes error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorBusinessNotFound,
 		WithCauses(causes))
 }
 
 // ConfigLoadFailure is an error when the config fails to load.
 func ConfigLoadFailure(causes error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorConfigLoadFailure,
 		WithCauses(causes))
 }
 
 // DatabaseOperationFailed is an error when a database operation fails.
 func DatabaseOperationFailed(causes error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorDatabaseOperationFailed,
 		WithCauses(causes))
 }
@@ -420,7 +420,7 @@ func ServiceQueryParamMissing(serviceField string, causes ...error) Blame {
 	data := map[string]interface{}{
 		"service": serviceField,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorServiceQueryParamMissing,
 		WithFields(data),
 		WithCauses(causes...))
@@ -428,12 +428,12 @@ func ServiceQueryParamMissing(serviceField string, causes ...error) Blame {
 
 // MissingServiceName is an error when the service name is missing.
 func MissingServiceName(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorServiceNameMissing, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorServiceNameMissing, WithCauses(cause))
 }
 
 // RequestPayloadNil is an error when the request payload is nil.
 func RequestPayloadNil(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorRequestPayloadNil, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorRequestPayloadNil, WithCauses(cause))
 }
 
 // StateExecutionFailed is an error when a state execution fails.
@@ -441,7 +441,7 @@ func StateExecutionFailed(stateName string, cause error) Blame {
 	data := map[string]interface{}{
 		"state": stateName,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(
+	return getLocalBlameManager().FetchBlameForError(
 		ErrorStateExecutionFailed,
 		WithFields(data),
 		WithCauses(cause),
@@ -450,7 +450,7 @@ func StateExecutionFailed(stateName string, cause error) Blame {
 
 // HeadersNotFound is an error when the headers are not found.
 func HeadersNotFound(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorHeadersNotFound, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorHeadersNotFound, WithCauses(cause))
 }
 
 // InactiveService is an error when the service is inactive.
@@ -458,7 +458,7 @@ func InactiveService(serviceName string) Blame {
 	data := map[string]interface{}{
 		"service": serviceName,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(ErrorInactiveService, WithFields(data))
+	return getLocalBlameManager().FetchBlameForError(ErrorInactiveService, WithFields(data))
 }
 
 // ServiceDefinitionNotFound is an error when the service definition is not found.
@@ -466,7 +466,7 @@ func ServiceDefinitionNotFound(serviceName string, cause error) Blame {
 	data := map[string]interface{}{
 		"service": serviceName,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(ErrorServiceDefinitionNotFound, WithFields(data), WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorServiceDefinitionNotFound, WithFields(data), WithCauses(cause))
 }
 
 // URLValidationFailed is an error when the URL validation fails.
@@ -474,7 +474,7 @@ func URLValidationFailed(url string, cause error) Blame {
 	data := map[string]interface{}{
 		"url": url,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(ErrorURLValidationFailed, WithFields(data), WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorURLValidationFailed, WithFields(data), WithCauses(cause))
 }
 
 // URLParsingFailed is an error when the URL parsing fails.
@@ -482,7 +482,7 @@ func URLParsingFailed(url string, cause error) Blame {
 	data := map[string]interface{}{
 		"url": url,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(ErrorURLParsingFailed, WithFields(data), WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorURLParsingFailed, WithFields(data), WithCauses(cause))
 }
 
 // URLConstructionFailed is an error when the URL construction fails.
@@ -491,40 +491,40 @@ func URLConstructionFailed(url string, queryParams map[string]any, cause error) 
 		"url":         url,
 		"queryParams": queryParams,
 	}
-	return getLocalBlameWrapper().FetchBlameForError(ErrorURLConstructionFailed, WithFields(data), WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorURLConstructionFailed, WithFields(data), WithCauses(cause))
 }
 
 // CreateRequestBodyFailed is an error when the request body creation fails.
 func CreateRequestBodyFailed(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorCreateRequestBodyFailed, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorCreateRequestBodyFailed, WithCauses(cause))
 }
 
 // CreateHTTPRequestFailed is an error when the HTTP request creation fails.
 func CreateHTTPRequestFailed(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorCreateHTTPRequestFailed, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorCreateHTTPRequestFailed, WithCauses(cause))
 }
 
 // CreateHTTPClientFailed is an error when the HTTP client creation fails.
 func CreateHTTPClientFailed(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorCreateHTTPClientFailed, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorCreateHTTPClientFailed, WithCauses(cause))
 }
 
 // DecodeResponseFailed is an error when the response decoding fails.
 func DecodeResponseFailed(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorDecodeResponseFailed, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorDecodeResponseFailed, WithCauses(cause))
 }
 
 // ResponseResultError is an error when the response result has an error.
 func ResponseResultError(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorResponseResultError, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorResponseResultError, WithCauses(cause))
 }
 
 // MissingCorrelationID is an error when the correlation ID is missing.
 func MissingCorrelationID() Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorMissingCorrelationID)
+	return getLocalBlameManager().FetchBlameForError(ErrorMissingCorrelationID)
 }
 
 // MissingRecordsName is an error when the records name is missing.
 func MissingRecordsName(cause error) Blame {
-	return getLocalBlameWrapper().FetchBlameForError(ErrorMissingRecordsName, WithCauses(cause))
+	return getLocalBlameManager().FetchBlameForError(ErrorMissingRecordsName, WithCauses(cause))
 }

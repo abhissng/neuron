@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -29,7 +30,7 @@ func SavePrivateKeyPEM(path string, priv *rsa.PrivateKey) error {
 		Type:  RSA_PRIVATE_KEY,
 		Bytes: privBytes,
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -47,7 +48,7 @@ func SavePublicKeyPEM(path string, pub *rsa.PublicKey) error {
 		Type:  PUBLIC_KEY,
 		Bytes: pubBytes,
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func SavePublicKeyPEM(path string, pub *rsa.PublicKey) error {
 
 // LoadRSAPrivateKeyPEM loads a PKCS#1 PEM-encoded RSA private key.
 func LoadRSAPrivateKeyPEM(path string) (*rsa.PrivateKey, error) {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +71,7 @@ func LoadRSAPrivateKeyPEM(path string) (*rsa.PrivateKey, error) {
 
 // LoadRSAPublicKeyPEM loads a PKIX PEM-encoded RSA public key.
 func LoadRSAPublicKeyPEM(path string) (*rsa.PublicKey, error) {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}

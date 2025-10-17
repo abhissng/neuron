@@ -77,8 +77,8 @@ func WithS3ForcePathStyle(forcePathStyle bool) Option {
 	}
 }
 
-// NewAWSWrapper creates a new instance of AWSManager with the provided options
-func NewAWSWrapper(cfg AWSConfig, opts ...Option) (*AWSManager, error) {
+// NewAWSManager creates a new instance of AWSManager with the provided options
+func NewAWSManager(cfg AWSConfig, opts ...Option) (*AWSManager, error) {
 	// Set default region if not provided
 	if cfg.Region == "" {
 		cfg.Region = "ap-south-1"
@@ -103,7 +103,7 @@ func NewAWSWrapper(cfg AWSConfig, opts ...Option) (*AWSManager, error) {
 	ssmClient := ssm.NewFromConfig(awsConfig)
 
 	// Apply options
-	awsWrapper := &AWSManager{
+	awsManager := &AWSManager{
 		config:         cfg,
 		s3Client:       s3Client,
 		kmsClient:      kmsClient,
@@ -112,10 +112,10 @@ func NewAWSWrapper(cfg AWSConfig, opts ...Option) (*AWSManager, error) {
 	}
 
 	for _, opt := range opts {
-		opt(awsWrapper)
+		opt(awsManager)
 	}
 
-	return awsWrapper, nil
+	return awsManager, nil
 }
 
 // loadAWSConfig creates the AWS SDK configuration

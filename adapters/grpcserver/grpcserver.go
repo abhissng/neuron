@@ -1,4 +1,4 @@
-package grpcwrapper
+package grpcmanager
 
 import (
 	"context"
@@ -208,7 +208,7 @@ func buildInterceptors(config ServerConfig) ([]grpc.UnaryServerInterceptor, []gr
 	return unary, stream
 }
 
-// InterceptorLogger is a simple logging wrapper
+// InterceptorLogger is a simple logging manager
 func InterceptorLogger(l *log.Log) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
 		requestID, _ := ctx.Value(constant.RequestID).(types.StringConstant)
