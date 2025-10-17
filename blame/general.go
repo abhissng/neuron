@@ -46,11 +46,11 @@ func InitLocalBlameManager(bundle *i18n.Bundle) error {
 	// Create a map of error definitions
 	blameDefinitionsMap := make(map[types.ErrorCode]Blame)
 	for index, def := range blameDefinitions {
-		if helpers.IsEmpty(def.StatusCode) {
-			def.StatusCode = helpers.GenerateStatusCode(StatusCodeNameSpace, StatusCodeBase+index)
+		if helpers.IsEmpty(def.ReasonCode) {
+			def.ReasonCode = helpers.GenerateReasonCode(ReasonCodeNameSpace, ReasonCodeBase+index)
 		}
 		blameDefinitionsMap[types.ErrorCode(def.Code)] =
-			NewBlame(def.StatusCode, types.ErrorCode(def.Code), def.Message, def.Description).
+			NewBlame(def.ReasonCode, types.ErrorCode(def.Code), def.Message, def.Description).
 				WithComponent(types.ComponentErrorType(def.Component)).
 				WithResponseType(types.ResponseErrorType(def.ResponseType)).
 				WithBundle(bundle)

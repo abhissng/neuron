@@ -265,13 +265,13 @@ func ExtractBearerToken(authHeader string) string {
 	return ""
 }
 
-// GenerateStatusCode generates a namespaced status code as a string
-func GenerateStatusCode(namespace string, code int) string {
+// GenerateReasonCode generates a namespaced reason code as a string
+func GenerateReasonCode(namespace string, code int) string {
 	if IsEmpty(namespace) {
 		return fmt.Sprintf("%d", code)
 	}
 	namespace = strings.ToUpper(namespace)
-	return fmt.Sprintf("%s_%d", namespace, code)
+	return fmt.Sprintf("%s-%d", namespace, code)
 }
 
 // RecoverException recovers from panics and logs the stack trace

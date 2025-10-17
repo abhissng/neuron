@@ -11,8 +11,8 @@ type Blame interface {
 	// error is embedded to ensure Blame implements the error interface.
 	error
 
-	// FetchStatusCode returns the HTTP status code associated with the error.
-	FetchStatusCode() string
+	// FetchReasonCode returns the reason code associated with the error.
+	FetchReasonCode() string
 
 	// FetchErrCode returns the error code associated with the error.
 	FetchErrCode() types.ErrorCode
@@ -93,13 +93,13 @@ type Blame interface {
 	ErrorFromBlame() error
 }
 
-// NewBlame creates a new instance of Blame with the provided status code, error code, and message. It captures the source of the error at the point of instantiation.
+// NewBlame creates a new instance of Blame with the provided reason code, error code, and message. It captures the source of the error at the point of instantiation.
 func NewBlame(
-	statusCode string,
+	reasonCode string,
 	errCode types.ErrorCode,
 	message, description string,
 ) Blame {
-	return NewError(statusCode, errCode, message, description)
+	return NewError(reasonCode, errCode, message, description)
 }
 
 // NewBasicBlame creates a new instance of Blame with the provided error code. It captures the source of the error at the point of instantiation.

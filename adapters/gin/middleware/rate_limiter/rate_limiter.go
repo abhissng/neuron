@@ -12,12 +12,11 @@ import (
 var (
 	clients      = make(map[string]time.Time)
 	clientsMutex sync.Mutex
-	rateLimit    = viper.GetDuration(constant.RateLimitDurationInSecondKey) // Limit each client to one request every 10 seconds
 )
 
 // RateLimiterMiddleware applies rate limiting to each request based on dynamic rules
-func RateLimiterMiddleware() gin.HandlerFunc {
-	if rateLimit == 0 {
+func RateLimiterMiddleware(rateLimit time.Duration) gin.HandlerFunc {
+	if rateLimit == 0 || viper.GetDuration(constant.RateLimitDurationInSecondKey) == 0 { // Limit each client to one request every 10 seconds
 		rateLimit = time.Second * 10
 	}
 	return func(c *gin.Context) {
