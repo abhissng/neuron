@@ -20,7 +20,7 @@ import (
 )
 
 //----------------------------------------------------------
-// GENERIC NATS WRAPPER WITH CIRCUIT BREAKER
+// GENERIC NATS Manager WITH CIRCUIT BREAKER
 //----------------------------------------------------------
 
 // NATSManager encapsulates the NATS connection, JetStream context, and a circuit breaker.
@@ -52,7 +52,7 @@ foo.>: Matches subjects like foo.bar, foo.bar.baz, foo.baz.qux, etc.
 >.foo.*: Matches subjects like bar.foo.baz, baz.foo.qux, but not foo.bar.
 */
 
-// NewNATSManager initializes a new generic NATS wrapper
+// NewNATSManager initializes a new generic NATS manager
 func NewNATSManager(url string, options ...Option) (*NATSManager, error) {
 	defaultLog := log.NewBasicLogger(helpers.IsProdEnvironment(), true)
 
@@ -73,7 +73,7 @@ func NewNATSManager(url string, options ...Option) (*NATSManager, error) {
 		return nil, fmt.Errorf("failed to connect to NATS: %v", err)
 	}
 
-	wrapper := &NATSManager{
+	manager := &NATSManager{
 		Context:            context.Background(),
 		nc:                 nc,
 		subjects:           make(map[string]*nats.Subscription),
@@ -87,14 +87,14 @@ func NewNATSManager(url string, options ...Option) (*NATSManager, error) {
 	}
 
 	for _, opt := range options {
-		opt(wrapper)
+		opt(manager)
 	}
 
-	if wrapper.loggerSet {
+	if manager.loggerSet {
 		_ = defaultLog.Sync()
 	}
 
-	return wrapper, nil
+	return manager, nil
 }
 
 // Ping checks the connection to the nats
@@ -109,7 +109,7 @@ func (w *NATSManager) Ping() error {
 	return errors.New(ConnectionFailedMessage)
 }
 
-// Close gracefully shuts down the wrapper
+// Close gracefully shuts down the manager
 func (w *NATSManager) Close() {
 	w.mu.Lock()
 	defer w.mu.Unlock()

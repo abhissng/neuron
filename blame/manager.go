@@ -9,6 +9,7 @@ import (
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/types"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 // BlameDefinition represents a blame definition.
@@ -21,13 +22,13 @@ type BlameDefinition struct {
 	ResponseType string `json:"ResponseType"`
 }
 
-// BlameWrapper is a wrapper around the blame definitions.
-type BlameWrapper struct {
+// BlameManager is a wrapper around the blame definitions.
+type BlameManager struct {
 	BlameDefinitions map[types.ErrorCode]Blame
 }
 
 // RetrieveBlameCache retrieves a blame definition from the cache.
-func (bw *BlameWrapper) RetrieveBlameCache(errorCode types.ErrorCode) Blame {
+func (bw *BlameManager) RetrieveBlameCache(errorCode types.ErrorCode) Blame {
 	if cache, ok := bw.BlameDefinitions[errorCode]; ok {
 		return cache
 	}
@@ -35,24 +36,26 @@ func (bw *BlameWrapper) RetrieveBlameCache(errorCode types.ErrorCode) Blame {
 }
 
 // FetchBlameForError fetches a blame definition for the given error code.
-func (bw *BlameWrapper) FetchBlameForError(errorCode types.ErrorCode, opts ...BlameOption) Blame {
+func (bw *BlameManager) FetchBlameForError(errorCode types.ErrorCode, opts ...BlameOption) Blame {
 	return bw.RetrieveBlameCache(errorCode).EmptyCause().Wrap(opts...)
 }
 
-// NewBlameWrapper creates a new BlameWrapper instance.
-func NewBlameWrapper(localeDir string, languageTag string) (*BlameWrapper, error) {
+// NewBlameManager creates a new BlameManager instance.
+func NewBlameManager(opt *BlameManagerOption) (*BlameManager, error) {
+	if opt.Bundle == nil {
+		opt.Bundle = helpers.NewBundle(helpers.ParseLanguageTag(opt.LanguageTag))
+	}
 
-	bundle := helpers.NewBundle(helpers.ParseLanguageTag(languageTag))
-
-	err := InitLocalBlameWrapper(bundle)
+	err := InitLocalBlameManager(opt.Bundle)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialise local blame wrapper: %w", err)
+		return nil, fmt.Errorf("failed to initialise local blame manager: %w", err)
 	}
 
 	var blameDefinitions []BlameDefinition
+
 	// Load error definitions from JSON file
-	if !helpers.IsEmpty(localeDir) {
-		file, err := os.Open(filepath.Clean(localeDir))
+	if !helpers.IsEmpty(opt.LocaleDir) {
+		file, err := os.Open(filepath.Clean(opt.LocaleDir))
 		if err != nil {
 			return nil, fmt.Errorf("failed to open error definitions file: %w", err)
 		}
@@ -67,9 +70,14 @@ func NewBlameWrapper(localeDir string, languageTag string) (*BlameWrapper, error
 		}
 	}
 
+	// Create a map of error definitions
+	blameDefinitionsMap := make(map[types.ErrorCode]Blame)
+
+	if opt.ExistingManager != nil {
+		blameDefinitionsMap = opt.ExistingManager.BlameDefinitions
+	}
+
 	if len(blameDefinitions) > 0 {
-		// Create a map of error definitions
-		blameDefinitionsMap := make(map[types.ErrorCode]Blame)
 		for index, def := range blameDefinitions {
 			if helpers.IsEmpty(def.StatusCode) {
 				def.StatusCode = helpers.GenerateStatusCode(helpers.GetServiceName(), 100+index)
@@ -78,15 +86,19 @@ func NewBlameWrapper(localeDir string, languageTag string) (*BlameWrapper, error
 				NewBlame(def.StatusCode, types.ErrorCode(def.Code), def.Message, def.Description).
 					WithComponent(types.ComponentErrorType(def.Component)).
 					WithResponseType(types.ResponseErrorType(def.ResponseType)).
-					WithBundle(bundle)
+					WithBundle(opt.Bundle)
 		}
 
-		return &BlameWrapper{
+		// return &BlameManager{
+		// 	BlameDefinitions: blameDefinitionsMap,
+		// }, nil
+	}
+	if len(blameDefinitionsMap) > 0 {
+		return &BlameManager{
 			BlameDefinitions: blameDefinitionsMap,
-			// Bundle:           i18n.NewBundle(language),
 		}, nil
 	}
-	return localBlameWrapper, nil
+	return localBlameManager, nil
 
 }
 
@@ -140,4 +152,76 @@ func WithCauses(causes ...error) BlameOption {
 func ExtendBlameDefinitions(initialDefinitions []BlameDefinition, newDefinitions []BlameDefinition) []BlameDefinition {
 	// Use the append function to efficiently add new definitions.
 	return append(initialDefinitions, newDefinitions...) // ... is crucial to append elements
+}
+
+// BuildBlame constructs a Blame object in a generic way.
+// If manager is nil, it defaults to getLocalBlameManager().
+func BuildBlame(
+	errorCode types.ErrorCode,
+	fields map[string]any,
+	cause error,
+	manager *BlameManager,
+) Blame {
+	if manager == nil {
+		manager = getLocalBlameManager()
+	}
+
+	options := []BlameOption{}
+	if len(fields) > 0 {
+		options = append(options, WithFields(fields))
+	}
+	if cause != nil {
+		options = append(options, WithCauses(cause))
+	}
+
+	return manager.FetchBlameForError(errorCode, options...)
+}
+
+// BlameManagerOption holds configuration
+type BlameManagerOption struct {
+	LocaleDir       string
+	LanguageTag     string
+	Bundle          *i18n.Bundle
+	ExistingManager *BlameManager
+}
+
+// Option defines a function that configures BlameManager
+type Option func(*BlameManagerOption)
+
+// WithLocaleDir sets the locale directory
+func WithLocaleDir(dir string) Option {
+	return func(bw *BlameManagerOption) {
+		bw.LocaleDir = dir
+	}
+}
+
+// WithLanguageTag sets the language tag
+func WithLanguageTag(tag string) Option {
+	return func(bw *BlameManagerOption) {
+		bw.LanguageTag = tag
+	}
+}
+
+// WithExistingManager sets the existing manager
+func WithExistingManager(manager *BlameManager) Option {
+	return func(bw *BlameManagerOption) {
+		bw.ExistingManager = manager
+	}
+}
+
+// WithBundle sets the bundle
+func WithBundle(bundle *i18n.Bundle) Option {
+	return func(bw *BlameManagerOption) {
+		bw.Bundle = bundle
+	}
+}
+
+func NewBlameManagerOption(opts ...Option) *BlameManagerOption {
+	bw := &BlameManagerOption{
+		LanguageTag: helpers.GetDefaultLanguageTag().String(),
+	}
+	for _, opt := range opts {
+		opt(bw)
+	}
+	return bw
 }

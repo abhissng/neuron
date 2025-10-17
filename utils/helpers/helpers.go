@@ -687,3 +687,8 @@ func MustGetEnv(key string) string {
 
 	return value
 }
+
+// IsURL checks if the given string is a URL
+func IsURL(s string) bool {
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
+}

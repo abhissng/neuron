@@ -75,18 +75,18 @@ func (ctx *ServiceContext) CheckDependencies() (string, DependencyDetails) {
 		dependencyDetails.Database = dbHealth
 	}
 
-	blameHealth := NewDependencyStatus("OK", helpers.GetHealthyMessageFor("Blame Wrapper"))
-	if ctx.BlameWrapper == nil {
-		err = errors.New("blame wrapper is empty")
+	blameHealth := NewDependencyStatus("OK", helpers.GetHealthyMessageFor("Blame Manager"))
+	if ctx.BlameManager == nil {
+		err = errors.New("blame manager is empty")
 		ctx.Log.Error(constant.ControllerMessage, log.Err(err))
 		blameHealth.Status = "FAIL"
 		blameHealth.Message = err.Error()
 	}
 	dependencyDetails.Blame = blameHealth
 
-	pasetoHealth := NewDependencyStatus("OK", helpers.GetHealthyMessageFor("Paseto Wrapper"))
-	if ctx.PasetoWrapper == nil {
-		err = errors.New("paseto wrapper is empty")
+	pasetoHealth := NewDependencyStatus("OK", helpers.GetHealthyMessageFor("Paseto Manager"))
+	if ctx.PasetoManager == nil {
+		err = errors.New("paseto manager is empty")
 		ctx.Log.Error(constant.ControllerMessage, log.Err(err))
 		pasetoHealth.Status = "FAIL"
 		pasetoHealth.Message = err.Error()

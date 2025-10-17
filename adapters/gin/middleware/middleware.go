@@ -204,7 +204,7 @@ func SessionMiddleware(sm *session.SessionManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessionID, err := c.Cookie(constant.SessionID)
 		if err != nil {
-
+			return
 		}
 		if sessionID != "" {
 			sessionData, err := sm.GetSession(c, sessionID)

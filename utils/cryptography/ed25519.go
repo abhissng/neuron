@@ -136,8 +136,8 @@ func GenerateAndSaveEd25519KeyPair(publicKeyPath, privateKeyPath string) error {
 	}
 
 	// Save the public key to a file with standard read permissions.
-	// 0644 means owner can read/write, others can only read.
-	if err := os.WriteFile(publicKeyPath, []byte(publicKey), 0644); err != nil {
+	// 0600 means only the owner can read and write the file.
+	if err := os.WriteFile(publicKeyPath, []byte(publicKey), 0600); err != nil {
 		return fmt.Errorf("failed to write public key to file: %w", err)
 	}
 

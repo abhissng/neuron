@@ -113,7 +113,7 @@ func ProcessServiceStates[T any](
 		ctx.Log.Info("Response Retrieved", ctx.Slog(log.Any("response", resp))...)
 
 		if !helpers.IsSuccess(resp.Status) {
-			blameInfo := resp.Error.NewErrorResponseBlame(ctx.BlameWrapper)
+			blameInfo := resp.Error.NewErrorResponseBlame(ctx.BlameManager)
 			ctx.Log.Error("State Execution Failed", ctx.Slog(log.Any("state", state.Service), log.Any("error", blameInfo.ErrorFromBlame()))...)
 			return result.NewFailureWithValue(serviceResult, blameInfo)
 		}

@@ -9,8 +9,8 @@ import (
 	"github.com/abhissng/neuron/utils/types"
 )
 
-// HttpClientWrapper holds the HTTP request configurations
-type HttpClientWrapper struct {
+// HttpClientManager holds the HTTP request configurations
+type HttpClientManager struct {
 	URL         string
 	Method      string
 	Headers     map[string]string
@@ -27,7 +27,7 @@ type HttpClientWrapper struct {
 	UseFastHTTP bool // New flag to enable fastHTTP
 }
 
-func (c *HttpClientWrapper) Clear() {
+func (c *HttpClientManager) Clear() {
 	c.Headers = make(map[string]string)
 	c.QueryParams = make(map[string]any)
 	c.Files = make(map[string]string)
@@ -36,10 +36,10 @@ func (c *HttpClientWrapper) Clear() {
 	c.UseFastHTTP = false
 }
 
-// NewHttpClientWrapper initializes a new HttpClientWrapper with default values
-func NewHttpClientWrapper(requestURL string, opts ...RequestOption) *HttpClientWrapper {
-	// **Default HttpClientWrapper**
-	config := &HttpClientWrapper{
+// NewHttpClientManager initializes a new HttpClientManager with default values
+func NewHttpClientManager(requestURL string, opts ...RequestOption) *HttpClientManager {
+	// **Default HttpClientManager**
+	config := &HttpClientManager{
 		URL:         requestURL,
 		Method:      http.MethodGet,
 		Headers:     make(map[string]string),
@@ -62,46 +62,46 @@ func NewHttpClientWrapper(requestURL string, opts ...RequestOption) *HttpClientW
 	return config
 }
 
-func (c *HttpClientWrapper) AddHeaders(headers map[string]string) {
+func (c *HttpClientManager) AddHeaders(headers map[string]string) {
 	c.Headers = headers
 }
 
-func (c *HttpClientWrapper) AddQueryParams(params map[string]any) {
+func (c *HttpClientManager) AddQueryParams(params map[string]any) {
 	c.QueryParams = params
 }
 
-func (c *HttpClientWrapper) AddFiles(files map[string]string) {
+func (c *HttpClientManager) AddFiles(files map[string]string) {
 	c.Files = files
 }
 
-func (c *HttpClientWrapper) AddFormValues(values map[string]string) {
+func (c *HttpClientManager) AddFormValues(values map[string]string) {
 	c.FormValues = values
 }
 
-func (c *HttpClientWrapper) AddTimeout(timeout time.Duration) {
+func (c *HttpClientManager) AddTimeout(timeout time.Duration) {
 	c.Timeout = timeout
 }
 
-func (c *HttpClientWrapper) AddContentType(contentType types.ContentType) {
+func (c *HttpClientManager) AddContentType(contentType types.ContentType) {
 	c.ContentType = contentType
 }
 
-func (c *HttpClientWrapper) AddIsTLS(isTLS bool) {
+func (c *HttpClientManager) AddIsTLS(isTLS bool) {
 	c.IsTLS = isTLS
 }
 
-func (c *HttpClientWrapper) AddCertFile(certFile string) {
+func (c *HttpClientManager) AddCertFile(certFile string) {
 	c.CertFile = certFile
 }
 
-func (c *HttpClientWrapper) AddKeyFile(keyFile string) {
+func (c *HttpClientManager) AddKeyFile(keyFile string) {
 	c.KeyFile = keyFile
 }
 
-func (c *HttpClientWrapper) AddSkipVerify(skipVerify bool) {
+func (c *HttpClientManager) AddSkipVerify(skipVerify bool) {
 	c.SkipVerify = skipVerify
 }
 
-func (c *HttpClientWrapper) AddFastHTTP() {
+func (c *HttpClientManager) AddFastHTTP() {
 	c.UseFastHTTP = true
 }

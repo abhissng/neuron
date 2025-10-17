@@ -188,6 +188,7 @@ func (c *CryptoManager) Encrypt(plaintext []byte) (string, error) {
 	}
 
 	var out bytes.Buffer
+	// #nosec G115
 	if err := binary.Write(&out, binary.BigEndian, uint16(len(encKey))); err != nil {
 		return "", err
 	}

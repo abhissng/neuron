@@ -59,7 +59,7 @@ func WithJetStream(cfgs JetStreamOptions, opts ...nats.JSOpt) Option {
 	}
 }
 
-// WithLogger sets the logger  for the wrapper.
+// WithLogger sets the logger  for the manager.
 func WithLogger(log *log.Log) Option {
 	return func(w *NATSManager) {
 		w.logger = log
@@ -80,7 +80,7 @@ func WithCircuitBreaker(options ...circuitBreaker.CircuitBreakerOption) Option {
 	}
 }
 
-// WithLogger sets the logger  for the wrapper.
+// WithLogger sets the logger  for the manager.
 func WithIdempotencyManager(cleanUpInterval time.Duration) Option {
 	return func(w *NATSManager) {
 		w.idempotencyManager = idempotency.NewIdempotencyManager[string](cleanUpInterval)
