@@ -8,6 +8,7 @@ import (
 	"github.com/abhissng/neuron/adapters/events/nats"
 	"github.com/abhissng/neuron/adapters/http"
 	"github.com/abhissng/neuron/adapters/log"
+	"github.com/abhissng/neuron/adapters/mongo"
 	"github.com/abhissng/neuron/adapters/oci"
 	"github.com/abhissng/neuron/adapters/paseto"
 	"github.com/abhissng/neuron/adapters/redis"
@@ -38,6 +39,7 @@ type AppContext struct {
 	*cryptography.CryptoManager
 	email.EmailClient
 	*oci.OCIManager
+	*mongo.MongoManager
 
 	serviceId      string
 	isDebugEnabled bool
@@ -191,5 +193,12 @@ func WithEmailClient(client email.EmailClient) AppContextOption {
 func WithOciManager(manager *oci.OCIManager) AppContextOption {
 	return func(ctx *AppContext) {
 		ctx.OCIManager = manager
+	}
+}
+
+// WithMongoManager sets the mongo manager for the AppContext.
+func WithMongoManager(manager *mongo.MongoManager) AppContextOption {
+	return func(ctx *AppContext) {
+		ctx.MongoManager = manager
 	}
 }
