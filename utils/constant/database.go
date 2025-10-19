@@ -11,6 +11,7 @@ const (
 	PostgreSQL                 types.DBType  = "postgres"
 	MySQL                      types.DBType  = "mysql"
 	SQLCProvider               types.DBType  = "sqlc"
+	MongoDB                    types.DBType  = "mongo"
 	DatabaseCheckAliveInterval time.Duration = 30 * time.Second
 )
 

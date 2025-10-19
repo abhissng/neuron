@@ -21,38 +21,46 @@ func BuildDSN(
 	password string,
 	options map[string]string) string {
 
-	// Based on DBType DSN will be build
+	var dsn string
+
+	// Build query string from options
+	buildOptions := func(opts map[string]string) string {
+		if len(opts) == 0 {
+			return ""
+		}
+		q := "?"
+		for k, v := range opts {
+			q += fmt.Sprintf("%s=%s&", k, v)
+		}
+		return q[:len(q)-1] // remove trailing '&'
+	}
+
 	switch dbType {
 	case constant.PostgreSQL:
-		// For PostgreSQL: format is "postgresql://user:password@host:port/dbname?options"
-		dsn := fmt.Sprintf("postgresql://%s:%s@%s/%s", user, password, host, dbName)
-		// dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", user, password, host, dbName)
-		if len(options) > 0 {
-			dsn += "?"
-			for key, value := range options {
-				dsn += fmt.Sprintf("%s=%s&", key, value)
-			}
-			dsn = dsn[:len(dsn)-1] // Remove the trailing '&'
-		}
-		return dsn
+		// Format: "postgresql://user:password@host:port/dbname?options"
+		dsn = fmt.Sprintf("postgresql://%s:%s@%s/%s", user, password, host, dbName)
+		dsn += buildOptions(options)
 
 	case constant.MySQL:
-		// For MySQL: format is "user:password@tcp(host:port)/dbname?options"
-		// dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", user, password, host, port, dbName)
-		dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s", user, password, host, dbName)
-		if len(options) > 0 {
-			dsn += "?"
-			for key, value := range options {
-				dsn += fmt.Sprintf("%s=%s&", key, value)
-			}
-			dsn = dsn[:len(dsn)-1] // Remove the trailing '&'
+		// Format: "user:password@tcp(host:port)/dbname?options"
+		dsn = fmt.Sprintf("%s:%s@tcp(%s)/%s", user, password, host, dbName)
+		dsn += buildOptions(options)
+
+	case constant.MongoDB:
+		// Format: "mongodb://user:password@host:port/dbname?options"
+		if user != "" && password != "" {
+			dsn = fmt.Sprintf("mongodb://%s:%s@%s/%s", user, password, host, dbName)
+		} else {
+			dsn = fmt.Sprintf("mongodb://%s/%s", host, dbName) // no auth
 		}
-		return dsn
+		dsn += buildOptions(options)
 
 	default:
 		// Unsupported database type
 		return ""
 	}
+
+	return dsn
 }
 
 // ExtractDBNameFromDSN extracts the database name from a DSN string.
