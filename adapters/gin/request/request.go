@@ -340,3 +340,33 @@ func FetchPasetoBearerToken(c *gin.Context) result.Result[string] {
 
 	return result.NewSuccess(&token)
 }
+
+// Fetch X-User-Role Header
+func FetchXUserRoleHeader(c *gin.Context) result.Result[string] {
+	userRoleHeader := FetchTextParam(c, constant.XUserRole, HeaderParam, true)
+	if userRoleHeader.IsSuccess() {
+		userRole := userRoleHeader.ToValue()
+		return result.NewSuccess(userRole)
+	}
+	return result.NewFailure[string](blame.MissingXUserRole())
+}
+
+// Fetch X-Org-Id Header
+func FetchXOrgIdHeader(c *gin.Context) result.Result[string] {
+	orgIdHeader := FetchTextParam(c, constant.XOrgId, HeaderParam, true)
+	if orgIdHeader.IsSuccess() {
+		orgId := orgIdHeader.ToValue()
+		return result.NewSuccess(orgId)
+	}
+	return result.NewFailure[string](blame.MissingXOrgId())
+}
+
+// Fetch X-User-Id Header
+func FetchXUserIdHeader(c *gin.Context) result.Result[string] {
+	userIdHeader := FetchTextParam(c, constant.XUserId, HeaderParam, true)
+	if userIdHeader.IsSuccess() {
+		userId := userIdHeader.ToValue()
+		return result.NewSuccess(userId)
+	}
+	return result.NewFailure[string](blame.MissingXUserId())
+}

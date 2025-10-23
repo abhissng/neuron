@@ -12,6 +12,7 @@ import (
 	"github.com/abhissng/neuron/adapters/oci"
 	"github.com/abhissng/neuron/adapters/paseto"
 	"github.com/abhissng/neuron/adapters/redis"
+	"github.com/abhissng/neuron/adapters/session"
 	"github.com/abhissng/neuron/adapters/vault"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/database"
@@ -40,6 +41,7 @@ type AppContext struct {
 	email.EmailClient
 	*oci.OCIManager
 	*mongo.MongoManager
+	*session.SessionManager
 
 	serviceId      string
 	isDebugEnabled bool
@@ -200,5 +202,12 @@ func WithOciManager(manager *oci.OCIManager) AppContextOption {
 func WithMongoManager(manager *mongo.MongoManager) AppContextOption {
 	return func(ctx *AppContext) {
 		ctx.MongoManager = manager
+	}
+}
+
+// WithSessionManager sets the session manager for the AppContext.
+func WithSessionManager(manager *session.SessionManager) AppContextOption {
+	return func(ctx *AppContext) {
+		ctx.SessionManager = manager
 	}
 }

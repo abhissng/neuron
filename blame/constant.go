@@ -74,4 +74,7 @@ const (
 	ErrorResponseResultError             types.ErrorCode = "error-response-result-error"
 	ErrorMissingCorrelationID            types.ErrorCode = "error-missing-correlation-id"
 	ErrorMissingRecordsName              types.ErrorCode = "error-missing-records-name"
+	ErrorMissingXUserRole                types.ErrorCode = "error-missing-x-user-role"
+	ErrorMissingXOrgId                   types.ErrorCode = "error-missing-x-org-id"
+	ErrorMissingXUserId                  types.ErrorCode = "error-missing-x-user-id"
 )

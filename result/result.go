@@ -7,16 +7,16 @@ import (
 	"github.com/abhissng/neuron/utils/constant"
 )
 
-// Result is a generic interface that can represent either a success or an error.
+// Result is a generic interface that can represent either a success or a failure.
 type Result[T any] interface {
 	// IsSuccess returns true if the result is a success, false otherwise.
 	IsSuccess() bool
-	// IsError returns true if the result is an error, false otherwise.
-	IsError() bool
-	// Value returns the success value and error value if there is error any.
+	// IsFailure returns true if the result is an failure, false otherwise.
+	IsFailure() bool
+	// Value returns the success value and blame value if there is blame any.
 	Value() (*T, blame.Blame)
-	// Error returns the error value.
-	Error() blame.Blame
+	// Blame returns the blame value.
+	Blame() blame.Blame
 	//Redirect is used only if an api is redirecting to other service/webapp
 	Redirect() (string, bool)
 	// ToValue returns the success value if the result is a success, nil otherwise.
@@ -44,13 +44,13 @@ func (s Success[T]) Value() (*T, blame.Blame) {
 	return s.Val, nil
 }
 
-// IsError implements Result.
-func (s Success[T]) IsError() bool {
+// IsFailure implements Result.
+func (s Success[T]) IsFailure() bool {
 	return false
 }
 
-// Error implements Result.
-func (s Success[T]) Error() blame.Blame {
+// Blame implements Result.
+func (s Success[T]) Blame() blame.Blame {
 	return blame.NewBasicBlame("success-cannot-be-error").WithComponent(constant.ErrLibrary)
 }
 
@@ -71,7 +71,7 @@ type Failure[T any] struct {
 	RedirectURL string
 }
 
-// NewError creates a new Failure result.
+// Newfailure creates a new Failure result.
 func NewFailure[T any](err blame.Blame) Result[T] {
 	return &Failure[T]{Err: err}
 }
@@ -85,8 +85,8 @@ func (f Failure[T]) IsSuccess() bool {
 	return false
 }
 
-// IsError implements Result.
-func (f Failure[T]) IsError() bool {
+// IsFailure implements Result.
+func (f Failure[T]) IsFailure() bool {
 	return true
 }
 
@@ -98,8 +98,8 @@ func (f Failure[T]) Value() (*T, blame.Blame) {
 	return f.Val, f.Err
 }
 
-// Error implements Result.
-func (f Failure[T]) Error() blame.Blame {
+// Blame implements Result.
+func (f Failure[T]) Blame() blame.Blame {
 	return f.Err
 }
 
@@ -135,7 +135,7 @@ func MapError[T, R any](r Result[T], mapFn func(error) blame.Blame) Result[R] {
 	if r.IsSuccess() {
 		return NewFailure[R](blame.NewBasicBlame("SUCCESS_CANNOT_MAP_WITH_ERROR"))
 	}
-	return NewFailure[R](mapFn(r.Error()))
+	return NewFailure[R](mapFn(r.Blame()))
 }
 
 // NewRedirectSuccess creates a new Success result with a redirect URL.

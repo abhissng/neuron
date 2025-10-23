@@ -9,15 +9,16 @@ import (
 
 // StandardClaims represents the standard claims in a token.
 type StandardClaims struct {
-	Iss string    `json:"iss"`           // Issuer
-	Exp time.Time `json:"exp"`           // Expiration Time
-	Iat time.Time `json:"iat"`           // Issued At Time
-	Jti string    `json:"jti"`           // JWT ID (Unique identifier for the token)
-	Aud string    `json:"aud,omitempty"` // Audience (Optional)
-	Nbf time.Time `json:"nbf,omitempty"` // Not Before (Optional)
-	Sub string    `json:"sub,omitempty"` // Subject (Optional)
-	Ip  string    `json:"ip,omitempty"`  // IP address (Optional)
-	Pid string    `json:"pid"`           // Payload ID created at payload time
+	Iss  string         `json:"iss"`            // Issuer
+	Exp  time.Time      `json:"exp"`            // Expiration Time
+	Iat  time.Time      `json:"iat"`            // Issued At Time
+	Jti  string         `json:"jti"`            // JWT ID (Unique identifier for the token)
+	Aud  string         `json:"aud,omitempty"`  // Audience (Optional)
+	Nbf  time.Time      `json:"nbf,omitempty"`  // Not Before (Optional)
+	Sub  string         `json:"sub,omitempty"`  // Subject (Optional)
+	Ip   string         `json:"ip,omitempty"`   // IP address (Optional)
+	Pid  string         `json:"pid"`            // Payload ID created at payload time
+	Data map[string]any `json:"data,omitempty"` // Data (Optional)
 }
 
 // StandardClaimsOption is a functional option for configuring StandardClaims.
@@ -48,6 +49,16 @@ func WithSubject(sub string) StandardClaimsOption {
 func WithIP(ip string) StandardClaimsOption {
 	return func(c *StandardClaims) {
 		c.Ip = ip
+	}
+}
+
+// WithData sets the Data claim.
+func WithData(data map[string]any) StandardClaimsOption {
+	return func(c *StandardClaims) {
+		if c.Data == nil {
+			c.Data = make(map[string]any)
+		}
+		c.Data = data
 	}
 }
 
@@ -116,4 +127,8 @@ func (c *StandardClaims) Subject() string {
 func (c *StandardClaims) IP() string {
 	// Comment: Returns the IP address associated with the token (optional).
 	return c.Ip
+}
+func (c *StandardClaims) GetData() map[string]any {
+	// Comment: Returns the data associated with the token (optional).
+	return c.Data
 }

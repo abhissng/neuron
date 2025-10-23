@@ -18,6 +18,8 @@ const (
 	CSRFTokenHeader     = "X-CSRF-Token" // #nosec G101
 	CSRFTokenCookie     = "X-CSRF-Token" // #nosec G101
 	XUserRole           = "X-User-Role"
+	XOrgId              = "X-Org-Id"
+	XUserId             = "X-User-Id"
 )
 
 // These are middlewares or plugin constant for the application

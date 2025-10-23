@@ -40,7 +40,7 @@ func RequestIDMiddleware(log1 *log.Log) gin.HandlerFunc {
 		c.Set(constant.CorrelationID, correlationId)
 
 		// Log the IDs
-		log1.Info("Request ID and Correlation ID", log.String("request-id", requestId), log.String("correlation-id", correlationId))
+		log1.Debug("Request ID and Correlation ID", log.String("request-id", requestId), log.String("correlation-id", correlationId))
 		// Pass control to the next middleware/handler
 		c.Next()
 	}
@@ -177,7 +177,7 @@ func PasetoVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 		return result.CastFailure[string, bool](subjectResult)
 	}
 
-	res := ctx.ValidateToken(*token, paseto.ValidateEssentialTags)
+	res := ctx.ValidateToken(*token, nil, paseto.WithValidateEssentialTags)
 	if !res.IsSuccess() {
 		_, err := res.Value()
 		return result.NewFailure[bool](err)
@@ -204,15 +204,22 @@ func SessionMiddleware(sm *session.SessionManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sessionID, err := c.Cookie(constant.SessionID)
 		if err != nil {
+			// No cookie found — just continue without session
+			c.Next()
 			return
 		}
-		if sessionID != "" {
-			sessionData, err := sm.GetSession(c, sessionID)
-			if err == nil {
-				// Add session data to context
-				c.Set("session", sessionData)
-			}
+
+		// Try retrieving session data
+		sessionData, err := sm.GetSession(c, sessionID)
+		if err != nil {
+			// Invalid or expired session — clear cookie (optional)
+			c.SetCookie(constant.SessionID, "", -1, "/", "", false, true)
+			c.Next()
+			return
 		}
+
+		// Valid session — attach to context
+		c.Set("session", sessionData)
 		c.Next()
 	}
 }

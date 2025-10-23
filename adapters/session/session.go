@@ -12,12 +12,12 @@ import (
 
 // SessionData represents the data stored in a session
 type SessionData struct {
-	UserID          string         `json:"user_id"`
-	Username        string         `json:"username"`
-	Email           string         `json:"email"`
-	Role            string         `json:"role"`
-	LastAccess      time.Time      `json:"last_access"`
-	CustomData      map[string]any `json:"custom_data"`
+	UserID          string         `json:"user_id,omitempty"`
+	Username        string         `json:"username,omitempty"`
+	Email           string         `json:"email,omitempty"`
+	Role            string         `json:"role,omitempty"`
+	LastAccess      time.Time      `json:"last_access,omitempty"`
+	CustomData      map[string]any `json:"custom_data,omitempty"`
 	IsAuthenticated bool           `json:"is_authenticated"`
 }
 
@@ -37,10 +37,10 @@ type SessionManager struct {
 // Option is a function that configures the SessionManager
 type Option func(*SessionManager)
 
-// WithRedisWrapper sets the Redis wrapper
-func WithRedisWrapper(rw *redis.RedisManager) Option {
+// WithRedisManager sets the Redis manager
+func WithRedisManager(manager *redis.RedisManager) Option {
 	return func(sm *SessionManager) {
-		sm.store = rw
+		sm.store = manager
 	}
 }
 
