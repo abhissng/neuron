@@ -130,7 +130,9 @@ func getAllowedHeaders() string {
 	 X-Signature,
 	 X-Paseto-Token,
 	 X-Refresh-Token,
-	 X-User-Role`
+	 X-User-Role,
+	 X-Org-Id,
+	 X-User-Id`
 }
 
 // getAllowedOrigin returns the allowed origin for CORS with wildcard support

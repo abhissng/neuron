@@ -444,6 +444,27 @@
     "Description": "The required records name is missing in the request.",
     "Component": "adaptors",
     "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-missing-x-user-role",
+    "Message": "X-User-Role is missing",
+    "Description": "The required X-User-Role is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-missing-x-org-id",
+    "Message": "X-Org-Id is missing",
+    "Description": "The required X-Org-Id is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-missing-x-user-id",
+    "Message": "X-User-Id is missing",
+    "Description": "The required X-User-Id is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
   }
 
 ]

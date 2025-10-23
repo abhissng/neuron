@@ -16,7 +16,7 @@ func TestNewSuccess(t *testing.T) {
 	successResult := result.NewSuccess(&value)
 
 	assert.True(t, successResult.IsSuccess())
-	assert.False(t, successResult.IsError())
+	assert.False(t, successResult.IsFailure())
 
 	val, err := successResult.Value()
 	assert.NoError(t, err)
@@ -28,13 +28,13 @@ func TestNewFailure(t *testing.T) {
 	errorResult := result.NewFailure[any](testErr)
 
 	assert.False(t, errorResult.IsSuccess())
-	assert.True(t, errorResult.IsError())
+	assert.True(t, errorResult.IsFailure())
 
 	_, err := errorResult.Value()
 	assert.Error(t, err)
 	assert.Equal(t, testErr, err)
 
-	assert.Equal(t, testErr, errorResult.Error())
+	assert.Equal(t, testErr, errorResult.Blame())
 }
 
 func TestToResult(t *testing.T) {
@@ -58,7 +58,7 @@ func TestCastFailure(t *testing.T) {
 	// Cast to different type should fail
 	castErrorResult := result.CastFailure[string, int](successResult)
 	assert.IsType(t, &result.Failure[int]{}, castErrorResult)
-	assert.EqualError(t, castErrorResult.Error(), "cannot cast a success result")
+	assert.EqualError(t, castErrorResult.Blame(), "cannot cast a success result")
 
 	// Cast error result should return a new error result
 	testErr := blame.NewBasicBlame("test-error")
@@ -71,7 +71,7 @@ func TestCastFailure(t *testing.T) {
 	errorResult = result.NewFailure[string](specificErr)
 	castErrorResultint := result.CastFailure[string, error](errorResult)
 	assert.IsType(t, &result.Failure[error]{}, castErrorResultint)
-	assert.EqualError(t, castErrorResultint.Error(), "specific error: test error")
+	assert.EqualError(t, castErrorResultint.Blame(), "specific error: test error")
 }
 
 func TestMapError(t *testing.T) {
@@ -83,7 +83,7 @@ func TestMapError(t *testing.T) {
 		return blame.NewBasicBlame("mapped-error")
 	})
 	assert.IsType(t, &result.Failure[error]{}, mappedResult)
-	assert.EqualError(t, mappedResult.Error(), "cannot map a success result")
+	assert.EqualError(t, mappedResult.Blame(), "cannot map a success result")
 
 	testErr := blame.NewBasicBlame("test-error")
 	errorResult := result.NewFailure[string](testErr)
@@ -93,5 +93,5 @@ func TestMapError(t *testing.T) {
 		return blame.NewBasicBlame(types.ErrorCode(fmt.Errorf("specific error: %w", testErr).Error()))
 	})
 	assert.IsType(t, &result.Failure[error]{}, mappedResult)
-	assert.EqualError(t, mappedResult.Error(), "mapped error: test error")
+	assert.EqualError(t, mappedResult.Blame(), "mapped error: test error")
 }

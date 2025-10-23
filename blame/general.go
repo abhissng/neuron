@@ -528,3 +528,18 @@ func MissingCorrelationID() Blame {
 func MissingRecordsName(cause error) Blame {
 	return getLocalBlameManager().FetchBlameForError(ErrorMissingRecordsName, WithCauses(cause))
 }
+
+// MissingXUserRole is an error when the X-User-Role is missing.
+func MissingXUserRole() Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorMissingXUserRole)
+}
+
+// MissingXOrgId is an error when the X-Org-Id is missing.
+func MissingXOrgId() Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorMissingXOrgId)
+}
+
+// MissingXUserId is an error when the X-User-Id is missing.
+func MissingXUserId() Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorMissingXUserId)
+}
