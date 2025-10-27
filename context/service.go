@@ -7,6 +7,7 @@ import (
 	"github.com/abhissng/neuron/utils/types"
 	"github.com/gin-gonic/gin"
 	"github.com/nats-io/nats.go"
+	"go.uber.org/zap"
 )
 
 // ServiceContext embeds AppContext and Gin Context and default Context of Go
@@ -91,31 +92,36 @@ func (ctx *ServiceContext) SlogFields(withFields ...types.Field) []types.Field {
 func (ctx *ServiceContext) SlogInfo(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	ctx.Log.Info(message, slogfields...)
+	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger.Info(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogWarn(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	ctx.Log.Warn(message, slogfields...)
+	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger.Warn(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogError(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	ctx.Log.Error(message, slogfields...)
+	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger.Error(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogFatal(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	ctx.Log.Fatal(message, slogfields...)
+	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger.Fatal(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogDebug(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	ctx.Log.Debug(message, slogfields...)
+	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger.Debug(message, slogfields...)
 }
 
 // SlogEvent returns a slice of types.Field with message and correlation fields and additional fields.

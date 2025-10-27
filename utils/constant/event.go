@@ -68,6 +68,7 @@ const (
 	HandlerSuccess    = "HandlerSuccessful"
 	HandlerFailed     = "HandlerFailed"
 	HandlerPending    = "HandlerPending"
+	HandlerRedirect   = "HandlerRedirect"
 	MiddlewareSuccess = "MiddlewareSuccessful"
 	MiddlewareFailed  = "MiddlewareFailed"
 
