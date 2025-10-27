@@ -211,3 +211,9 @@ func (t *TimeWrapper) In(loc *time.Location) *TimeWrapper {
 func (t *TimeWrapper) AddDate(years, months, days int) *TimeWrapper {
 	return &TimeWrapper{t.Time.AddDate(years, months, days)}
 }
+
+// GetCurrentTimeIn returns current time in given timezone
+func GetCurrentTimeIn(timezone string) time.Time {
+	location, _ := LoadLocation(timezone)
+	return Now().In(location).Time
+}

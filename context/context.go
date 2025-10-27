@@ -158,9 +158,8 @@ func (s *ServiceContext) RecoverFromException() {
 		errorMsg := fmt.Sprintf("Panic recovered: %v\nStack Trace:\n%s", r, string(stack))
 
 		// Use the service logger if available, otherwise use standard log
-
 		if s.Log != nil {
-			s.Log.Panic(errorMsg)
+			s.Log.Error(errorMsg)
 		} else {
 			helpers.Println(constant.ERROR, errorMsg)
 		}
@@ -174,7 +173,7 @@ func (s *ServiceContext) RunSafely(fn func()) {
 			msg := fmt.Sprintf("Panic recovered: %v\nStack Trace:\n%s", r, string(stack))
 			// Use the service logger if available, otherwise use standard log
 			if s.Log != nil {
-				s.Log.Panic(msg)
+				s.Log.Error(msg)
 			} else {
 				helpers.Println(constant.INFO, msg)
 			}

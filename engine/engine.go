@@ -60,7 +60,8 @@ func ProcessServiceStates[T any](
 
 		return result.NewFailure[ServiceResult](blame.ServiceDefinitionNotFound(serviceName.String(), err))
 	}
-	ctx.Log.Info("Service Definition Retrieved", ctx.Slog(log.Any("service", *svcDef))...)
+	ctx.SlogInfo("Service Definition Retrieved", log.Any("service", *svcDef))
+	// ctx.Log.Info("Service Definition Retrieved", ctx.Slog(log.Any("service", *svcDef))...)
 
 	if !ctx.IsServiceActive(serviceName.String()) {
 		return result.NewFailure[ServiceResult](blame.InactiveService(serviceName.String()))
@@ -106,15 +107,16 @@ func ProcessServiceStates[T any](
 
 		resp, err := codec.Decode[*message.Message[T]](msg.Data, codec.JSON)
 		if err != nil {
-			ctx.Log.Error("failed to unmarshal response", log.String("state", state.Service), log.Err(err))
+			ctx.SlogError("failed to unmarshal response", log.String("state", state.Service), log.Err(err))
 			return result.NewFailureWithValue(serviceResult, blame.UnMarshalError(codec.JSON, err))
 		}
 		serviceResult.Response[Payload] = resp
-		ctx.Log.Info("Response Retrieved", ctx.Slog(log.Any("response", resp))...)
+		ctx.SlogInfo("Response Retrieved", log.Any("response", resp))
+		// ctx.Log.Info("Response Retrieved", ctx.Slog(log.Any("response", resp))...)
 
 		if !helpers.IsSuccess(resp.Status) {
 			blameInfo := resp.Error.NewErrorResponseBlame(ctx.BlameManager)
-			ctx.Log.Error("State Execution Failed", ctx.Slog(log.Any("state", state.Service), log.Any("error", blameInfo.ErrorFromBlame()))...)
+			ctx.SlogError("State Execution Failed", log.Any("state", state.Service), log.Any("error", blameInfo.ErrorFromBlame()))
 			return result.NewFailureWithValue(serviceResult, blameInfo)
 		}
 		// Update initial payload

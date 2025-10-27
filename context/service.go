@@ -74,15 +74,48 @@ func (ctx *ServiceContext) GetGinContextCorrelationID() types.CorrelationID {
 	return ""
 }
 
-// Slog returns a slice of types.Field with request and correlation fields and additional fields.
-func (ctx *ServiceContext) Slog(withFields ...types.Field) []types.Field {
+// SlogFields returns a slice of types.Field with request and correlation fields and additional fields.
+func (ctx *ServiceContext) SlogFields(withFields ...types.Field) []types.Field {
 	// Start with the request and correlation fields
 	fields := make([]types.Field, 0, 2+len(withFields))
 	fields = append(fields, ctx.FetchGinRequestAndCorrelationField()...)
 
 	// Append additional fields provided as variadic arguments
-	fields = append(fields, withFields...)
+	if len(withFields) > 0 {
+		fields = append(fields, withFields...)
+	}
 	return fields
+}
+
+// SlogInfo logs a message at the InfoLevel.
+func (ctx *ServiceContext) SlogInfo(message string, withFields ...types.Field) {
+	// Start with the request and correlation fields
+	slogfields := ctx.SlogFields(withFields...)
+	ctx.Log.Info(message, slogfields...)
+}
+
+func (ctx *ServiceContext) SlogWarn(message string, withFields ...types.Field) {
+	// Start with the request and correlation fields
+	slogfields := ctx.SlogFields(withFields...)
+	ctx.Log.Warn(message, slogfields...)
+}
+
+func (ctx *ServiceContext) SlogError(message string, withFields ...types.Field) {
+	// Start with the request and correlation fields
+	slogfields := ctx.SlogFields(withFields...)
+	ctx.Log.Error(message, slogfields...)
+}
+
+func (ctx *ServiceContext) SlogFatal(message string, withFields ...types.Field) {
+	// Start with the request and correlation fields
+	slogfields := ctx.SlogFields(withFields...)
+	ctx.Log.Fatal(message, slogfields...)
+}
+
+func (ctx *ServiceContext) SlogDebug(message string, withFields ...types.Field) {
+	// Start with the request and correlation fields
+	slogfields := ctx.SlogFields(withFields...)
+	ctx.Log.Debug(message, slogfields...)
 }
 
 // SlogEvent returns a slice of types.Field with message and correlation fields and additional fields.
