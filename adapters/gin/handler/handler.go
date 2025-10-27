@@ -108,7 +108,7 @@ func processResult[T any](res result.Result[T], ctx *context.ServiceContext) {
 	if !res.IsSuccess() {
 		redirectURL, Redirect := res.Redirect()
 		if Redirect {
-			ctx.SlogInfo(constant.DataProcessed, log.WithField(constant.RedirectToURL, redirectURL))
+			ctx.SlogInfo(constant.HandlerRedirect, log.WithField(constant.RedirectToURL, redirectURL))
 			ctx.Redirect(http.StatusFound, redirectURL)
 			return
 		}
@@ -116,14 +116,14 @@ func processResult[T any](res result.Result[T], ctx *context.ServiceContext) {
 		_, blameInfo := res.Value()
 		status := helpers.FetchHTTPStatusCode(blameInfo.FetchResponseType())
 		errorResponse := blameInfo.FetchErrorResponse(blame.WithTranslation())
-		ctx.SlogInfo(constant.DataProcessed, log.WithField("Error Message", errorResponse))
+		ctx.SlogError(constant.HandlerFailed, log.WithField("Error Message", errorResponse))
 		ctx.JSON(status, acknowledgment.NewAPIResponse[any](false, types.CorrelationID(ctx.GetGinContextCorrelationID()), errorResponse))
 		return
 	}
 
 	redirectURL, Redirect := res.Redirect()
 	if Redirect {
-		ctx.SlogInfo(constant.DataProcessed, log.WithField(constant.RedirectToURL, redirectURL))
+		ctx.SlogInfo(constant.HandlerRedirect, log.WithField(constant.RedirectToURL, redirectURL))
 		ctx.Redirect(http.StatusFound, redirectURL)
 		return
 	}
