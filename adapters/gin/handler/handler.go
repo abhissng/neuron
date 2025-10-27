@@ -43,7 +43,7 @@ func WrapServiceMiddlewareHandler(handler ServiceMiddlewareHandler) gin.HandlerF
 					_, err := response.Value()
 					httpStatus := helpers.FetchHTTPStatusCode(err.FetchResponseType())
 					res := err.FetchErrorResponse(blame.WithTranslation())
-					ctx.Log.Error(constant.MiddlewareFailed, ctx.Slog(log.WithField("error-code", err.FetchErrCode()))...)
+					ctx.SlogError(constant.MiddlewareFailed, log.WithField("error-code", err.FetchErrCode()))
 					c.AbortWithStatusJSON(httpStatus, acknowledgment.NewAPIResponse(false, types.CorrelationID(ctx.GetGinContextCorrelationID()), res))
 					c.Request.Body.Close() // #nosec G104
 				} else {
@@ -93,11 +93,11 @@ func ExecuteControllerHandler[T any](handler RequestHandler[T]) gin.HandlerFunc 
 
 // handleException handles exceptions and logs the error, stack trace, and blame
 func handleException(handlerType string, ctx *context.ServiceContext, err any) {
-	ctx.Log.Error("Exception Occured at "+handlerType, ctx.Slog(log.WithField("error", err))...)
+	ctx.SlogError("Exception Occured at "+handlerType, log.WithField("error", err))
 	stackTrace := debug.Stack()
 	helpers.Println(constant.ERROR, "Stack Trace: ", string(stackTrace))
 	serverBlame := blame.InternalServerError(fmt.Errorf("error %+v", err))
-	ctx.Log.Error("Server Blame ", ctx.Slog(log.WithField("message", serverBlame.FetchErrorResponse()))...)
+	ctx.SlogError("Server Blame ", log.WithField("message", serverBlame.FetchErrorResponse()))
 	ctx.JSON(http.StatusInternalServerError, gin.H{
 		"Message": "An unexpected error occurred. Please contact the administrator.",
 	})
@@ -108,7 +108,7 @@ func processResult[T any](res result.Result[T], ctx *context.ServiceContext) {
 	if !res.IsSuccess() {
 		redirectURL, Redirect := res.Redirect()
 		if Redirect {
-			ctx.Log.Info(constant.DataProcessed, ctx.Slog(log.WithField(constant.RedirectToURL, redirectURL))...)
+			ctx.SlogInfo(constant.DataProcessed, log.WithField(constant.RedirectToURL, redirectURL))
 			ctx.Redirect(http.StatusFound, redirectURL)
 			return
 		}
@@ -116,14 +116,14 @@ func processResult[T any](res result.Result[T], ctx *context.ServiceContext) {
 		_, blameInfo := res.Value()
 		status := helpers.FetchHTTPStatusCode(blameInfo.FetchResponseType())
 		errorResponse := blameInfo.FetchErrorResponse(blame.WithTranslation())
-		ctx.Log.Info(constant.DataProcessed, ctx.Slog(log.WithField("Error Message", errorResponse))...)
+		ctx.SlogInfo(constant.DataProcessed, log.WithField("Error Message", errorResponse))
 		ctx.JSON(status, acknowledgment.NewAPIResponse[any](false, types.CorrelationID(ctx.GetGinContextCorrelationID()), errorResponse))
 		return
 	}
 
 	redirectURL, Redirect := res.Redirect()
 	if Redirect {
-		ctx.Log.Info(constant.DataProcessed, ctx.Slog(log.WithField(constant.RedirectToURL, redirectURL))...)
+		ctx.SlogInfo(constant.DataProcessed, log.WithField(constant.RedirectToURL, redirectURL))
 		ctx.Redirect(http.StatusFound, redirectURL)
 		return
 	}
