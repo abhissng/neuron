@@ -194,9 +194,9 @@ func (e *Error) WithResponseType(responseType types.ResponseErrorType) *Error {
 	return e
 }
 
-// Error returns the error message with the source as a string
+// Error returns the error message with the causes as a string
 func (e *Error) Error() string {
-	return fmt.Sprintf("%s (source: %s)", e.errCode.String(), e.source)
+	return fmt.Sprintf("%s (causes: %v)", e.errCode.String(), e.causes)
 }
 
 // findSource captures the source of the error at the point of instantiation.
