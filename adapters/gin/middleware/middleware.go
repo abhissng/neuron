@@ -157,7 +157,7 @@ func AutoRefreshMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 // **Gin Middleware for Paseto Verification**
 func PasetoVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 
-	if ctx.PasetoMiddlewareOption().HasExcludedOption() {
+	if ctx.PasetoMiddlewareOption() != nil && ctx.PasetoMiddlewareOption().HasExcludedOption() {
 		blame := handleExcludedOptions(ctx)
 		if blame != nil {
 			return result.NewFailure[bool](blame)

@@ -62,37 +62,6 @@ func (v *Viper) LoadDynamicConfig(vault *vault.Vault) error {
 	return loadAndReplaceConfig(vault)
 }
 
-/*
-// InitialiseViper initialises the viper client
-// if vaultFlag is true, it will load the configuration and replace placeholders with values fetched from Vault
-// constants ProjectId and VaultPath are required if vaultFlag is true
-func (v *Viper) InitialiseViper(vaultFlag bool) (*vault.Vault, error) {
-	viper.SetConfigName(v.configName) // Name of configuration file
-	viper.SetConfigType(v.configType) // Configuration file type
-	viper.AddConfigPath(v.configPath) // Look for configuration file in the given directory
-
-	// Enable Viper to read environment variables
-	viper.AutomaticEnv()
-
-	// Attempt to read configuration file
-	if err := viper.ReadInConfig(); err != nil {
-		err = fmt.Errorf("error reading configuration file: %s", err)
-		return nil, err
-	}
-	if vaultFlag {
-		vlt := vault.NewVault(helpers.GetEnvironment(), viper.GetString(constant.ProjectId), viper.GetString(constant.VaultPath))
-		vlt.InitVaultClient()
-		if err := loadAndReplaceConfig(vlt); err != nil {
-			helpers.Println(constant.ERROR, "Error loading and replacing config using vault: ", err)
-			return nil, err
-		}
-		return vlt, nil
-	}
-
-	return nil, nil
-}
-*/
-
 // Function to load configuration and replace placeholders with values fetched from Vault
 func loadAndReplaceConfig(vlt *vault.Vault) error {
 
@@ -141,4 +110,37 @@ func getSecretsFromVault(configContent string, vaultManager *vault.Vault) (strin
 	})
 
 	return updatedConfig, nil
+}
+
+// UnmarshalConfig unmarshals the entire Viper configuration into the provided struct reference.
+// It helps you avoid calling viper.GetString / viper.GetInt repeatedly by binding
+// configuration values directly into a typed struct.
+//
+// Example:
+//
+//	type AppConfig struct {
+//	    Server struct {
+//	        Host string `mapstructure:"host"`
+//	        Port int    `mapstructure:"port"`
+//	    } `mapstructure:"server"`
+//
+//	    Database struct {
+//	        User     string `mapstructure:"user,squash"`
+//	        Password string `mapstructure:"password"`
+//	        Host     string `mapstructure:"host"`
+//	        Port     int    `mapstructure:"port"`
+//	    } `mapstructure:"database"`
+//
+//	    LogLevel string `mapstructure:"log_level"`
+//	}
+func UnmarshalConfig[T any](target *T) error {
+	if target == nil {
+		return fmt.Errorf("target struct cannot be nil")
+	}
+
+	if err := viper.Unmarshal(target); err != nil {
+		return fmt.Errorf("failed to unmarshal viper config: %w", err)
+	}
+
+	return nil
 }
