@@ -61,7 +61,6 @@ func ProcessServiceStates[T any](
 		return result.NewFailure[ServiceResult](blame.ServiceDefinitionNotFound(serviceName.String(), err))
 	}
 	ctx.SlogInfo("Service Definition Retrieved", log.Any("service", *svcDef))
-	// ctx.Log.Info("Service Definition Retrieved", ctx.Slog(log.Any("service", *svcDef))...)
 
 	if !ctx.IsServiceActive(serviceName.String()) {
 		return result.NewFailure[ServiceResult](blame.InactiveService(serviceName.String()))
@@ -112,7 +111,6 @@ func ProcessServiceStates[T any](
 		}
 		serviceResult.Response[Payload] = resp
 		ctx.SlogInfo("Response Retrieved", log.Any("response", resp))
-		// ctx.Log.Info("Response Retrieved", ctx.Slog(log.Any("response", resp))...)
 
 		if !helpers.IsSuccess(resp.Status) {
 			blameInfo := resp.Error.NewErrorResponseBlame(ctx.BlameManager)
