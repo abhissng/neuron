@@ -1,8 +1,10 @@
 package types
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -50,6 +52,20 @@ func ToTimestamptz(value time.Time) pgtype.Timestamptz {
 func ToTimestamp(value time.Time) pgtype.Timestamp {
 	return pgtype.Timestamp{
 		Time:  value,
+		Valid: true,
+	}
+}
+
+func PGTypeToUUID(p pgtype.UUID) (uuid.UUID, error) {
+	if !p.Valid {
+		return uuid.Nil, fmt.Errorf("uuid is null")
+	}
+	return uuid.UUID(p.Bytes), nil
+}
+
+func UUIDToPGType(u uuid.UUID) pgtype.UUID {
+	return pgtype.UUID{
+		Bytes: u,
 		Valid: true,
 	}
 }
