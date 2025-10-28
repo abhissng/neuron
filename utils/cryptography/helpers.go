@@ -1,8 +1,10 @@
 package cryptography
 
 import (
+	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 
 	"golang.org/x/crypto/blake2s"
@@ -104,4 +106,28 @@ func Generate256BitHash(key, data []byte) (string, error) {
 //	if ok { ... }
 func CompareHash(hash1, hash2 string) bool {
 	return subtle.ConstantTimeCompare([]byte(hash1), []byte(hash2)) == 1
+}
+
+// Generate16BitKeyString returns a random 16-bit key as a string
+func Generate16BitKeyString() (string, error) {
+	var b [2]byte
+	_, err := rand.Read(b[:])
+	if err != nil {
+		return "", err
+	}
+	key := binary.BigEndian.Uint16(b[:])
+	//return fmt.Sprintf("%d", key), nil // decimal string
+	return fmt.Sprintf("%04X", key), nil // uncomment for hex string
+}
+
+// Generate32BitKeyString returns a random 32-bit key as a string
+func Generate32BitKeyString() (string, error) {
+	var b [4]byte
+	_, err := rand.Read(b[:])
+	if err != nil {
+		return "", err
+	}
+	key := binary.BigEndian.Uint32(b[:])
+	// return fmt.Sprintf("%d", key), nil // decimal string
+	return fmt.Sprintf("%08X", key), nil // uncomment for hex string
 }

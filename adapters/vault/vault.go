@@ -13,6 +13,7 @@ import (
 	"github.com/abhissng/neuron/utils/cryptography"
 	"github.com/abhissng/neuron/utils/helpers"
 	infisical "github.com/infisical/go-sdk"
+	"github.com/infisical/go-sdk/packages/models"
 )
 
 // Constants for prefixes and timeouts
@@ -91,8 +92,20 @@ func NewVault(opts ...Option) *Vault {
 }
 
 // === Backend Retrieval Functions ===
+func (v *Vault) retrieveInfisicalSecret(key string, list []*models.Secret) (string, error) {
+	if len(list) == 0 {
+		return "", errors.New("infisical secret list is empty")
+	}
+	for _, secret := range list {
+		if secret.SecretKey == key {
+			return secret.SecretValue, nil
+		}
+	}
+	return "", errors.New("infisical secret not found")
+}
 
-func (v *Vault) retrieveInfisicalSecret(key string) (string, error) {
+// Retrieve a single secret from Infisical
+func (v *Vault) RetrieveInfisicalSingleSecret(key string) (string, error) {
 	if v.infisicalClient == nil {
 		return "", errors.New("infisical client not initialized")
 	}
@@ -111,6 +124,29 @@ func (v *Vault) retrieveInfisicalSecret(key string) (string, error) {
 		return "", fmt.Errorf("failed to retrieve Infisical secret %s: %w", key, err)
 	}
 	return secret.SecretValue, nil
+}
+
+// Retrieve all secrets from Infisical
+func (v *Vault) retrieveInfisicalSecrets() ([]*models.Secret, error) {
+	if v.infisicalClient == nil {
+		return nil, errors.New("infisical client not initialized")
+	}
+	secrets, err := v.infisicalClient.Secrets().List(infisical.ListSecretsOptions{
+		ProjectID:          v.projectID,
+		Environment:        v.env,
+		SecretPath:         v.path,
+		AttachToProcessEnv: false,
+		Recursive:          true,
+	})
+	if err != nil {
+		helpers.Println(constant.ERROR, "Error retrieving Infisical secrets: ", err)
+		return nil, fmt.Errorf("failed to list secrets: %w", err)
+	}
+	var secretList []*models.Secret
+	for _, secret := range secrets {
+		secretList = append(secretList, &secret)
+	}
+	return secretList, nil
 }
 
 func (v *Vault) retrieveAWSKMSSecret(ctx context.Context, secretId string) (string, error) {
@@ -186,7 +222,11 @@ func (v *Vault) FetchVaultValue(key string) (string, error) {
 		// source = "Infisical"
 		actualKey = strings.TrimPrefix(key, InfisicalPrefix)
 		// helpers.Println(constant.DEBUG, "Fetching from", source, "(explicit prefix) - Key:", actualKey)
-		return v.retrieveInfisicalSecret(actualKey)
+		secrets, err := v.retrieveInfisicalSecrets()
+		if err != nil {
+			return "", err
+		}
+		return v.retrieveInfisicalSecret(actualKey, secrets)
 	case strings.HasPrefix(key, AWSKMSPrefix):
 		// source = "AWS KMS"
 		actualKey = strings.TrimPrefix(key, AWSKMSPrefix)
@@ -200,7 +240,11 @@ func (v *Vault) FetchVaultValue(key string) (string, error) {
 			return v.retrieveAWSParameterStoreSecret(ctx, actualKey, true)
 		}
 		// helpers.Println(constant.DEBUG, "Fetching from", source, "(default) - Key:", actualKey)
-		return v.retrieveInfisicalSecret(actualKey)
+		secrets, err := v.retrieveInfisicalSecrets()
+		if err != nil {
+			return "", err
+		}
+		return v.retrieveInfisicalSecret(actualKey, secrets)
 	}
 }
 
