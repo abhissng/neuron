@@ -40,6 +40,7 @@ type Vault struct {
 	siteURL       string
 	cryptoManager *cryptography.CryptoManager
 	timeOut       time.Duration
+	vaultSecrets  []*models.Secret
 }
 
 // NewVault creates a new Vault with options
@@ -83,7 +84,8 @@ func NewVault(opts ...Option) *Vault {
 	}
 
 	// Check if at least one client is usable
-	if v.infisicalClient == nil && v.awsClient.GetSecretsManagerClient() == nil && v.awsClient.GetSSMClient() == nil {
+	if v.infisicalClient == nil &&
+		v.awsClient.GetSecretsManagerClient() == nil && v.awsClient.GetSSMClient() == nil {
 		helpers.Println(constant.ERROR, "no secret backend clients could be initialized")
 		os.Exit(1)
 	}
@@ -143,8 +145,8 @@ func (v *Vault) retrieveInfisicalSecrets() ([]*models.Secret, error) {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	}
 	var secretList []*models.Secret
-	for _, secret := range secrets {
-		secretList = append(secretList, &secret)
+	for i := range secrets {
+		secretList = append(secretList, &secrets[i])
 	}
 	return secretList, nil
 }
@@ -220,13 +222,16 @@ func (v *Vault) FetchVaultValue(key string) (string, error) {
 
 	case strings.HasPrefix(key, InfisicalPrefix):
 		// source = "Infisical"
+		if len(v.vaultSecrets) == 0 {
+			var err error
+			v.vaultSecrets, err = v.retrieveInfisicalSecrets()
+			if err != nil {
+				return "", err
+			}
+		}
 		actualKey = strings.TrimPrefix(key, InfisicalPrefix)
 		// helpers.Println(constant.DEBUG, "Fetching from", source, "(explicit prefix) - Key:", actualKey)
-		secrets, err := v.retrieveInfisicalSecrets()
-		if err != nil {
-			return "", err
-		}
-		return v.retrieveInfisicalSecret(actualKey, secrets)
+		return v.retrieveInfisicalSecret(actualKey, v.vaultSecrets)
 	case strings.HasPrefix(key, AWSKMSPrefix):
 		// source = "AWS KMS"
 		actualKey = strings.TrimPrefix(key, AWSKMSPrefix)
@@ -239,12 +244,14 @@ func (v *Vault) FetchVaultValue(key string) (string, error) {
 		if v.defaultSource == "aws" {
 			return v.retrieveAWSParameterStoreSecret(ctx, actualKey, true)
 		}
-		// helpers.Println(constant.DEBUG, "Fetching from", source, "(default) - Key:", actualKey)
-		secrets, err := v.retrieveInfisicalSecrets()
-		if err != nil {
-			return "", err
+		if len(v.vaultSecrets) == 0 {
+			var err error
+			v.vaultSecrets, err = v.retrieveInfisicalSecrets()
+			if err != nil {
+				return "", err
+			}
 		}
-		return v.retrieveInfisicalSecret(actualKey, secrets)
+		return v.retrieveInfisicalSecret(actualKey, v.vaultSecrets)
 	}
 }
 
