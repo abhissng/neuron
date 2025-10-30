@@ -6,4 +6,7 @@ const (
 
 	// Regular expression for MySQL DSN: "user:password@tcp(host:port)/dbname?options"
 	MysqlDSNRegex = `^[^/]+/\([^?]+`
+
+	// Regular expression for MongoDB DSN: "mongodb://user:password@host:port/dbname?options"
+	MongoDSNRegex = `^mongodb://[^/]+/([^?]+)`
 )
