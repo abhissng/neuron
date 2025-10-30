@@ -2,8 +2,10 @@ package database
 
 import (
 	"fmt"
+	"net/url"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/abhissng/neuron/utils/codec"
@@ -13,54 +15,66 @@ import (
 
 // BuildDSN constructs a DSN (Data Source Name) string based on input parameters.
 // host should be in the format "host:port" or the domain if it is available
+// BuildDSN safely builds a DSN string for PostgreSQL, MySQL, and MongoDB.
 func BuildDSN(
 	dbType types.DBType,
 	host string,
 	dbName,
 	user,
 	password string,
-	options map[string]string) string {
+	options map[string]string,
+) string {
+	// Safely escape user & password
+	userEscaped := url.QueryEscape(user)
+	passEscaped := url.QueryEscape(password)
+	dbEscaped := url.QueryEscape(dbName)
 
-	var dsn string
-
-	// Build query string from options
+	// Build query string from options safely
 	buildOptions := func(opts map[string]string) string {
-		if len(opts) == 0 {
+		if len(opts) == 0 || opts == nil {
 			return ""
 		}
-		q := "?"
+		values := url.Values{}
 		for k, v := range opts {
-			q += fmt.Sprintf("%s=%s&", k, v)
+			values.Add(k, v)
 		}
-		return q[:len(q)-1] // remove trailing '&'
+		return "?" + values.Encode()
 	}
 
+	var dsn string
 	switch dbType {
 	case constant.PostgreSQL:
-		// Format: "postgresql://user:password@host:port/dbname?options"
-		dsn = fmt.Sprintf("postgresql://%s:%s@%s/%s", user, password, host, dbName)
+		// Format: postgresql://user:password@host:port/dbname?options
+		if user != "" && password != "" {
+			dsn = fmt.Sprintf("postgresql://%s:%s@%s/%s", userEscaped, passEscaped, host, dbEscaped)
+		} else {
+			dsn = fmt.Sprintf("postgresql://%s/%s", host, dbEscaped)
+		}
 		dsn += buildOptions(options)
 
 	case constant.MySQL:
-		// Format: "user:password@tcp(host:port)/dbname?options"
-		dsn = fmt.Sprintf("%s:%s@tcp(%s)/%s", user, password, host, dbName)
+		// Format: user:password@tcp(host:port)/dbname?options
+		if user != "" && password != "" {
+			dsn = fmt.Sprintf("%s:%s@tcp(%s)/%s", userEscaped, passEscaped, host, dbEscaped)
+		} else {
+			dsn = fmt.Sprintf("@tcp(%s)/%s", host, dbEscaped)
+		}
 		dsn += buildOptions(options)
 
 	case constant.MongoDB:
-		// Format: "mongodb://user:password@host:port/dbname?options"
+		// Format: mongodb://user:password@host:port/dbname?options
 		if user != "" && password != "" {
-			dsn = fmt.Sprintf("mongodb://%s:%s@%s/%s", user, password, host, dbName)
+			dsn = fmt.Sprintf("mongodb://%s:%s@%s/%s", userEscaped, passEscaped, host, dbEscaped)
 		} else {
-			dsn = fmt.Sprintf("mongodb://%s/%s", host, dbName) // no auth
+			dsn = fmt.Sprintf("mongodb://%s/%s", host, dbEscaped)
 		}
 		dsn += buildOptions(options)
 
 	default:
-		// Unsupported database type
 		return ""
 	}
 
-	return dsn
+	return strings.TrimSuffix(dsn, "?")
 }
 
 // ExtractDBNameFromDSN extracts the database name from a DSN string.
@@ -71,6 +85,8 @@ func ExtractDBNameFromDSN(dbType types.DBType, dsn string) (string, error) {
 		regxStr = constant.PostgresDSNRegex
 	case constant.MySQL:
 		regxStr = constant.MysqlDSNRegex
+	case constant.MongoDB:
+		regxStr = constant.MongoDSNRegex
 	default:
 		return "", fmt.Errorf("unable to extract database name from DSN: %s", dsn)
 	}

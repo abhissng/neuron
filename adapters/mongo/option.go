@@ -60,6 +60,14 @@ func WithURI(uri, dbName string) MongoOption {
 	}
 }
 
+// contextWithTimeout returns a context with timeout
+func (m *MongoManager) contextWithTimeout(parent context.Context) (context.Context, context.CancelFunc) {
+	if m.timeout <= 0 {
+		m.timeout = 60 * time.Second
+	}
+	return context.WithTimeout(parent, m.timeout)
+}
+
 // WithTimeout sets custom timeout
 func WithTimeout(d time.Duration) MongoOption {
 	return func(m *MongoManager) error {
