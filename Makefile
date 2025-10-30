@@ -39,12 +39,14 @@ run_build_checks:
 	@printf "$(BLUE)🚀 Running build checks$(RESET)\n"
 	$(call run_with_progress,Checking for updates and dependencies,\
 		go mod tidy && \
-		if go list -m -u all | grep -v '^module' | grep -B 2 Update > /dev/null 2>&1; then \
-			printf "$(YELLOW)⚡️ Updates available. Upgrading Go modules$(RESET)\n" && \
-			go get -u ./...; \
+		if go list -m -u all | grep -v '^module' | grep -q '\[.*\]'; then \
+			printf "$(YELLOW)⚡️ Updates available. Upgrading Go modules...$(RESET)\n"; \
+			go get -u ./... && \
+			printf "$(GREEN)✅ Go modules upgraded.$(RESET)\n\n"; \
 		else \
-			printf "$(GREEN)✅ No updates available. Skipping upgrade$(RESET)\n\n"; \
+			printf "$(GREEN)✅ Go modules are up-to-date. Skipping upgrade.$(RESET)\n\n"; \
 		fi)
+
 
 # Run initial build script
 run_initial_build_script:

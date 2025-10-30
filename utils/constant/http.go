@@ -24,13 +24,13 @@ const (
 
 // These are middlewares or plugin constant for the application
 const (
-	CorsAllowedOriginsKey        = "CorsAllowedOrigins"
-	RedisAddrKey                 = "RedisAddr"
-	RedisPasswordKey             = "RedisPassword"
-	RedisDBKey                   = "RedisDB"
-	RateLimitDefaultKey          = "RateLimitDefault"
-	RateLimitSpecialKey          = "RateLimitSpecial"
-	RateLimitDurationInSecondKey = "RateLimitDurationInSecond"
+	CorsAllowedOriginsKey = "CorsAllowedOrigins"
+	RedisAddrKey          = "RedisAddr"
+	RedisPasswordKey      = "RedisPassword"
+	RedisDBKey            = "RedisDB"
+	RateLimitDefaultKey   = "RateLimitDefault"
+	RateLimitSpecialKey   = "RateLimitSpecial"
+	// RateLimitDurationInSecondKey = "RateLimitDurationInSecond"
 )
 
 // These are group version constants for the server routes
