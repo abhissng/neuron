@@ -2,9 +2,12 @@ package middleware
 
 import (
 	"net/http"
+	"runtime/debug"
 	"sync"
 	"time"
 
+	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 )
@@ -66,23 +69,40 @@ func (l *IPRateLimiter) getLimiter(ip string) *rate.Limiter {
 
 // cleanupClients periodically removes limiters for inactive IPs.
 func (l *IPRateLimiter) cleanupClients() {
-	// Check for inactive clients every (ttl / 2)
-	// Or a fixed interval, like every minute.
-	ticker := time.NewTicker(l.ttl / 2)
+	// Use a minimum interval to prevent excessive cleanup frequency
+	interval := l.ttl / 2
+	if interval < time.Minute {
+		interval = time.Minute
+	}
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-l.stop:
-			return // Stop the goroutine
+			return
 		case <-ticker.C:
-			l.mu.Lock()
-			for ip, client := range l.clients {
-				if time.Since(client.lastSeen) > l.ttl {
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						helpers.Println(constant.ERROR, "exception: ocuured in cleanupClients", "stack:", string(debug.Stack()))
+						// Log the panic but continue cleanup loop
+					}
+				}()
+				// Collect IPs to delete without holding lock for entire iteration
+				var toDelete []string
+				now := time.Now()
+				l.mu.Lock()
+				for ip, client := range l.clients {
+					if now.Sub(client.lastSeen) > l.ttl {
+						toDelete = append(toDelete, ip)
+					}
+				}
+				for _, ip := range toDelete {
 					delete(l.clients, ip)
 				}
-			}
-			l.mu.Unlock()
+				l.mu.Unlock()
+			}()
 		}
 	}
 }
