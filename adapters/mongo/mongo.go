@@ -113,10 +113,14 @@ func (c *Collection[T]) DeleteMany(ctx context.Context, filter bson.M, opts ...o
 // Aggregate executes an aggregation pipeline.
 // Note: Decoding the results is the responsibility of the caller, as aggregation
 // results can have a different structure than the collection's document type T.
-func (c *Collection[T]) Aggregate(ctx context.Context, pipeline mongo.Pipeline, opts ...options.Lister[options.AggregateOptions]) (*mongo.Cursor, error) {
+func (c *Collection[T]) Aggregate(ctx context.Context, pipeline mongo.Pipeline, opts ...options.Lister[options.AggregateOptions]) (*mongo.Cursor, context.CancelFunc, error) {
 	ctx, cancel := c.contextWithTimeout(ctx)
-	defer cancel()
-	return c.collection.Aggregate(ctx, pipeline, opts...)
+	cursor, err := c.collection.Aggregate(ctx, pipeline, opts...)
+	if err != nil {
+		cancel()
+		return nil, nil, err
+	}
+	return cursor, cancel, nil
 }
 
 // --- Transaction Management ---

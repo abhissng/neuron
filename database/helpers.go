@@ -31,7 +31,7 @@ func BuildDSN(
 
 	// Build query string from options safely
 	buildOptions := func(opts map[string]string) string {
-		if len(opts) == 0 {
+		if len(opts) == 0 || opts == nil {
 			return ""
 		}
 		values := url.Values{}
