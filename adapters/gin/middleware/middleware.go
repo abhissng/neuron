@@ -9,7 +9,6 @@ import (
 	"github.com/abhissng/neuron/adapters/gin/request"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/adapters/paseto"
-	"github.com/abhissng/neuron/adapters/session"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/context"
 	"github.com/abhissng/neuron/result"
@@ -17,6 +16,7 @@ import (
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/random"
+	"github.com/abhissng/neuron/utils/structures"
 	"github.com/abhissng/neuron/utils/structures/claims"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
@@ -156,31 +156,38 @@ func AutoRefreshMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 
 // **Gin Middleware for Paseto Verification**
 func PasetoVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
+	var err blame.Blame
 
 	if ctx.PasetoMiddlewareOption() != nil && ctx.PasetoMiddlewareOption().HasExcludedOption() {
-		blame := handleExcludedOptions(ctx)
-		if blame != nil {
-			return result.NewFailure[bool](blame)
+		blame := handleExcludedOptions(ctx, ctx.PasetoMiddlewareOption().ExcludedOptions())
+		if blame == nil {
+			return result.NewSuccess(helpers.Valid())
 		}
-		return result.NewSuccess(helpers.Valid())
+		// 🧩 If exclusion handling fails → fall back to normal verification
+		ctx.SlogWarn("excluded option check failed, falling back to normal paseto verification", log.Err(errors.New(blame.Error())))
 	}
 
 	tokenResult := request.FetchPasetoBearerToken(ctx.Context)
 	if !tokenResult.IsSuccess() {
-		_, blameInfo := tokenResult.Value()
-		return result.NewFailure[bool](blameInfo)
+		err = tokenResult.Blame()
+		return result.NewFailure[bool](err)
 	}
 	token := tokenResult.ToValue()
 
 	subjectResult := request.FetchXSubjectHeader(ctx.Context)
 	if !subjectResult.IsSuccess() {
-		return result.CastFailure[string, bool](subjectResult)
+		return result.NewFailure[bool](subjectResult.Blame())
 	}
 
-	res := ctx.ValidateToken(*token, nil, paseto.WithValidateEssentialTags)
+	extra := make(map[string]any)
+	extra["subject"] = *(subjectResult.ToValue())
+	extra["ip"] = ctx.ClientIP()
+	extra["audience"] = ctx.Request.UserAgent()
+
+	res := ctx.ValidateToken(*token, extra, paseto.WithValidateEssentialTags)
 	if !res.IsSuccess() {
-		_, err := res.Value()
-		return result.NewFailure[bool](err)
+		ctx.SlogError("validation failed for paseto token", log.Any("error", res.Blame().Error()))
+		return result.NewFailure[bool](res.Blame())
 	}
 
 	validToken := true
@@ -193,39 +200,66 @@ func VerifyCorrelationId(ctx *context.ServiceContext) result.Result[bool] {
 		return result.NewFailure[bool](blame.MissingCorrelationID())
 	}
 
-	if ctx.Context.GetHeader(constant.CorrelationIDHeader) == "" {
+	if ctx.GetHeader(constant.CorrelationIDHeader) == "" {
 		return result.NewFailure[bool](blame.MissingCorrelationID())
 	}
 	valid := true
 	return result.NewSuccess(&valid)
 }
 
-func SessionMiddleware(sm *session.SessionManager) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		sessionID, err := c.Cookie(constant.SessionID)
-		if err != nil {
-			// No cookie found — just continue without session
-			c.Next()
-			return
+// SessionVerifyMiddleware validates user sessions stored by SessionManager
+func SessionVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
+	// 🧠 Handle exclusion rules (like in PasetoVerifyMiddleware)
+	if ctx.SessionManager != nil && ctx.SessionMiddlewareOption() != nil && ctx.SessionMiddlewareOption().HasExcludedOption() {
+		blame := handleExcludedOptions(ctx, ctx.SessionMiddlewareOption().ExcludedOptions())
+		if blame == nil {
+			return result.NewSuccess(helpers.Valid())
 		}
-
-		// Try retrieving session data
-		sessionData, err := sm.GetSession(c, sessionID)
-		if err != nil {
-			// Invalid or expired session — clear cookie (optional)
-			c.SetCookie(constant.SessionID, "", -1, "/", "", false, true)
-			c.Next()
-			return
-		}
-
-		// Valid session — attach to context
-		c.Set("session", sessionData)
-		c.Next()
+		// 🧩 If exclusion handling fails → fall back to normal verification
+		ctx.SlogWarn("excluded option check failed, falling back to normal session verification", log.Err(errors.New(blame.Error())))
 	}
+
+	var err error
+	var sessionID string
+
+	defer func() {
+		if ctx.SessionManager != nil && err != nil && sessionID != "" {
+			go func() { _ = ctx.DestroySession(ctx.Context, sessionID) }()
+		}
+	}()
+
+	// 🧩 Extract session ID cookie
+	sessionID, err = ctx.Cookie(constant.SessionID)
+	if err != nil || sessionID == "" {
+		ctx.SlogError("session cookie is missing", log.Err(err))
+		return result.NewFailure[bool](blame.SessionMalformed(errors.New("session cookie is missing")))
+	}
+
+	// 🧩 Fetch session data
+	sessionData, err := ctx.GetSession(ctx.Context, sessionID)
+	if err != nil {
+		ctx.SlogError("session not found", log.Err(err))
+		// Clear expired/invalid cookie
+		ctx.SetCookie(constant.SessionID, "", -1, "/", "", false, true)
+		return result.NewFailure[bool](blame.SessionNotFound())
+	}
+
+	// 🧩 Optional custom validator
+	res := ctx.ValidateSession(ctx.Context, sessionID, nil)
+	if !res.IsSuccess() {
+		err = errors.New(res.Blame().Error())
+		ctx.SlogError("session validation failed", log.Err(err))
+		return result.NewFailure[bool](blame.SessionValidationFailed(err))
+	}
+
+	// 🧩 Attach session to Gin context (for downstream handlers)
+	ctx.Set(constant.SessionID, sessionData)
+
+	valid := true
+	return result.NewSuccess(&valid)
 }
 
-func handleExcludedOptions(ctx *context.ServiceContext) blame.Blame {
-	excluded := ctx.PasetoMiddlewareOption().ExcludedOptions()
+func handleExcludedOptions(ctx *context.ServiceContext, excluded *structures.ExcludedOptions) blame.Blame {
 
 	if excluded.HasExcludedService() {
 		serviceName, err := ctx.GetGinCtxServiceName()
@@ -236,6 +270,7 @@ func handleExcludedOptions(ctx *context.ServiceContext) blame.Blame {
 		if helpers.IsFoundInSlice(serviceName.String(), excluded.ExcludedServices()) {
 			return nil
 		}
+		return blame.NewBasicError("service not allowed")
 	}
 
 	if excluded.HasExcludedRecords() {
@@ -247,9 +282,10 @@ func handleExcludedOptions(ctx *context.ServiceContext) blame.Blame {
 		if helpers.IsFoundInSlice(*recordsName, excluded.ExcludedRecords()) {
 			return nil
 		}
+		return blame.NewBasicError("records not allowed")
 	}
 
-	return nil
+	return blame.NewBasicError("excluded options not allowed")
 }
 
 // BasicAuthMiddleware implements simple HTTP Basic Auth

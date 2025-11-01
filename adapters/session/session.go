@@ -7,6 +7,10 @@ import (
 	"time"
 
 	"github.com/abhissng/neuron/adapters/redis"
+	"github.com/abhissng/neuron/blame"
+	"github.com/abhissng/neuron/result"
+	"github.com/abhissng/neuron/utils/helpers"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
@@ -29,9 +33,10 @@ func NewSessionData() *SessionData {
 
 // SessionManager handles session operations
 type SessionManager struct {
-	store         *redis.RedisManager
-	sessionPrefix string
-	defaultExpiry time.Duration
+	store                   *redis.RedisManager
+	sessionPrefix           string
+	defaultExpiry           time.Duration
+	sessionMiddlewareOption *SessionMiddlewareOptions
 }
 
 // Option is a function that configures the SessionManager
@@ -58,12 +63,20 @@ func WithDefaultExpiry(expiry time.Duration) Option {
 	}
 }
 
+// WithSessionMiddlewareOption sets the session middleware options
+func WithSessionMiddlewareOption(option *SessionMiddlewareOptions) Option {
+	return func(sm *SessionManager) {
+		sm.sessionMiddlewareOption = option
+	}
+}
+
 // NewSessionManager creates a new session manager with the provided options
 func NewSessionManager(opts ...Option) (*SessionManager, error) {
 	sm := &SessionManager{
-		store:         &redis.RedisManager{},
-		sessionPrefix: "session:",     // Default prefix
-		defaultExpiry: 24 * time.Hour, // Default expiry
+		store:                   &redis.RedisManager{},
+		sessionPrefix:           "session:",     // Default prefix
+		defaultExpiry:           24 * time.Hour, // Default expiry
+		sessionMiddlewareOption: NewSessionMiddlewareOptions(),
 	}
 
 	// Apply all the options
@@ -158,4 +171,50 @@ func (sm *SessionManager) IsAuthenticated(ctx context.Context, sessionID string)
 		return false
 	}
 	return session.IsAuthenticated
+}
+
+// SessionMiddlewareOption returns the session middleware options.
+func (sm *SessionManager) SessionMiddlewareOption() *SessionMiddlewareOptions {
+	return sm.sessionMiddlewareOption
+}
+
+// SessionValidator defines a function that validates session data.
+type SessionValidator func(session *SessionData, extra map[string]any) error
+
+// ValidateSession validates a session and runs multiple custom validators.
+func (s *SessionManager) ValidateSession(
+	c *gin.Context,
+	sessionID string,
+	extra map[string]any,
+	validators ...SessionValidator,
+) result.Result[SessionData] {
+	var sessionData SessionData
+
+	// 🔹 Fetch session data from your store (Redis, DB, memory, etc.)
+	data, err := s.GetSession(c, sessionID)
+	if err != nil {
+		return result.NewFailure[SessionData](blame.SessionNotFound())
+	}
+
+	if !data.IsAuthenticated {
+		return result.NewFailure[SessionData](blame.SessionUnauthenticated())
+	}
+
+	// 🔹 Validate essential fields
+	if helpers.IsEmpty(data.UserID) {
+		return result.NewFailure[SessionData](blame.SessionMalformed(errors.New("missing user related information")))
+	}
+
+	// 🔹 Run custom validators (if any)
+	for _, validator := range validators {
+		if validator == nil {
+			continue
+		}
+		if err := validator(&sessionData, extra); err != nil {
+			return result.NewFailure[SessionData](blame.SessionValidationFailed(err))
+		}
+	}
+
+	// ✅ Valid session
+	return result.NewSuccess(&sessionData)
 }

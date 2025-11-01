@@ -33,7 +33,7 @@ func WrapServiceMiddlewareHandler(handler ServiceMiddlewareHandler) gin.HandlerF
 			err := blame.ServiceContextFetchError(viper.GetString(constant.SupportEmail), err)
 			res := err.FetchErrorResponse(blame.WithTranslation())
 			c.AbortWithStatusJSON(500, acknowledgment.NewAPIResponse(false, "", res))
-			c.Request.Body.Close() // #nosec G104
+			_ = c.Request.Body.Close() // #nosec G104
 			return
 		}
 		defer func() {
@@ -45,13 +45,13 @@ func WrapServiceMiddlewareHandler(handler ServiceMiddlewareHandler) gin.HandlerF
 					res := err.FetchErrorResponse(blame.WithTranslation())
 					ctx.SlogError(constant.MiddlewareFailed, log.WithField("error-code", err.FetchErrCode()))
 					c.AbortWithStatusJSON(httpStatus, acknowledgment.NewAPIResponse(false, types.CorrelationID(ctx.GetGinContextCorrelationID()), res))
-					c.Request.Body.Close() // #nosec G104
+					_ = c.Request.Body.Close() // #nosec G104
 				} else {
 					c.Next()
 				}
 			default:
 				handleException("Middleware", ctx, exception)
-				c.Request.Body.Close() // #nosec G104
+				_ = c.Request.Body.Close() // #nosec G104
 			}
 		}()
 
@@ -73,7 +73,7 @@ func ExecuteControllerHandler[T any](handler RequestHandler[T]) gin.HandlerFunc 
 			err := blame.ServiceContextFetchError(viper.GetString(constant.SupportEmail), err)
 			res := err.FetchErrorResponse(blame.WithTranslation())
 			c.AbortWithStatusJSON(500, acknowledgment.NewAPIResponse[any](false, "", res))
-			c.Request.Body.Close() // #nosec G104
+			_ = c.Request.Body.Close() // #nosec G104
 			return
 		}
 		var handlerResult result.Result[T]

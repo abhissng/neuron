@@ -51,11 +51,14 @@ func NewServiceContext(opts ...ServiceContextOption) *ServiceContext {
 	return sc
 }
 
-// FetchGinRequestAndCorrelationField fetched a requestId and correlationid as slice of fields
-func (ctx *ServiceContext) FetchGinRequestAndCorrelationField() []types.Field {
+// FetchGinRequestSlogFields fetched a requestId and correlationid as slice of fields
+func (ctx *ServiceContext) FetchGinRequestSlogFields() []types.Field {
 	fields := make([]types.Field, 2)
 	fields[0] = log.String(constant.RequestID, ctx.GetGinContextRequestID().String())
 	fields[1] = log.String(constant.CorrelationID, ctx.GetGinContextCorrelationID().String())
+	if ctx.GetCookieSessionID() != "" {
+		fields = append(fields, log.String(constant.SessionID, ctx.GetCookieSessionID()))
+	}
 	return fields
 }
 
@@ -79,7 +82,7 @@ func (ctx *ServiceContext) GetGinContextCorrelationID() types.CorrelationID {
 func (ctx *ServiceContext) SlogFields(withFields ...types.Field) []types.Field {
 	// Start with the request and correlation fields
 	fields := make([]types.Field, 0, 2+len(withFields))
-	fields = append(fields, ctx.FetchGinRequestAndCorrelationField()...)
+	fields = append(fields, ctx.FetchGinRequestSlogFields()...)
 
 	// Append additional fields provided as variadic arguments
 	if len(withFields) > 0 {
@@ -92,35 +95,35 @@ func (ctx *ServiceContext) SlogFields(withFields ...types.Field) []types.Field {
 func (ctx *ServiceContext) SlogInfo(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Info(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogWarn(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Warn(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogError(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Error(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogFatal(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Fatal(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogDebug(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields
 	slogfields := ctx.SlogFields(withFields...)
-	logger := ctx.Log.Logger.WithOptions(zap.AddCaller())
+	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Debug(message, slogfields...)
 }
 
@@ -143,4 +146,12 @@ func (ctx *ServiceContext) GetCorrelationID() types.CorrelationID {
 		return correlationID
 	}
 	return ctx.GetGinContextCorrelationID()
+}
+
+// GetCookieSessionID returns the session ID from the cookie.
+func (ctx *ServiceContext) GetCookieSessionID() string {
+	if sessionID, ok := ctx.Cookie(constant.SessionID); ok == nil {
+		return sessionID
+	}
+	return ""
 }

@@ -465,6 +465,41 @@
     "Description": "The required X-User-Id is missing in the request.",
     "Component": "adaptors",
     "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-session-not-found",
+    "Message": "Session not found",
+    "Description": "The session could not be found.",
+    "Component": "adaptors",
+    "ResponseType": "NotFound" 
+  },
+  {
+    "Code": "error-session-malformed",
+    "Message": "Malformed session",
+    "Description": "The session is malformed. Please try logging in again.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized" 
+  },    
+  {
+    "Code": "error-session-validation-failed",
+    "Message": "Session validation failed",
+    "Description": "The session validation failed. Please try logging in again.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized" 
+  },
+  {
+    "Code": "error-session-invalid",
+    "Message": "Session invalid",
+    "Description": "The session is invalid. Please try logging in again.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized" 
+  },
+  {
+    "Code": "error-session-unauthenticated",
+    "Message": "Session unauthenticated",
+    "Description": "The session is unauthenticated. Please try logging in again.",
+    "Component": "adaptors",
+    "ResponseType": "Unauthorized" 
   }
 
 ]

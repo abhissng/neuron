@@ -113,7 +113,9 @@ func (w *OpenSearchWriter) flush(batch [][]byte) {
 		helpers.Println(constant.ERROR, "Failed to execute OpenSearch bulk request: ", err)
 		return
 	}
-	defer res.Inspect().Response.Body.Close()
+	defer func() {
+		_ = res.Inspect().Response.Body.Close()
+	}()
 
 	if res.Inspect().Response.IsError() {
 		helpers.Println(constant.ERROR, "OpenSearch bulk indexing failed: ", res.Inspect().Response.String())

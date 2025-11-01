@@ -543,3 +543,28 @@ func MissingXOrgId() Blame {
 func MissingXUserId() Blame {
 	return getLocalBlameManager().FetchBlameForError(ErrorMissingXUserId)
 }
+
+// SessionNotFound is an error when the session is not found.
+func SessionNotFound() Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorSessionNotFound)
+}
+
+// SessionMalformed is an error when the session is malformed.
+func SessionMalformed(cause error) Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorSessionMalformed, WithCauses(cause))
+}
+
+// SessionValidationFailed is an error when the session validation fails.
+func SessionValidationFailed(cause error) Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorSessionValidationFailed, WithCauses(cause))
+}
+
+// SessionInvalid is an error when the session is invalid.
+func SessionInvalid() Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorSessionInvalid)
+}
+
+// SessionUnauthenticated is an error when the session is unauthenticated.
+func SessionUnauthenticated() Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorSessionUnauthenticated)
+}

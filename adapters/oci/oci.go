@@ -225,7 +225,9 @@ func (cm *OCIManager) UploadObject(ctx context.Context, namespace, bucket, objec
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	stat, _ := f.Stat()
 
 	req := objectstorage.PutObjectRequest{
@@ -250,12 +252,16 @@ func (cm *OCIManager) DownloadObject(ctx context.Context, namespace, bucket, obj
 	if err != nil {
 		return err
 	}
-	defer resp.Content.Close()
+	defer func() {
+		_ = resp.Content.Close()
+	}()
 	out, err := os.Create(filepath.Clean(destPath))
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		_ = out.Close()
+	}()
 	_, err = io.Copy(out, resp.Content)
 	return err
 }

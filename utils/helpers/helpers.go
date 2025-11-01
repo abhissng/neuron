@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -392,7 +393,9 @@ func findDynamicPort(protocol types.Protocol) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		defer listener.Close()
+		defer func() {
+			_ = listener.Close()
+		}()
 		return listener.Addr().(*net.TCPAddr).Port, nil
 	case constant.UDP:
 		addr, err := net.ResolveUDPAddr("udp", addr)
@@ -403,7 +406,9 @@ func findDynamicPort(protocol types.Protocol) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		defer conn.Close()
+		defer func() {
+			_ = conn.Close()
+		}()
 		return conn.LocalAddr().(*net.UDPAddr).Port, nil
 	default:
 		return 0, fmt.Errorf("unsupported protocol: %s", protocol)
@@ -418,7 +423,9 @@ func isPortAvailable(protocol types.Protocol, port string) bool {
 	case constant.TCP:
 		listener, err := net.Listen("tcp", addr)
 		if err == nil {
-			defer listener.Close()
+			defer func() {
+				_ = listener.Close()
+			}()
 			return true
 		}
 	case constant.UDP:
@@ -426,7 +433,9 @@ func isPortAvailable(protocol types.Protocol, port string) bool {
 		if err == nil {
 			conn, err := net.ListenUDP("udp", udpAddr)
 			if err == nil {
-				defer conn.Close()
+				defer func() {
+					_ = conn.Close()
+				}()
 				return true
 			}
 		}
@@ -691,4 +700,33 @@ func MustGetEnv(key string) string {
 // IsURL checks if the given string is a URL
 func IsURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
+}
+
+func ToNetIPAddr(remoteAddress string) (*netip.Addr, error) {
+	var host string
+
+	// Try to split if remoteAddress contains port (e.g. "192.168.0.1:5000")
+	if strings.Contains(remoteAddress, ":") {
+		h, _, err := net.SplitHostPort(remoteAddress)
+		if err != nil {
+			// It might still be a plain IP like "::1" or malformed
+			host = remoteAddress
+		} else {
+			host = h
+		}
+	} else {
+		host = remoteAddress
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return nil, fmt.Errorf("invalid IP: %s", remoteAddress)
+	}
+
+	ipAddr, ok := netip.AddrFromSlice(ip)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert %s to netip.Addr", remoteAddress)
+	}
+
+	return &ipAddr, nil
 }

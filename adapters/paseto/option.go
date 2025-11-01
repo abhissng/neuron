@@ -6,6 +6,7 @@ import (
 
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
+	"github.com/abhissng/neuron/utils/structures"
 )
 
 const (
@@ -156,7 +157,7 @@ func WithExcludedServices(services []string) PasetoMiddlewareOption {
 */
 
 // WithExcludedOptions sets the excluded options for the PASETO wrapper.
-func WithExcludedOptions(options *ExcludedOptions) PasetoMiddlewareOption {
+func WithExcludedOptions(options *structures.ExcludedOptions) PasetoMiddlewareOption {
 	return func(o *PasetoMiddlewareOptions) {
 		o.excludedOptions = options
 	}

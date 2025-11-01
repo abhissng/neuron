@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
-	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 
 	"golang.org/x/crypto/blake2s"
@@ -22,6 +22,14 @@ func getDefaultHashSize() int {
 func GenerateHash(key, data []byte, size int) (string, error) {
 	if len(key) < 16 {
 		return "", fmt.Errorf("key must be at least 16 bytes")
+	}
+
+	var decoded []byte
+	if len(key) > 32 {
+		decoded, _ = hex.DecodeString(string(key))
+	}
+	if len(decoded) > 0 {
+		key = decoded
 	}
 
 	if len(data) == 0 {
@@ -52,8 +60,21 @@ func GenerateHash(key, data []byte, size int) (string, error) {
 //	hash, err := Generate128BitHash([]byte("key123"), []byte("otp-123456"))
 //	fmt.Println("Hash:", hash)
 func Generate128BitHash(key, data []byte) (string, error) {
+
 	if len(key) < 16 {
 		return "", fmt.Errorf("key must be at least 16 bytes")
+	}
+
+	var decoded []byte
+	if len(key) > 16 {
+		decoded, _ = hex.DecodeString(string(key))
+	}
+	if len(decoded) > 0 {
+		key = decoded
+	}
+
+	if len(data) == 0 {
+		return "", fmt.Errorf("data must not be empty")
 	}
 
 	hasher, err := blake2s.New128(key)
@@ -81,8 +102,21 @@ func Generate128BitHash(key, data []byte) (string, error) {
 //	hash, err := Generate256BitHash([]byte("key123"), []byte("otp-123456"))
 //	fmt.Println("Hash:", hash)
 func Generate256BitHash(key, data []byte) (string, error) {
-	if len(key) < 16 {
-		return "", fmt.Errorf("key must be at least 16 bytes")
+
+	if len(key) < 32 {
+		return "", fmt.Errorf("key must be at least 32 bytes")
+	}
+
+	var decoded []byte
+	if len(key) > 32 {
+		decoded, _ = hex.DecodeString(string(key))
+	}
+	if len(decoded) > 0 {
+		key = decoded
+	}
+
+	if len(data) == 0 {
+		return "", fmt.Errorf("data must not be empty")
 	}
 
 	hasher, err := blake2s.New256(key)
@@ -108,26 +142,25 @@ func CompareHash(hash1, hash2 string) bool {
 	return subtle.ConstantTimeCompare([]byte(hash1), []byte(hash2)) == 1
 }
 
-// Generate16BitKeyString returns a random 16-bit key as a string
-func Generate16BitKeyString() (string, error) {
-	var b [2]byte
-	_, err := rand.Read(b[:])
-	if err != nil {
-		return "", err
-	}
-	key := binary.BigEndian.Uint16(b[:])
-	//return fmt.Sprintf("%d", key), nil // decimal string
-	return fmt.Sprintf("%04X", key), nil // uncomment for hex string
+// Generate16ByteKeyString returns a random 16-byte key as a string
+func Generate16ByteKeyString() (string, error) {
+	return GenerateByteKeyString(16)
 }
 
-// Generate32BitKeyString returns a random 32-bit key as a string
-func Generate32BitKeyString() (string, error) {
-	var b [4]byte
-	_, err := rand.Read(b[:])
+// Generate32ByteKeyString returns a random 32-byte key as a hex string
+func Generate32ByteKeyString() (string, error) {
+	return GenerateByteKeyString(32)
+}
+
+// GenerateByteKeyString returns a random key of specified length as a hex string
+func GenerateByteKeyString(length int) (string, error) {
+	if length < 16 || length > 32 {
+		return "", fmt.Errorf("length must be between 16 and 32")
+	}
+	b := make([]byte, length)
+	_, err := rand.Read(b)
 	if err != nil {
 		return "", err
 	}
-	key := binary.BigEndian.Uint32(b[:])
-	// return fmt.Sprintf("%d", key), nil // decimal string
-	return fmt.Sprintf("%08X", key), nil // uncomment for hex string
+	return hex.EncodeToString(b), nil // hex encoding doubles the length (64 chars)
 }

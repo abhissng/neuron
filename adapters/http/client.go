@@ -40,7 +40,9 @@ func (c *stdHTTPClient) Do(config *HttpClientManager, body []byte, contentType t
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	return io.ReadAll(resp.Body)
 }
