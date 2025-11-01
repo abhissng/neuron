@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"time"
 
 	"github.com/abhissng/neuron/context"
 	"github.com/abhissng/neuron/utils/constant"
@@ -22,4 +23,24 @@ func GetServiceContext(c *gin.Context) (*context.ServiceContext, error) {
 	}
 
 	return serviceCtx, nil
+}
+
+func SetSessionCookie(c *gin.Context, sessionID, env, domain string, ttl time.Duration) {
+	secure := false
+	switch env {
+	case "prod", "staging":
+		secure = true
+	case "dev", "development":
+		secure = false
+	}
+
+	c.SetCookie(
+		constant.SessionID,
+		sessionID,
+		int(ttl.Seconds()), // match SessionManager TTL
+		"/",                // valid for all paths
+		domain,             // domain setting
+		secure,             // HTTPS only in prod/staging
+		true,               // HttpOnly always true
+	)
 }

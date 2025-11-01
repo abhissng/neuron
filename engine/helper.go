@@ -35,7 +35,7 @@ func encodeErrorRespondMesage[T any](ctx *context.ServiceContext, action types.A
 // FetchJWTSecret returns the JWT secret
 func FetchJWTSecret(ctx *context.ServiceContext) string {
 	if ctx != nil && ctx.Vault != nil {
-		secret, _ := ctx.Vault.FetchVaultValue(constant.JWTSecret)
+		secret, _ := ctx.FetchVaultValue(constant.JWTSecret)
 		if secret == "" {
 			secret = "default-secret"
 		}

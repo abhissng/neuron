@@ -68,3 +68,47 @@ func (m *MetaData) ValidateMetaData() error {
 	// Implement validation logic here
 	return nil
 }
+
+type ExcludedOptions struct {
+	Services []*string `json:"services"`
+	Records  []*string `json:"records"`
+	Events   []*string `json:"events"`
+}
+
+func NewExcludedOptions() *ExcludedOptions {
+	return &ExcludedOptions{
+		Services: make([]*string, 0),
+		Records:  make([]*string, 0),
+		Events:   make([]*string, 0),
+	}
+}
+
+// HasExcludedService returns true if the list of excluded services is not empty.
+func (e *ExcludedOptions) HasExcludedService() bool {
+	return len(e.Services) > 0
+}
+
+// HasExcludedRecords returns true if the list of excluded records is not empty.
+func (e *ExcludedOptions) HasExcludedRecords() bool {
+	return len(e.Records) > 0
+}
+
+// HasExcludedEvent returns true if the list of excluded events is not empty.
+func (e *ExcludedOptions) HasExcludedEvent() bool {
+	return len(e.Events) > 0
+}
+
+// ExcludedServices returns the list of excluded services.
+func (e *ExcludedOptions) ExcludedServices() []*string {
+	return e.Services
+}
+
+// ExcludedRecords returns the list of excluded records.
+func (e *ExcludedOptions) ExcludedRecords() []*string {
+	return e.Records
+}
+
+// ExcludedEvents returns the list of excluded events.
+func (e *ExcludedOptions) ExcludedEvents() []*string {
+	return e.Events
+}

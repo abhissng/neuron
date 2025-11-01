@@ -77,4 +77,9 @@ const (
 	ErrorMissingXUserRole                types.ErrorCode = "error-missing-x-user-role"
 	ErrorMissingXOrgId                   types.ErrorCode = "error-missing-x-org-id"
 	ErrorMissingXUserId                  types.ErrorCode = "error-missing-x-user-id"
+	ErrorSessionNotFound                 types.ErrorCode = "error-session-not-found"
+	ErrorSessionMalformed                types.ErrorCode = "error-session-malformed"
+	ErrorSessionValidationFailed         types.ErrorCode = "error-session-validation-failed"
+	ErrorSessionInvalid                  types.ErrorCode = "error-session-invalid"
+	ErrorSessionUnauthenticated          types.ErrorCode = "error-session-unauthenticated"
 )

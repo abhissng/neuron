@@ -27,7 +27,9 @@ func attachFiles(m *gomail.Message, attachments []string) error {
 			if err != nil {
 				return fmt.Errorf("failed to GET URL %s: %w", att, err)
 			}
-			defer resp.Body.Close()
+			defer func() {
+				_ = resp.Body.Close()
+			}()
 			if resp.StatusCode != http.StatusOK {
 				return fmt.Errorf("bad status fetching URL %s: %d", att, resp.StatusCode)
 			}

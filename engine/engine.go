@@ -90,7 +90,7 @@ func ProcessServiceStates[T any](
 		payloadToSend.CurrentService = state.Service
 
 		// Make the external call using the NATS wrapper.
-		msg, blameInfo := ctx.NATSManager.PublishAndWait(
+		msg, blameInfo := ctx.PublishAndWait(
 			state.ExecuteSubject,
 			svcDef.QueueGroup,
 			payloadToSend,
@@ -183,7 +183,7 @@ func buildRollbackSequence(svcDef *service.ServiceDefinition, executedStates []*
 // executeStateRollback executes rollback for a single state
 func executeStateRollback[T any](ctx *context.ServiceContext, state *service.ServiceState, serviceResult *ServiceResult) {
 	if state.RollbackSubject == "" {
-		ctx.Log.Info("Skipping rollback for state (no rollback subject)", log.String("state", state.Service))
+		ctx.Info("Skipping rollback for state (no rollback subject)", log.String("state", state.Service))
 		return
 	}
 
@@ -206,7 +206,7 @@ func executeStateRollback[T any](ctx *context.ServiceContext, state *service.Ser
 		return
 	}
 
-	_, blameInfo := ctx.NATSManager.PublishWithMiddleware(
+	_, blameInfo := ctx.PublishWithMiddleware(
 		state.RollbackSubject,
 		reqBytes,
 		nats.AddHeaderMiddleware(constant.CorrelationIDHeader, respPayload.CorrelationID.String()),
@@ -215,5 +215,5 @@ func executeStateRollback[T any](ctx *context.ServiceContext, state *service.Ser
 		ctx.Log.Error("rollback request failed", log.String("state", state.Service), log.Any("error", blameInfo.ErrorFromBlame()))
 		return
 	}
-	ctx.Log.Info("Rollback successful for state", log.String("state", state.Service))
+	ctx.Info("Rollback successful for state", log.String("state", state.Service))
 }

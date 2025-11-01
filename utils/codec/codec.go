@@ -98,7 +98,9 @@ func Decode[T any](data []byte, codecType types.CodecType) (T, error) {
 		var gz *gzip.Reader
 		gz, err = gzip.NewReader(buf)
 		if err == nil {
-			defer gz.Close()
+			defer func() {
+				_ = gz.Close()
+			}()
 			var decodedData []byte
 			decodedData, err = io.ReadAll(gz)
 			if err == nil {

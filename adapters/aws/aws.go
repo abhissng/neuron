@@ -185,7 +185,9 @@ func (a *AWSManager) DownloadFromS3(ctx context.Context, bucket, key string) ([]
 	if err != nil {
 		return nil, fmt.Errorf("failed to download from S3: %w", err)
 	}
-	defer result.Body.Close()
+	defer func() {
+		_ = result.Body.Close()
+	}()
 
 	data, err := io.ReadAll(result.Body)
 	if err != nil {

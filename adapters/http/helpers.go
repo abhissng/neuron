@@ -150,7 +150,9 @@ func (config *HttpClientManager) addFilesToMultipartForm(writer *multipart.Write
 		}
 
 		err = func() error {
-			defer file.Close()
+			defer func() {
+				_ = file.Close()
+			}()
 
 			part, err := writer.CreateFormFile(field, file.Name())
 			if err != nil {

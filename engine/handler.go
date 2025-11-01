@@ -35,9 +35,9 @@ func WrapServiceWithNATSHandler[T any](ctx *context.ServiceContext, handler Serv
 			if blameInfo != nil {
 				response = encodeErrorRespondMesage[any](ctx, constant.Execute, msg, blameInfo)
 			}
-			ctx.Log.Info(constant.ServiceHandlerMessage, ctx.SlogEvent(msg, log.String("handlers", "WrapServiceWithNATSHandler"), log.Any("response", response))...)
+			ctx.Info(constant.ServiceHandlerMessage, ctx.SlogEvent(msg, log.String("handlers", "WrapServiceWithNATSHandler"), log.Any("response", response))...)
 			// Use the NATS connection to send a response
-			_, err := ctx.NATSManager.PublishWithMiddleware(
+			_, err := ctx.PublishWithMiddleware(
 				msg.Reply, response,
 				middlewareFunc...,
 			)

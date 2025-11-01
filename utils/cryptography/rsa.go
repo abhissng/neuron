@@ -34,7 +34,9 @@ func SavePrivateKeyPEM(path string, priv *rsa.PrivateKey) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	return pem.Encode(f, block)
 }
 
@@ -52,7 +54,9 @@ func SavePublicKeyPEM(path string, pub *rsa.PublicKey) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	return pem.Encode(f, block)
 }
 

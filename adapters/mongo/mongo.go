@@ -72,7 +72,9 @@ func (c *Collection[T]) Find(ctx context.Context, filter bson.M, opts ...options
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer func() {
+		_ = cursor.Close(ctx)
+	}()
 
 	var results []*T
 	if err := cursor.All(ctx, &results); err != nil {
