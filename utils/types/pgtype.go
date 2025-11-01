@@ -123,7 +123,7 @@ func Limit(min, max int) DecimalOpt {
 func FloatToPgNumeric(val float64, opts ...DecimalOpt) pgtype.Numeric {
 	// defaults
 	cfg := &DecimalConfig{
-		Places:       3,
+		Places:       2,
 		TrimIntegers: false,
 		MinPlaces:    0,
 		MaxPlaces:    10,
