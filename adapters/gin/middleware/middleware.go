@@ -224,7 +224,11 @@ func SessionVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 
 	defer func() {
 		if ctx.SessionManager != nil && err != nil && sessionID != "" {
-			go func() { _ = ctx.DestroySession(ctx.Context, sessionID) }()
+			go func() {
+				if destroyErr := ctx.DestroySession(ctx.Context, sessionID); destroyErr != nil {
+					ctx.SlogError("failed to destroy session", log.Err(destroyErr))
+				}
+			}()
 		}
 	}()
 

@@ -24,12 +24,11 @@ func GenerateHash(key, data []byte, size int) (string, error) {
 		return "", fmt.Errorf("key must be at least 16 bytes")
 	}
 
-	var decoded []byte
-	if len(key) > 32 {
-		decoded, _ = hex.DecodeString(string(key))
-	}
-	if len(decoded) > 0 {
-		key = decoded
+	// If key looks like hex-encoded (32 or 64 chars), attempt to decode
+	if len(key) == 32 || len(key) == 64 {
+		if decoded, err := hex.DecodeString(string(key)); err == nil && len(decoded) >= 16 {
+			key = decoded
+		}
 	}
 
 	if len(data) == 0 {
@@ -65,12 +64,11 @@ func Generate128BitHash(key, data []byte) (string, error) {
 		return "", fmt.Errorf("key must be at least 16 bytes")
 	}
 
-	var decoded []byte
-	if len(key) > 16 {
-		decoded, _ = hex.DecodeString(string(key))
-	}
-	if len(decoded) > 0 {
-		key = decoded
+	// If key is hex-encoded (32 chars for 16 bytes), attempt to decode
+	if len(key) == 32 {
+		if decoded, err := hex.DecodeString(string(key)); err == nil && len(decoded) == 16 {
+			key = decoded
+		}
 	}
 
 	if len(data) == 0 {
@@ -105,6 +103,17 @@ func Generate256BitHash(key, data []byte) (string, error) {
 
 	if len(key) < 32 {
 		return "", fmt.Errorf("key must be at least 32 bytes")
+	}
+
+	// If key is hex-encoded (64 chars for 32 bytes), attempt to decode
+	if len(key) == 64 {
+		if decoded, err := hex.DecodeString(string(key)); err == nil && len(decoded) == 32 {
+			key = decoded
+		}
+	}
+
+	if len(data) == 0 {
+		return "", fmt.Errorf("data must not be empty")
 	}
 
 	var decoded []byte
@@ -142,7 +151,7 @@ func CompareHash(hash1, hash2 string) bool {
 	return subtle.ConstantTimeCompare([]byte(hash1), []byte(hash2)) == 1
 }
 
-// Generate16ByteKeyString returns a random 16-byte key as a string
+// Generate16ByteKeyString returns a random 16-byte key as a hex string
 func Generate16ByteKeyString() (string, error) {
 	return GenerateByteKeyString(16)
 }

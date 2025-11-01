@@ -32,6 +32,9 @@ func SetSessionCookie(c *gin.Context, sessionID, env, domain string, ttl time.Du
 		secure = true
 	case "dev", "development":
 		secure = false
+	default:
+		// Default to secure for unknown environments
+		secure = true
 	}
 
 	c.SetCookie(

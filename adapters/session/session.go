@@ -188,7 +188,6 @@ func (s *SessionManager) ValidateSession(
 	extra map[string]any,
 	validators ...SessionValidator,
 ) result.Result[SessionData] {
-	var sessionData SessionData
 
 	// 🔹 Fetch session data from your store (Redis, DB, memory, etc.)
 	data, err := s.GetSession(c, sessionID)
@@ -210,11 +209,11 @@ func (s *SessionManager) ValidateSession(
 		if validator == nil {
 			continue
 		}
-		if err := validator(&sessionData, extra); err != nil {
+		if err := validator(data, extra); err != nil {
 			return result.NewFailure[SessionData](blame.SessionValidationFailed(err))
 		}
 	}
 
 	// ✅ Valid session
-	return result.NewSuccess(&sessionData)
+	return result.NewSuccess(data)
 }
