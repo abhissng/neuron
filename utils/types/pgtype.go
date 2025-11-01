@@ -20,14 +20,6 @@ func ToPgTypeInt4(value int32) pgtype.Int4 {
 	}
 }
 
-// ToPgTypeInt32 converts an int value to pgtype.Int4 (PostgreSQL INTEGER).
-func ToPgTypeInt32(value int32) pgtype.Int4 {
-	return pgtype.Int4{
-		Int32: value,
-		Valid: true,
-	}
-}
-
 // ToPgTypeInt2 converts an int value to pgtype.Int2 (PostgreSQL INTEGER).
 func ToPgTypeInt2(value int16) pgtype.Int2 {
 	return pgtype.Int2{
