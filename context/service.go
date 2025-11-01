@@ -93,35 +93,35 @@ func (ctx *ServiceContext) SlogFields(withFields ...types.Field) []types.Field {
 
 // SlogInfo logs a message at the InfoLevel.
 func (ctx *ServiceContext) SlogInfo(message string, withFields ...types.Field) {
-	// Start with the request and correlation fields
+	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
 	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Info(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogWarn(message string, withFields ...types.Field) {
-	// Start with the request and correlation fields
+	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
 	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Warn(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogError(message string, withFields ...types.Field) {
-	// Start with the request and correlation fields
+	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
 	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Error(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogFatal(message string, withFields ...types.Field) {
-	// Start with the request and correlation fields
+	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
 	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Fatal(message, slogfields...)
 }
 
 func (ctx *ServiceContext) SlogDebug(message string, withFields ...types.Field) {
-	// Start with the request and correlation fields
+	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
 	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Debug(message, slogfields...)
