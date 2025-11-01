@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"math"
 	"net"
 	"net/http"
 	"net/netip"
@@ -729,4 +730,10 @@ func ToNetIPAddr(remoteAddress string) (*netip.Addr, error) {
 	}
 
 	return &ipAddr, nil
+}
+
+// NormalizePrecision normalizes the precision of a float64 value.
+func NormalizePrecision(val float64, digits int) float64 {
+	scale := math.Pow10(digits)
+	return math.Round(val*scale) / scale
 }
