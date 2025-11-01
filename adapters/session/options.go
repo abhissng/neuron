@@ -12,6 +12,7 @@ func NewSessionMiddlewareOptions() *SessionMiddlewareOptions {
 }
 
 // ExcludedOptions returns the list of options to exclude from token validation.
+// Returns nil if no options are excluded.
 func (p *SessionMiddlewareOptions) ExcludedOptions() *structures.ExcludedOptions {
 	return p.excludedOptions
 }

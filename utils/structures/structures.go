@@ -100,15 +100,21 @@ func (e *ExcludedOptions) HasExcludedEvent() bool {
 
 // ExcludedServices returns the list of excluded services.
 func (e *ExcludedOptions) ExcludedServices() []*string {
-	return e.Services
+	result := make([]*string, len(e.Services))
+	copy(result, e.Services)
+	return result
 }
 
 // ExcludedRecords returns the list of excluded records.
 func (e *ExcludedOptions) ExcludedRecords() []*string {
-	return e.Records
+	result := make([]*string, len(e.Records))
+	copy(result, e.Records)
+	return result
 }
 
 // ExcludedEvents returns the list of excluded events.
 func (e *ExcludedOptions) ExcludedEvents() []*string {
-	return e.Events
+	result := make([]*string, len(e.Events))
+	copy(result, e.Events)
+	return result
 }

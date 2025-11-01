@@ -37,7 +37,10 @@ func SavePrivateKeyPEM(path string, priv *rsa.PrivateKey) error {
 	defer func() {
 		_ = f.Close()
 	}()
-	return pem.Encode(f, block)
+	if err := pem.Encode(f, block); err != nil {
+		return err
+	}
+	return nil
 }
 
 // SavePublicKeyPEM saves a PKIX (X.509) PEM-encoded RSA public key.
@@ -57,7 +60,10 @@ func SavePublicKeyPEM(path string, pub *rsa.PublicKey) error {
 	defer func() {
 		_ = f.Close()
 	}()
-	return pem.Encode(f, block)
+	if err := pem.Encode(f, block); err != nil {
+		return err
+	}
+	return nil
 }
 
 // LoadRSAPrivateKeyPEM loads a PKCS#1 PEM-encoded RSA private key.
