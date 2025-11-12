@@ -180,7 +180,8 @@ func GetOpenSearchLogCore(level zap.AtomicLevel, opts ...Option) (zapcore.Core, 
 		EncodeLevel:    zapcore.CapitalLevelEncoder, // "INFO", not colored
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		// EncodeCaller:   zapcore.ShortCallerEncoder,
+		EncodeCaller: helpers.TailCallerEncoder(4),
 	}
 	osEncoder := zapcore.NewJSONEncoder(osEncoderConfig)
 

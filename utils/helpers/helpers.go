@@ -17,10 +17,14 @@ import (
 	"time"
 
 	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/structures"
 	"github.com/abhissng/neuron/utils/types"
+	"github.com/biter777/countries"
 	"github.com/nats-io/nats.go"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/nyaruka/phonenumbers"
 	"github.com/spf13/viper"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/text/language"
 )
 
@@ -736,4 +740,127 @@ func ToNetIPAddr(remoteAddress string) (*netip.Addr, error) {
 func NormalizePrecision(val float64, digits int) float64 {
 	scale := math.Pow10(digits)
 	return math.Round(val*scale) / scale
+}
+
+// DetectInputType checks if the string is a file path or raw JSON.
+// Returns "file", "json", or "unknown".
+// DetectInputType checks if the string is a file path or raw JSON.
+// Returns "file", "json", or "".
+func DetectInputType(input string) string {
+	input = strings.TrimSpace(input)
+
+	// ---- Case 1: JSON FIRST (cheap structural heuristic) ----
+	if len(input) > 1 {
+		first := input[0]
+		last := input[len(input)-1]
+		if (first == '{' && last == '}') || (first == '[' && last == ']') {
+			return "json"
+		}
+	}
+
+	// ---- Case 2: Ensure real file existence ----
+	if fi, err := os.Stat(input); err == nil && !fi.IsDir() {
+		return "file"
+	}
+
+	// ---- Case 3: Heuristic file-path detection ----
+	// Only if it looks like a path (contains slash or backslash)
+	// AND has a valid extension
+	if (strings.Contains(input, "/") || strings.Contains(input, `\`)) &&
+		filepath.Ext(input) != "" {
+		return "file"
+	}
+
+	return ""
+}
+
+// ParsePhoneNumber parses a raw phone number string into a standardized Info struct.
+//
+// defaultRegion: A two-letter (ISO 3166-1) country code (e.g., "US", "IN", "GB").
+// This is used to guess the country code if the number is not in international
+// format (e.g., to understand that "(415) 555-1212" is a "US" number).
+func ParsePhoneNumber(rawNumber, defaultRegion string) (*structures.PhoneNumberInfo, error) {
+	// 1. Parse the number using the phonenumbers library
+	num, err := phonenumbers.Parse(rawNumber, strings.ToUpper(defaultRegion))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse number '%s' (region: %s): %w", rawNumber, defaultRegion, err)
+	}
+
+	// 2. Get the region code from the parsed number
+	regionCode, countryName := GetCountryInfoForCode(int(num.GetCountryCode()))
+
+	// 3. Create the info struct with all details
+	info := &structures.PhoneNumberInfo{
+		E164Format:     phonenumbers.Format(num, phonenumbers.E164),
+		CountryCode:    num.GetCountryCode(),
+		RegionCode:     regionCode,
+		CountryName:    countryName,
+		IsValid:        phonenumbers.IsValidNumber(num),
+		NationalNumber: num.GetNationalNumber(),
+	}
+
+	return info, nil
+}
+
+// GetRegionForCountryCode gets the primary region (e.g., "IN") for a country code (e.g., 91).
+// Note: Some codes map to multiple regions (e.g., +1 maps to US, CA, etc.).
+func GetRegionForCountryCode(countryCode int) string {
+	// This returns the *main* region for that code (e.g., 1 -> "US")
+	return phonenumbers.GetRegionCodeForCountryCode(countryCode)
+}
+
+// GetCountryInfoForCode gets the primary region and full name for a country code.
+// Note: Some codes map to multiple regions (e.g., +1 maps to US, CA, etc.).
+func GetCountryInfoForCode(countryCode int) (regionCode string, countryName string) {
+	// Get the *primary* region for this dialing code
+	regionCode = phonenumbers.GetRegionCodeForCountryCode(countryCode)
+
+	country := countries.ByName(regionCode)
+	if country.IsValid() {
+		countryName = country.String()
+	} else {
+		countryName = "N/A"
+	}
+	return regionCode, countryName
+}
+
+func TailCallerEncoder(n int) zapcore.CallerEncoder {
+	if n <= 0 {
+		return zapcore.ShortCallerEncoder
+	}
+	return func(caller zapcore.EntryCaller, enc zapcore.PrimitiveArrayEncoder) {
+		path := caller.File
+
+		// Scan from the end; stop after hitting 4 separators (/ or \)
+		sep := 0
+		i := len(path) - 1
+		for ; i >= 0; i-- {
+			c := path[i]
+			if c == '/' || c == '\\' {
+				sep++
+				if sep == n {
+					break
+				}
+			}
+		}
+		start := i + 1
+		if start < 0 || start > len(path) {
+			start = 0
+		}
+		tail := path[start:]
+
+		// Normalize only if needed (Windows paths)
+		if strings.IndexByte(tail, '\\') >= 0 {
+			tail = strings.ReplaceAll(tail, "\\", "/")
+		}
+
+		// Build "tail:line" with minimal overhead
+		var sb strings.Builder
+		sb.Grow(len(tail) + 12)
+		sb.WriteString(tail)
+		sb.WriteByte(':')
+		sb.WriteString(strconv.Itoa(caller.Line))
+
+		enc.AppendString(sb.String())
+	}
 }

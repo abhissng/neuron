@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abhissng/neuron/adapters/opensearch"
+	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/types"
 	"go.uber.org/zap"
@@ -74,6 +75,32 @@ func Any(key string, value any) types.Field {
 // Err creates a single types.Field (error) for a given error.
 func Err(err error) types.Field {
 	return zap.Error(err)
+}
+
+// Blame creates a single types.Field (error) for a given error.
+type errorArray []error
+
+func (a errorArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
+	for _, e := range a {
+		if e == nil {
+			enc.AppendString("<nil>")
+		} else {
+			enc.AppendString(e.Error())
+		}
+	}
+	return nil
+}
+
+func Blame(b blame.Blame) zap.Field {
+	cs := b.FetchCauses()
+	switch len(cs) {
+	case 0:
+		return zap.Skip() // nothing to log
+	case 1:
+		return zap.Error(cs[0])
+	default:
+		return zap.Array("causes", errorArray(cs))
+	}
 }
 
 // Stringer creates a single types.Field (fmt.Stringer) for a given key-value pair.
@@ -160,6 +187,9 @@ type LoggerConfig struct {
 
 	// Environment overrides the default environment
 	Environment string
+
+	// EncoderTailLength overrides the default encoder tail length
+	EncoderTailLength int
 }
 
 // LoggerOption defines a function that modifies LoggerConfig
@@ -224,6 +254,21 @@ func WithDisableOpenSearch(disable bool) LoggerOption {
 	return func(c *LoggerConfig) {
 		if disable {
 			c.OpenSearchOptions = append(c.OpenSearchOptions, opensearch.WithDisableOpenSearch())
+		}
+	}
+}
+
+// WithEncoderTailLength sets the encoder tail length
+func WithEncoderTailLength(length int) LoggerOption {
+	return func(c *LoggerConfig) {
+		if length > 0 {
+			if length <= 2 {
+				length = 0 // to call short encoder directly
+			}
+			if length > 7 {
+				length = 7
+			}
+			c.EncoderTailLength = length
 		}
 	}
 }

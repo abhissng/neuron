@@ -13,6 +13,7 @@ import (
 	"github.com/abhissng/neuron/adapters/paseto"
 	"github.com/abhissng/neuron/adapters/redis"
 	"github.com/abhissng/neuron/adapters/session"
+	"github.com/abhissng/neuron/adapters/store"
 	"github.com/abhissng/neuron/adapters/vault"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/database"
@@ -42,6 +43,7 @@ type AppContext struct {
 	*oci.OCIManager
 	*mongo.MongoManager
 	*session.SessionManager
+	*store.StoreManager
 
 	serviceId      string
 	isDebugEnabled bool
@@ -209,5 +211,12 @@ func WithMongoManager(manager *mongo.MongoManager) AppContextOption {
 func WithSessionManager(manager *session.SessionManager) AppContextOption {
 	return func(ctx *AppContext) {
 		ctx.SessionManager = manager
+	}
+}
+
+// WithStoreManager sets the store manager for the AppContext.
+func WithStoreManager(manager *store.StoreManager) AppContextOption {
+	return func(ctx *AppContext) {
+		ctx.StoreManager = manager
 	}
 }

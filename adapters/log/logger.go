@@ -43,15 +43,16 @@ func NewLogger(cfg *LoggerConfig) (*Log, error) {
 
 	// ✅ 2. Configure encoder settings
 	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "time",
-		LevelKey:       "level",
-		NameKey:        "log",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		EncodeLevel:    zapcore.CapitalColorLevelEncoder, // INFO, WARN, ERROR (readable)
-		EncodeTime:     zapcore.ISO8601TimeEncoder,       // 2025-02-22T13:43:42.977+0530
-		EncodeCaller:   zapcore.ShortCallerEncoder,       // nats/nats.go:120
+		TimeKey:       "time",
+		LevelKey:      "level",
+		NameKey:       "log",
+		CallerKey:     "caller",
+		MessageKey:    "msg",
+		StacktraceKey: "stacktrace",
+		EncodeLevel:   zapcore.CapitalColorLevelEncoder, // INFO, WARN, ERROR (readable)
+		EncodeTime:    zapcore.ISO8601TimeEncoder,       // 2025-02-22T13:43:42.977+0530
+		// EncodeCaller:   zapcore.ShortCallerEncoder,       // nats/nats.go:120
+		EncodeCaller:   helpers.TailCallerEncoder(cfg.EncoderTailLength),
 		EncodeDuration: zapcore.StringDurationEncoder,
 	}
 
@@ -108,15 +109,17 @@ func GetEncoderPool() *sync.Pool {
 	encoderPool := &sync.Pool{
 		New: func() any {
 			return zapcore.NewJSONEncoder(zapcore.EncoderConfig{
-				LevelKey:      "level",
-				TimeKey:       "time",
-				NameKey:       "log",
-				MessageKey:    "msg",
-				CallerKey:     "caller",
-				StacktraceKey: "stacktrace",
-				EncodeLevel:   zapcore.CapitalLevelEncoder,
-				EncodeTime:    zapcore.ISO8601TimeEncoder,
-				EncodeCaller:  zapcore.ShortCallerEncoder,
+				LevelKey:       "level",
+				TimeKey:        "time",
+				NameKey:        "log",
+				MessageKey:     "msg",
+				CallerKey:      "caller",
+				StacktraceKey:  "stacktrace",
+				EncodeLevel:    zapcore.CapitalLevelEncoder,
+				EncodeTime:     zapcore.ISO8601TimeEncoder,
+				EncodeDuration: zapcore.StringDurationEncoder,
+				// EncodeCaller : zapcore.ShortCallerEncoder
+				EncodeCaller: helpers.TailCallerEncoder(4),
 			})
 		},
 	}

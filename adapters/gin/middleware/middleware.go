@@ -164,7 +164,7 @@ func PasetoVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 			return result.NewSuccess(helpers.Valid())
 		}
 		// 🧩 If exclusion handling fails → fall back to normal verification
-		ctx.SlogWarn("excluded option check failed, falling back to normal paseto verification", log.Err(errors.New(blame.Error())))
+		ctx.SlogWarn("excluded option check failed, falling back to normal paseto verification", log.Blame(blame))
 	}
 
 	tokenResult := request.FetchPasetoBearerToken(ctx.Context)
@@ -186,7 +186,7 @@ func PasetoVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 
 	res := ctx.ValidateToken(*token, extra, paseto.WithValidateEssentialTags)
 	if !res.IsSuccess() {
-		ctx.SlogError("validation failed for paseto token", log.Any("error", res.Blame().Error()))
+		ctx.SlogError("validation failed for paseto token", log.Blame(res.Blame()))
 		return result.NewFailure[bool](res.Blame())
 	}
 
@@ -216,7 +216,7 @@ func SessionVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 			return result.NewSuccess(helpers.Valid())
 		}
 		// 🧩 If exclusion handling fails → fall back to normal verification
-		ctx.SlogWarn("excluded option check failed, falling back to normal session verification", log.Err(errors.New(blame.Error())))
+		ctx.SlogWarn("excluded option check failed, falling back to normal session verification", log.Blame(blame))
 	}
 
 	var err error
@@ -251,9 +251,8 @@ func SessionVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 	// 🧩 Optional custom validator
 	res := ctx.ValidateSession(ctx.Context, sessionID, nil)
 	if !res.IsSuccess() {
-		err = errors.New(res.Blame().Error())
-		ctx.SlogError("session validation failed", log.Err(err))
-		return result.NewFailure[bool](blame.SessionValidationFailed(err))
+		ctx.SlogError("session validation failed", log.Blame(res.Blame()))
+		return result.NewFailure[bool](blame.SessionValidationFailed(errors.Join(res.Blame().FetchCauses()...)))
 	}
 
 	// 🧩 Attach session to Gin context (for downstream handlers)

@@ -118,3 +118,13 @@ func (e *ExcludedOptions) ExcludedEvents() []*string {
 	copy(result, e.Events)
 	return result
 }
+
+// PhoneNumberInfo holds the parsed phone number details.
+type PhoneNumberInfo struct {
+	E164Format     string // The standardized international format (e.g., +919876543210)
+	CountryCode    int32  // The country code (e.g., 91)
+	RegionCode     string // The two-letter (ISO 3166-1) region code (e.g., "IN", "US")
+	CountryName    string // The full country name (e.g., "India", "United States of America")
+	IsValid        bool   // Whether the library considers this a valid number
+	NationalNumber uint64 // The number without the country code
+}
