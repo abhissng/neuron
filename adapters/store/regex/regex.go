@@ -102,7 +102,7 @@ func (m *RegexManager) Get(key string) (*regexp.Regexp, error) {
 	return compiledRe, nil
 }
 
-// MustGet is a helper that panics if the regex key doesn't exist or is invalid.
+// MustGet is a helper that returns nil if the regex key doesn't exist or is invalid.
 // Useful for setup code where you know the key must be valid.
 func (m *RegexManager) MustGet(key string) *regexp.Regexp {
 	re, err := m.Get(key)

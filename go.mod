@@ -4,17 +4,17 @@ go 1.25.1
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.39.6
-	github.com/aws/aws-sdk-go-v2/config v1.31.18
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.22
-	github.com/aws/aws-sdk-go-v2/service/kms v1.48.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.90.0
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.39.11
-	github.com/aws/aws-sdk-go-v2/service/ssm v1.67.0
+	github.com/aws/aws-sdk-go-v2/config v1.31.19
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.23
+	github.com/aws/aws-sdk-go-v2/service/kms v1.48.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.90.1
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.39.12
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.67.1
 	github.com/biter777/countries v1.7.5
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/gzip v1.2.5
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-playground/validator/v10 v10.28.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
@@ -36,9 +36,8 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.mongodb.org/mongo-driver/v2 v2.4.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.43.0
+	golang.org/x/crypto v0.44.0
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
-	golang.org/x/net v0.46.0
 	golang.org/x/text v0.31.0
 	golang.org/x/time v0.14.0
 	google.golang.org/grpc v1.76.0
@@ -66,9 +65,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.13 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.30.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.40.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.30.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.40.1 // indirect
 	github.com/aws/smithy-go v1.23.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
@@ -139,14 +138,13 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/arch v0.23.0 // indirect
-	golang.org/x/mod v0.30.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.33.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/api v0.256.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251110190251-83f479183930 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 )

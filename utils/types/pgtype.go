@@ -315,7 +315,11 @@ func ToPgType[T PgType](value any, opts ...DecimalOpt) (T, error) {
 		if !ok {
 			return zero, fmt.Errorf("expected duration string, got %T", value)
 		}
-		return any(ParseToPgTypeInterval(v)).(T), nil
+		interval := ParseToPgTypeInterval(v)
+		if !interval.Valid {
+			return zero, fmt.Errorf("invalid interval string %q", v)
+		}
+		return any(interval).(T), nil
 	case pgtype.Numeric:
 		v, ok := value.(float64)
 		if !ok {

@@ -138,7 +138,7 @@ func GetOpenSearchLogCore(level zap.AtomicLevel, opts ...Option) (zapcore.Core, 
 	}
 
 	// --- 1. Create OpenSearch Client ---
-	client, err := NewClient(
+	client, options, err := NewClient(
 		helpers.GetOpenSearchAddresses(),
 		helpers.GetOpenSearchUsername(),
 		helpers.GetOpenSearchPassword(),
@@ -181,7 +181,7 @@ func GetOpenSearchLogCore(level zap.AtomicLevel, opts ...Option) (zapcore.Core, 
 		EncodeTime:     zapcore.ISO8601TimeEncoder,
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		// EncodeCaller:   zapcore.ShortCallerEncoder,
-		EncodeCaller: helpers.TailCallerEncoder(4),
+		EncodeCaller: helpers.TailCallerEncoder(options.EncoderLength),
 	}
 	osEncoder := zapcore.NewJSONEncoder(osEncoderConfig)
 
