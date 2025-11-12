@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -131,17 +132,22 @@ func FetchErrorStrings(errs []error) []string {
 	return errStrings
 }
 
-// FetchErrorStack returns a string containing the error messages separated by semicolons
+// FetchErrorStack returns a string after joining all errors
 func FetchErrorStack(errs []error) string {
-	var s strings.Builder
-	for _, err := range errs {
-		if err != nil {
-			s.WriteString(err.Error())
-			s.WriteString("; ")
-		}
-
+	err := JoinErrors(errs)
+	if err == nil {
+		return ""
 	}
-	return s.String()
+	return err.Error()
+}
+
+// JoinErrors returns a new error after joining all errors
+func JoinErrors(errs []error) error {
+	err := errors.Join(errs...)
+	if err == nil {
+		return nil
+	}
+	return err
 }
 
 // FetchHTTPStatusCode returns the HTTP status code associated with the response type

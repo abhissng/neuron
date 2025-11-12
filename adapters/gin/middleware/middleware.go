@@ -252,7 +252,7 @@ func SessionVerifyMiddleware(ctx *context.ServiceContext) result.Result[bool] {
 	res := ctx.ValidateSession(ctx.Context, sessionID, nil)
 	if !res.IsSuccess() {
 		ctx.SlogError("session validation failed", log.Blame(res.Blame()))
-		return result.NewFailure[bool](blame.SessionValidationFailed(errors.Join(res.Blame().FetchCauses()...)))
+		return result.NewFailure[bool](blame.SessionValidationFailed(helpers.JoinErrors(res.Blame().FetchCauses())))
 	}
 
 	// 🧩 Attach session to Gin context (for downstream handlers)
