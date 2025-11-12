@@ -262,9 +262,11 @@ func WithDisableOpenSearch(disable bool) LoggerOption {
 func WithEncoderTailLength(length int) LoggerOption {
 	return func(c *LoggerConfig) {
 		if length > 0 {
+			// Values <= 2 don't provide meaningful context beyond short encoder
 			if length <= 2 {
 				length = 0 // to call short encoder directly
 			}
+			// Cap at 7 to prevent excessively long caller paths
 			if length > 7 {
 				length = 7
 			}

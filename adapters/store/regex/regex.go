@@ -54,6 +54,10 @@ func NewRegexManager(input string) (*RegexManager, error) {
 		return nil, fmt.Errorf("failed to parse regex JSON: %w", err)
 	}
 
+	if len(store) == 0 {
+		return nil, errors.New("regex store is empty")
+	}
+
 	// Initialize the manager
 	manager := &RegexManager{
 		store:    store,

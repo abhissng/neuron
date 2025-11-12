@@ -86,9 +86,11 @@ func WithDisableOpenSearch() Option {
 
 func WithEncoderLength(length int) Option {
 	return func(o *Options) {
+		// Values <= 2 don't provide meaningful context beyond short encoder
 		if length <= 2 {
 			length = 0 // to call short encoder directly
 		}
+		// Cap at 7 to prevent excessively long caller paths
 		if length > 7 {
 			length = 7
 		}

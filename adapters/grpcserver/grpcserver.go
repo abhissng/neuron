@@ -9,8 +9,8 @@ import (
 	"os"
 
 	"github.com/abhissng/neuron/adapters/jwt"
-	"github.com/abhissng/neuron/adapters/paseto"
 	"github.com/abhissng/neuron/adapters/log"
+	"github.com/abhissng/neuron/adapters/paseto"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/random"
@@ -19,6 +19,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -112,8 +113,8 @@ func WithPasetoManager(pm *paseto.PasetoManager) Option {
 
 // Server represents a gRPC server
 type Server struct {
-	server   *grpc.Server
-	config   ServerConfig
+	server *grpc.Server
+	config ServerConfig
 }
 
 // NewServer creates a new gRPC server with option pattern
@@ -158,8 +159,8 @@ func NewServer(opts ...Option) (*Server, error) {
 
 	// Create gRPC Server
 	s := &Server{
-		server:   grpc.NewServer(grpcOpts...),
-		config:   config,
+		server: grpc.NewServer(grpcOpts...),
+		config: config,
 	}
 
 	if config.enableMetrics {
@@ -306,10 +307,46 @@ func (w *serverStreamWithContext) Context() context.Context { return w.ctx }
 
 // InterceptorLogger is a simple logging manager
 func InterceptorLogger(l *log.Log) logging.Logger {
+	// convert key-value pairs from interceptor to zap fields
+	toZapFields := func(kvs ...any) []zap.Field {
+		zfs := make([]zap.Field, 0, len(kvs)/2)
+		for i := 0; i+1 < len(kvs); i += 2 {
+			key, ok := kvs[i].(string)
+			if !ok {
+				key = fmt.Sprintf("arg_%d", i)
+			}
+			zfs = append(zfs, zap.Any(key, kvs[i+1]))
+		}
+		return zfs
+	}
+
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
 		requestID, _ := ctx.Value(constant.RequestID).(types.StringConstant)
 		correlationID, _ := ctx.Value(constant.CorrelationID).(types.StringConstant)
-		l.Printf(zapcore.Level(lvl), "[corr=%s req=%s] %s: %v", correlationID, requestID, msg, fields) // #nosec G115
+
+		zFields := []zap.Field{
+			zap.String("correlation_id", string(correlationID)),
+			zap.String("request_id", string(requestID)),
+		}
+		zFields = append(zFields, toZapFields(fields...)...)
+
+		// #nosec: G115 - We are intentionally converting logging.Level to zapcore.Level
+		// The logging.Level is guaranteed to be within the valid range for zapcore.Level
+		// This is safe because logging.Level values are constrained to valid zapcore.Level values
+		switch zapcore.Level(lvl) {
+		case zapcore.DebugLevel:
+			l.Debug(msg, zFields...)
+		case zapcore.InfoLevel:
+			l.Info(msg, zFields...)
+		case zapcore.WarnLevel:
+			l.Warn(msg, zFields...)
+		case zapcore.ErrorLevel:
+			l.Error(msg, zFields...)
+		case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
+			l.Error(msg, zFields...)
+		default:
+			l.Info(msg, zFields...)
+		}
 	})
 }
 
