@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"go.uber.org/zap"
 )
 
@@ -172,4 +173,20 @@ type LogMode string
 // String returns the string representation of the LogMode.
 func (l LogMode) String() string {
 	return string(l)
+}
+
+// PgType is a constraint that lists supported pgtype structs.
+type PgType interface {
+	pgtype.Int2 |
+		pgtype.Int4 |
+		pgtype.Int8 |
+		pgtype.Text |
+		pgtype.Bool |
+		pgtype.Float8 |
+		pgtype.Timestamp |
+		pgtype.Timestamptz |
+		pgtype.UUID |
+		pgtype.Date |
+		pgtype.Interval |
+		pgtype.Numeric
 }

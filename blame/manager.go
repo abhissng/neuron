@@ -2,9 +2,11 @@ package blame
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
@@ -20,6 +22,15 @@ type BlameDefinition struct {
 	Description  string `json:"Description"`
 	Component    string `json:"Component"`
 	ResponseType string `json:"ResponseType"`
+}
+
+// CastToBlame casts the provided blame to the error code of the target blame.
+// This is a convenience overload when the caller already has the target blame definition.
+func (bw *BlameManager) CastToBlame(from Blame, to Blame, opts ...BlameOption) Blame {
+	if to == nil {
+		return from
+	}
+	return bw.CastTo(from, to.FetchErrCode(), opts...)
 }
 
 // BlameManager is a wrapper around the blame definitions.
@@ -38,6 +49,51 @@ func (bw *BlameManager) RetrieveBlameCache(errorCode types.ErrorCode) Blame {
 // FetchBlameForError fetches a blame definition for the given error code.
 func (bw *BlameManager) FetchBlameForError(errorCode types.ErrorCode, opts ...BlameOption) Blame {
 	return bw.RetrieveBlameCache(errorCode).EmptyCause().Wrap(opts...)
+}
+
+// CastTo casts the provided blame to a new error code, appending the translated
+// source blame as a cause, merging fields and existing causes, and preserving
+// bundle and language on the resulting blame.
+func (bw *BlameManager) CastTo(from Blame, errorCode types.ErrorCode, opts ...BlameOption) Blame {
+	if bw == nil {
+		bw = getLocalBlameManager()
+	}
+
+	// Build translated cause from the source blame
+	_, desc := from.Translate()
+	translated := errors.New(strings.TrimSpace(desc))
+
+	// Merge fields and causes
+	options := []BlameOption{}
+	fields := from.FetchFields()
+	if len(fields) > 0 {
+		options = append(options, WithFields(fields))
+	}
+	srcCauses := from.FetchCauses()
+	mergedCauses := make([]error, 0, len(srcCauses)+1)
+	if len(srcCauses) > 0 {
+		mergedCauses = append(mergedCauses, srcCauses...)
+	}
+	mergedCauses = append(mergedCauses, translated)
+	options = append(options, WithCauses(mergedCauses...))
+
+	// Allow caller to apply additional options
+	if len(opts) > 0 {
+		options = append(options, opts...)
+	}
+
+	// Build target blame and convert to *Error for setters
+	target := bw.FetchBlameForError(errorCode, options...).WrapToError()
+
+	// Preserve bundle and language
+	if from.FetchBundle() != nil {
+		_ = target.WithBundle(from.FetchBundle())
+	}
+	if !helpers.IsEmpty(from.FetchLanguageTag()) {
+		_ = target.WithLanguageTag(from.FetchLanguageTag())
+	}
+
+	return target
 }
 
 // NewBlameManager creates a new BlameManager instance.

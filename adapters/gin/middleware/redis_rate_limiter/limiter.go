@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/net/context"
 )
 
 // RateLimiterMiddleware returns a Gin middleware configured via RateLimiterOptions

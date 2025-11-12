@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/abhissng/neuron/adapters/jwt"
+	"github.com/abhissng/neuron/adapters/paseto"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
@@ -18,11 +19,11 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -35,8 +36,11 @@ type ServerConfig struct {
 	jwtSecret      string
 	enableMetrics  bool
 	serviceName    string
-	maxRecvMsgSize int // In megabytes
+	maxRecvMsgSize int
+	maxSendMsgSize int
 	log            *log.Log
+	authMode       string
+	pasetoManager  *paseto.PasetoManager
 }
 
 // Option is a function that modifies ServerConfig
@@ -79,9 +83,30 @@ func WithMaxRecvMsgSize(size int) Option {
 	}
 }
 
+// WithMaxSendMsgSize sets max send message size (MB)
+func WithMaxSendMsgSize(size int) Option {
+	return func(c *ServerConfig) {
+		c.maxSendMsgSize = size
+	}
+}
+
 func WithLogger(log *log.Log) Option {
 	return func(c *ServerConfig) {
 		c.log = log
+	}
+}
+
+// WithAuthMode selects auth mode: "jwt" or "paseto". Empty means no auth.
+func WithAuthMode(mode string) Option {
+	return func(c *ServerConfig) {
+		c.authMode = mode
+	}
+}
+
+// WithPasetoManager provides a PasetoManager when using PASETO auth mode.
+func WithPasetoManager(pm *paseto.PasetoManager) Option {
+	return func(c *ServerConfig) {
+		c.pasetoManager = pm
 	}
 }
 
@@ -89,7 +114,6 @@ func WithLogger(log *log.Log) Option {
 type Server struct {
 	server   *grpc.Server
 	config   ServerConfig
-	registry *prometheus.Registry
 }
 
 // NewServer creates a new gRPC server with option pattern
@@ -99,6 +123,7 @@ func NewServer(opts ...Option) (*Server, error) {
 		port:           50051,
 		serviceName:    "default-service",
 		maxRecvMsgSize: 4, // Default 4MB
+		maxSendMsgSize: 4, // Default 4MB
 	}
 
 	// Apply options
@@ -128,13 +153,17 @@ func NewServer(opts ...Option) (*Server, error) {
 		grpc.ChainUnaryInterceptor(unaryInterceptors...),
 		grpc.ChainStreamInterceptor(streamInterceptors...),
 		grpc.MaxRecvMsgSize(config.maxRecvMsgSize*1024*1024),
+		grpc.MaxSendMsgSize(config.maxSendMsgSize*1024*1024),
 	)
 
 	// Create gRPC Server
 	s := &Server{
 		server:   grpc.NewServer(grpcOpts...),
 		config:   config,
-		registry: prometheus.NewRegistry(),
+	}
+
+	if config.enableMetrics {
+		grpc_prometheus.Register(s.server)
 	}
 
 	return s, nil
@@ -178,41 +207,109 @@ func buildInterceptors(config ServerConfig) ([]grpc.UnaryServerInterceptor, []gr
 	var unary []grpc.UnaryServerInterceptor
 	var stream []grpc.StreamServerInterceptor
 
-	// Logging Interceptor
+	recoveryOpts := []recovery.Option{
+		recovery.WithRecoveryHandler(recoveryHandler),
+	}
+	unary = append(unary, recovery.UnaryServerInterceptor(recoveryOpts...))
+	stream = append(stream, recovery.StreamServerInterceptor(recoveryOpts...))
+
+	unary = append(unary, unaryCorrelationIDInterceptor())
+	stream = append(stream, streamCorrelationIDInterceptor())
+
+	unary = append(unary, unaryRequestIDInterceptor())
+	stream = append(stream, streamRequestIDInterceptor())
+
 	loggingOpts := []logging.Option{
 		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
 	}
 	unary = append(unary, logging.UnaryServerInterceptor(InterceptorLogger(config.log), loggingOpts...))
 	stream = append(stream, logging.StreamServerInterceptor(InterceptorLogger(config.log), loggingOpts...))
 
-	// Authentication
-	if config.jwtSecret != "" {
-		authFunc := createAuthFunc(config.jwtSecret)
-		unary = append(unary, auth.UnaryServerInterceptor(authFunc))
-		stream = append(stream, auth.StreamServerInterceptor(authFunc))
+	switch config.authMode {
+	case "jwt":
+		if config.jwtSecret != "" {
+			authFunc := createAuthFunc(config.jwtSecret)
+			unary = append(unary, auth.UnaryServerInterceptor(authFunc))
+			stream = append(stream, auth.StreamServerInterceptor(authFunc))
+		}
+	case "paseto":
+		if config.pasetoManager != nil {
+			pAuth := createPasetoAuthFunc(config.pasetoManager)
+			unary = append(unary, auth.UnaryServerInterceptor(pAuth))
+			stream = append(stream, auth.StreamServerInterceptor(pAuth))
+		}
 	}
 
-	// Metrics
 	if config.enableMetrics {
 		grpc_prometheus.EnableHandlingTimeHistogram()
 		unary = append(unary, grpc_prometheus.UnaryServerInterceptor)
 		stream = append(stream, grpc_prometheus.StreamServerInterceptor)
 	}
 
-	// Recovery (Panic Handling)
-	recoveryOpts := []recovery.Option{
-		recovery.WithRecoveryHandler(recoveryHandler),
-	}
-	unary = append(unary, recovery.UnaryServerInterceptor(recoveryOpts...))
-	stream = append(stream, recovery.StreamServerInterceptor(recoveryOpts...))
 	return unary, stream
 }
+
+func unaryCorrelationIDInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		if _, ok := ctx.Value(constant.CorrelationID).(types.StringConstant); !ok {
+			if md, ok := metadata.FromIncomingContext(ctx); ok {
+				if vals := md.Get(constant.CorrelationID); len(vals) > 0 {
+					ctx = context.WithValue(ctx, types.StringConstant(constant.CorrelationID), vals[0])
+				}
+			}
+		}
+		return handler(ctx, req)
+	}
+}
+
+func streamCorrelationIDInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		if _, ok := ss.Context().Value(constant.CorrelationID).(types.StringConstant); !ok {
+			if md, ok := metadata.FromIncomingContext(ss.Context()); ok {
+				if vals := md.Get(constant.CorrelationID); len(vals) > 0 {
+					newCtx := context.WithValue(ss.Context(), types.StringConstant(constant.CorrelationID), vals[0])
+					wrapped := &serverStreamWithContext{ServerStream: ss, ctx: newCtx}
+					return handler(srv, wrapped)
+				}
+			}
+		}
+		return handler(srv, ss)
+	}
+}
+
+func unaryRequestIDInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		if _, ok := ctx.Value(constant.RequestID).(types.StringConstant); !ok {
+			ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUID())
+		}
+		return handler(ctx, req)
+	}
+}
+
+func streamRequestIDInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		if _, ok := ss.Context().Value(constant.RequestID).(types.StringConstant); !ok {
+			ctx := context.WithValue(ss.Context(), types.StringConstant(constant.RequestID), random.GenerateUUID())
+			wrapped := &serverStreamWithContext{ServerStream: ss, ctx: ctx}
+			return handler(srv, wrapped)
+		}
+		return handler(srv, ss)
+	}
+}
+
+type serverStreamWithContext struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (w *serverStreamWithContext) Context() context.Context { return w.ctx }
 
 // InterceptorLogger is a simple logging manager
 func InterceptorLogger(l *log.Log) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
 		requestID, _ := ctx.Value(constant.RequestID).(types.StringConstant)
-		l.Printf(zapcore.Level(lvl), "[%s] %s: %v", requestID, msg, fields) // #nosec G115
+		correlationID, _ := ctx.Value(constant.CorrelationID).(types.StringConstant)
+		l.Printf(zapcore.Level(lvl), "[corr=%s req=%s] %s: %v", correlationID, requestID, msg, fields) // #nosec G115
 	})
 }
 
@@ -240,6 +337,42 @@ func createAuthFunc(secret string) auth.AuthFunc {
 		ctx = context.WithValue(ctx, types.StringConstant(constant.Roles), claims.Roles)
 		ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUID())
 
+		return ctx, nil
+	}
+}
+
+func createPasetoAuthFunc(pm *paseto.PasetoManager) auth.AuthFunc {
+	return func(ctx context.Context) (context.Context, error) {
+		token, err := auth.AuthFromMD(ctx, "bearer")
+		if err != nil {
+			return nil, err
+		}
+
+		res := pm.ValidateToken(token, nil, paseto.WithValidateEssentialTags)
+		if res.IsFailure() {
+			return nil, status.Errorf(codes.Unauthenticated, "invalid token")
+		}
+		cl, err := res.Value()
+		if err != nil {
+			return nil, err
+		}
+
+		if cl != nil {
+			if cl.Sub != "" {
+				ctx = context.WithValue(ctx, types.StringConstant(constant.UserID), cl.Sub)
+			}
+			if cl.Data != nil {
+				if svc, ok := cl.Data["service"].(string); ok {
+					ctx = context.WithValue(ctx, types.StringConstant(constant.Service), svc)
+				}
+				if roles, ok := cl.Data["roles"].([]string); ok {
+					ctx = context.WithValue(ctx, types.StringConstant(constant.Roles), roles)
+				}
+			}
+		}
+		if _, ok := ctx.Value(constant.RequestID).(types.StringConstant); !ok {
+			ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUID())
+		}
 		return ctx, nil
 	}
 }
@@ -371,4 +504,62 @@ func (s *server) ProcessDiscovery(ctx context.Context, req *pb.DiscoveryMessage)
 		fmt.Printf("Response Timestamp: %v", resg.Timestamp.AsTime())
 
 
+*/
+
+/*
+USAGE EXAMPLES
+
+// ===== Server: Enable JWT auth and log correlation_id =====
+func startJWTServer() error {
+    s, err := NewServer(
+        WithPort(50051),
+        WithAuthMode("jwt"),
+        WithJWT("<your-jwt-secret>"),
+        WithMetrics(),
+    )
+    if err != nil { return err }
+
+    // register your protobuf service servers here, e.g.:
+    // pb.RegisterYourServiceServer(s.server, yourImpl)
+
+    return s.Start()
+}
+
+// ===== Server: Enable PASETO auth =====
+func startPasetoServer(pubKey ed25519.PublicKey) error {
+    pm := paseto.NewPasetoManager(
+        paseto.WithPublicKey(pubKey),
+        paseto.WithIssuer("your-issuer"),
+        paseto.WithAccessTokenExpiry(time.Hour),
+    )
+    s, err := NewServer(
+        WithPort(50051),
+        WithAuthMode("paseto"),
+        WithPasetoManager(pm),
+    )
+    if err != nil { return err }
+    // pb.RegisterYourServiceServer(s.server, yourImpl)
+    return s.Start()
+}
+
+// ===== Unary handler: read correlation_id/request_id from context =====
+func (h *handler) SomeRPC(ctx context.Context, req *pb.SomeRequest) (*pb.SomeReply, error) {
+    corr, _ := ctx.Value(types.StringConstant(constant.CorrelationID)).(types.StringConstant)
+    reqID, _ := ctx.Value(types.StringConstant(constant.RequestID)).(types.StringConstant)
+    h.log.Info("handling request", "correlation_id", corr, "request_id", reqID)
+    // ...
+    return &pb.SomeReply{}, nil
+}
+
+// ===== Client: attach Authorization and correlation_id =====
+func callWithJWT(conn *grpc.ClientConn, token string) error {
+    c := pb.NewYourServiceClient(conn)
+    md := metadata.New(map[string]string{
+        "authorization":  "Bearer " + token,
+        "correlation_id": "corr-1234",
+    })
+    ctx := metadata.NewOutgoingContext(context.Background(), md)
+    _, err := c.SomeRPC(ctx, &pb.SomeRequest{})
+    return err
+}
 */

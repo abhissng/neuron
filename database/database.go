@@ -68,6 +68,7 @@ type Transaction interface {
 	Rollback(ctx context.Context) error
 	IsDebugQuery(query string, args ...any)
 	RowsToSlice(rows Rows) ([][]string, error)
+	GetTx() any
 }
 
 // Rows defines a common interface for query results, providing methods for interacting with a set of rows returned from a database query.

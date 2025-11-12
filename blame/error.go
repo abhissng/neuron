@@ -194,9 +194,62 @@ func (e *Error) WithResponseType(responseType types.ResponseErrorType) *Error {
 	return e
 }
 
-// Error returns the error message with the causes as a string
+// Error returns the error message with the causes as a string.
 func (e *Error) Error() string {
-	return fmt.Sprintf("%s (causes: %v)", e.errCode.String(), e.causes)
+	return e.render(0, map[*Error]struct{}{})
+}
+
+// render prints e without recursing forever.
+// depth limit prevents massive chains; visited prevents cycles.
+func (e *Error) render(depth int, visited map[*Error]struct{}) string {
+	const maxDepth = 4
+
+	// Header (adjust fields as you need)
+	base := e.errCode.String() // if you have Message, you can append it here
+
+	if len(e.causes) == 0 || depth >= maxDepth {
+		return base
+	}
+	if _, seen := visited[e]; !seen {
+		visited[e] = struct{}{}
+	}
+
+	// Render causes individually (no %v on the whole slice!)
+	var b strings.Builder
+	b.Grow(len(base) + 32)
+	b.WriteString(base)
+	b.WriteString(" (causes: ")
+
+	for i, c := range e.causes {
+		if i > 0 {
+			b.WriteString("; ")
+		}
+		switch ce := c.(type) {
+		case *Error:
+			if _, seen := visited[ce]; seen {
+				b.WriteString("<cycle>")
+				continue
+			}
+			b.WriteString(ce.render(depth+1, visited)) // safe: depth-limited, cycle-aware
+		default:
+			// Plain error or other type: just its message
+			if c != nil {
+				b.WriteString(c.Error())
+			} else {
+				b.WriteString("<nil>")
+			}
+		}
+	}
+	b.WriteString(")")
+	return b.String()
+}
+
+// Optional: let errors.Unwrap work if you have a single primary cause
+func (e *Error) Unwrap() error {
+	if len(e.causes) > 0 {
+		return e.causes[0]
+	}
+	return nil
 }
 
 // findSource captures the source of the error at the point of instantiation.

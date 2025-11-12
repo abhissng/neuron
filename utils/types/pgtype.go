@@ -216,3 +216,123 @@ func ParseToPgTypeInterval(input string) pgtype.Interval {
 	}
 	return iv
 }
+
+// ToPgTypeDate converts a time.Time to pgtype.Date
+func ToPgTypeDate(t time.Time) pgtype.Date {
+	return pgtype.Date{
+		Time:  t,
+		Valid: true,
+	}
+}
+
+// ToPgType converts a Go value into a specific pgtype, constrained by PgType.
+func ToPgType[T PgType](value any, opts ...DecimalOpt) (T, error) {
+	var zero T
+
+	switch any(zero).(type) {
+	case pgtype.Int2:
+		v, ok := value.(int16)
+		if !ok {
+			return zero, fmt.Errorf("expected int16, got %T", value)
+		}
+		return any(ToPgTypeInt2(v)).(T), nil
+
+	case pgtype.Int4:
+		v, ok := value.(int32)
+		if !ok {
+			return zero, fmt.Errorf("expected int32, got %T", value)
+		}
+		return any(ToPgTypeInt4(v)).(T), nil
+
+	case pgtype.Int8:
+		switch val := value.(type) {
+		case int64:
+			return any(ToPgTypeInt8(val)).(T), nil
+		case int:
+			return any(ToPgTypeInt8(int64(val))).(T), nil
+		default:
+			return zero, fmt.Errorf("expected int/int64, got %T", value)
+		}
+
+	case pgtype.Text:
+		v, ok := value.(string)
+		if !ok {
+			return zero, fmt.Errorf("expected string, got %T", value)
+		}
+		return any(ToPgTypeText(v)).(T), nil
+
+	case pgtype.Bool:
+		v, ok := value.(bool)
+		if !ok {
+			return zero, fmt.Errorf("expected bool, got %T", value)
+		}
+		return any(ToPgTypeBool(v)).(T), nil
+
+	case pgtype.Float8:
+		v, ok := value.(float64)
+		if !ok {
+			return zero, fmt.Errorf("expected float64, got %T", value)
+		}
+		return any(ToPgTypeFloat8(v)).(T), nil
+
+	case pgtype.Timestamp:
+		v, ok := value.(time.Time)
+		if !ok {
+			return zero, fmt.Errorf("expected time.Time, got %T", value)
+		}
+		return any(ToPgTypeTimestamp(v)).(T), nil
+
+	case pgtype.Timestamptz:
+		v, ok := value.(time.Time)
+		if !ok {
+			return zero, fmt.Errorf("expected time.Time, got %T", value)
+		}
+		return any(ToPgTypeTimestamptz(v)).(T), nil
+
+	case pgtype.UUID:
+		switch val := value.(type) {
+		case uuid.UUID:
+			return any(ToPgTypeUUID(val)).(T), nil
+		case string:
+			id, err := uuid.Parse(val)
+			if err != nil {
+				return zero, fmt.Errorf("invalid UUID string: %v", err)
+			}
+			return any(ToPgTypeUUID(id)).(T), nil
+		default:
+			return zero, fmt.Errorf("expected uuid.UUID or string, got %T", value)
+		}
+
+	case pgtype.Date:
+		v, ok := value.(time.Time)
+		if !ok {
+			return zero, fmt.Errorf("expected time.Time, got %T", value)
+		}
+		return any(ToPgTypeDate(v)).(T), nil
+
+	case pgtype.Interval:
+		v, ok := value.(string)
+		if !ok {
+			return zero, fmt.Errorf("expected duration string, got %T", value)
+		}
+		interval := ParseToPgTypeInterval(v)
+		if !interval.Valid {
+			return zero, fmt.Errorf("invalid interval string %q", v)
+		}
+		return any(interval).(T), nil
+	case pgtype.Numeric:
+		v, ok := value.(float64)
+		if !ok {
+			return zero, fmt.Errorf("expected float64, got %T", value)
+		}
+		return any(FloatToPgNumeric(v, opts...)).(T), nil
+
+	default:
+		return zero, fmt.Errorf("unsupported pgtype: %T", zero)
+	}
+}
+
+func ToPgTypeNil[T PgType]() T {
+	var zero T
+	return zero
+}

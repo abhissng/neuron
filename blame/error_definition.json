@@ -1,5 +1,5 @@
 [  
-    {
+  {
         "Code": "internal-server-error",
         "Message": "Internal Server Error", 
         "Description": "An internal server error occurred.", 

@@ -33,10 +33,11 @@ type TLSOptions struct {
 
 // Options holds configuration for the OpenSearch writer.
 type Options struct {
-	BatchSize    int
-	FlushTimeout time.Duration
-	TLS          *TLSOptions
-	Disable      bool
+	BatchSize     int
+	FlushTimeout  time.Duration
+	TLS           *TLSOptions
+	Disable       bool
+	EncoderLength int
 }
 
 // Option defines a function type to modify options.
@@ -83,12 +84,25 @@ func WithDisableOpenSearch() Option {
 	}
 }
 
+func WithEncoderLength(length int) Option {
+	return func(o *Options) {
+		if length <= 2 {
+			length = 0 // to call short encoder directly
+		}
+		if length > 7 {
+			length = 7
+		}
+		o.EncoderLength = length
+	}
+}
+
 // NewClient creates a new OpenSearch client with the given options.
-func NewClient(addresses []string, username, password string, opts ...Option) (*opensearchapi.Client, error) {
+func NewClient(addresses []string, username, password string, opts ...Option) (*opensearchapi.Client, *Options, error) {
 	// Apply default options
 	options := &Options{
-		BatchSize:    DefaultBatchSize,
-		FlushTimeout: DefaultFlushInterval,
+		BatchSize:     DefaultBatchSize,
+		FlushTimeout:  DefaultFlushInterval,
+		EncoderLength: 0,
 	}
 
 	// Apply provided options
@@ -97,7 +111,7 @@ func NewClient(addresses []string, username, password string, opts ...Option) (*
 	}
 
 	if options.Disable {
-		return nil, errors.New(constant.OpenSearchDisabledError.String())
+		return nil, options, errors.New(constant.OpenSearchDisabledError.String())
 	}
 
 	// Configure TLS
@@ -109,7 +123,7 @@ func NewClient(addresses []string, username, password string, opts ...Option) (*
 	if options.TLS != nil && len(options.TLS.CACert) > 0 {
 		caCertPool := x509.NewCertPool()
 		if !caCertPool.AppendCertsFromPEM(options.TLS.CACert) {
-			return nil, errors.New("failed to add CA certificate to pool")
+			return nil, options, errors.New("failed to add CA certificate to pool")
 		}
 		tlsConfig.RootCAs = caCertPool
 	}
@@ -118,7 +132,7 @@ func NewClient(addresses []string, username, password string, opts ...Option) (*
 	if options.TLS != nil && len(options.TLS.ClientCert) > 0 && len(options.TLS.ClientKey) > 0 {
 		cert, err := tls.X509KeyPair(options.TLS.ClientCert, options.TLS.ClientKey)
 		if err != nil {
-			return nil, err
+			return nil, options, err
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
@@ -136,10 +150,10 @@ func NewClient(addresses []string, username, password string, opts ...Option) (*
 		Client: config,
 	})
 	if err != nil {
-		return nil, err
+		return nil, options, err
 	}
 
-	return client, nil
+	return client, options, nil
 }
 
 // NewOpenSearchWriter creates a new OpenSearchWriter instance with the given options.

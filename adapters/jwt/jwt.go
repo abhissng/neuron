@@ -6,25 +6,25 @@ import (
 	"time"
 
 	"github.com/abhissng/neuron/utils/helpers"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // Claims represents the JWT claims
 type Claims struct {
 	ServiceName string   `json:"service"`
 	Roles       []string `json:"roles"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 func NewJWTClaims(serviceName string, roles []string, expiryDuration time.Duration) *Claims {
-	expirationTime := time.Now().Add(expiryDuration).Unix()
+	now := time.Now()
 	claims := Claims{
 		ServiceName: serviceName,
 		Roles:       roles,
-		StandardClaims: jwt.StandardClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    serviceName,
-			ExpiresAt: expirationTime,
-			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: jwt.NewNumericDate(now.Add(expiryDuration)),
+			IssuedAt:  jwt.NewNumericDate(now),
 		},
 	}
 	return &claims
@@ -50,13 +50,18 @@ func GenerateJWT(serviceName string, roles []string, secret string, expiryDurati
 // ValidateJWT validates a JWT token with the given secret and expected claims
 func ValidateJWT(tokenString string, secret string, validRoles []string) (*Claims, error) {
 	// Parse the token
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		// Validate the signing method
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(secret), nil
-	})
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&Claims{},
+		func(token *jwt.Token) (interface{}, error) {
+			// Validate the signing method
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(secret), nil
+		},
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %v", err)
 	}
@@ -73,13 +78,10 @@ func ValidateJWT(tokenString string, secret string, validRoles []string) (*Claim
 	}
 
 	// Validate standard claims
-	// if claims.Issuer != expectedIssuer {
-	// 	return nil, fmt.Errorf("invalid issuer: expected %s, got %s", expectedIssuer, claims.Issuer)
-	// }
-	if time.Now().Unix() > claims.ExpiresAt {
+	if claims.ExpiresAt == nil || time.Now().After(claims.ExpiresAt.Time) {
 		return nil, errors.New("token has expired")
 	}
-	if claims.IssuedAt > time.Now().Unix() {
+	if claims.IssuedAt != nil && claims.IssuedAt.After(time.Now()) {
 		return nil, errors.New("token issued-at time is in the future")
 	}
 

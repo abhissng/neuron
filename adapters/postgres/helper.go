@@ -97,6 +97,11 @@ func (db *PostgresDB[T]) BeginTransaction(ctx context.Context) (database.Transac
 	return &PostgresTransaction{tx: tx, log: db.options.GetLogger(), debugMode: db.options.IsDebugMode()}, nil
 }
 
+// GetTx returns the transaction object.
+func (db *PostgresTransaction) GetTx() any {
+	return db.tx
+}
+
 // IsDebugQuery logs the query and arguments if debug mode is enabled.
 func (db *PostgresTransaction) IsDebugQuery(query string, args ...any) {
 	if db.debugMode {
