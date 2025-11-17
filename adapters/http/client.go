@@ -15,15 +15,18 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// Client interface for abstraction
+// HTTPClient defines the interface for HTTP client implementations.
+// It abstracts the HTTP client to support both standard and FastHTTP clients.
 type HTTPClient interface {
 	Do(config *HttpClientManager, body []byte, contentType types.ContentType) ([]byte, error)
 }
 
-// Standard HTTP client implementation
+// stdHTTPClient implements HTTPClient using the standard net/http package.
+// It provides reliable HTTP client functionality with full HTTP/1.1 and HTTP/2 support.
 type stdHTTPClient struct{}
 
-// Do implements HTTPClient
+// Do executes an HTTP request using the standard net/http client.
+// It handles request creation, header setting, and response reading.
 func (c *stdHTTPClient) Do(config *HttpClientManager, body []byte, contentType types.ContentType) ([]byte, error) {
 	req, err := http.NewRequest(config.Method, config.URL, bytes.NewReader(body))
 	if err != nil {
@@ -47,10 +50,12 @@ func (c *stdHTTPClient) Do(config *HttpClientManager, body []byte, contentType t
 	return io.ReadAll(resp.Body)
 }
 
-// FastHTTP client implementation (if available)
+// fastHTTPClient implements HTTPClient using the valyala/fasthttp package.
+// It provides high-performance HTTP client functionality for speed-critical applications.
 type fastHTTPClient struct{}
 
-// Do implements HTTPClient
+// Do executes an HTTP request using the FastHTTP client.
+// It provides better performance than standard HTTP client for high-throughput scenarios.
 func (c *fastHTTPClient) Do(config *HttpClientManager, body []byte, contentType types.ContentType) ([]byte, error) {
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
@@ -88,7 +93,8 @@ func (c *fastHTTPClient) Do(config *HttpClientManager, body []byte, contentType 
 	return resp.Body(), nil
 }
 
-// **Main Function: Do HTTP Request**
+// DoRequest executes a complete HTTP request with automatic encoding/decoding.
+// It validates URLs, constructs query parameters, handles TLS, and decodes responses.
 func DoRequest[T any](payload any, config *HttpClientManager) result.Result[T] {
 	// If you see this message check on all places where logging can be added for proper checks
 	config.Log.Info(constant.TransactionMessage, log.Any("url", config.URL))
@@ -148,7 +154,8 @@ func DoRequest[T any](payload any, config *HttpClientManager) result.Result[T] {
 	return result.NewSuccess(&decodedResp)
 }
 
-// **Step 2: Create HTTP Client**
+// createHTTPClient creates a configured HTTP client with TLS support.
+// It handles timeout settings, TLS configuration, and client certificates.
 func (config *HttpClientManager) createHTTPClient() *http.Client {
 	client := &http.Client{Timeout: config.Timeout}
 
@@ -167,7 +174,8 @@ func (config *HttpClientManager) createHTTPClient() *http.Client {
 	return client
 }
 
-// **Step 3: Handle Response and Decode**
+// decodeResponse decodes HTTP response body based on content type.
+// It attempts content-type specific decoding first, then falls back to generic decoders.
 func decodeResponse[T any](body []byte, contentType types.ContentType) (T, error) {
 	var result T
 	reader := bytes.NewReader(body)

@@ -29,7 +29,8 @@ import (
 	"golang.org/x/text/language"
 )
 
-// isEmptyPrimitive handles primitive type checks
+// isEmptyPrimitive checks if a primitive type value is empty.
+// It returns (isEmpty, wasHandled) where wasHandled indicates if the type was recognized.
 func isEmptyPrimitive(v reflect.Value) (bool, bool) {
 	switch v.Kind() {
 	case reflect.String:
@@ -46,7 +47,8 @@ func isEmptyPrimitive(v reflect.Value) (bool, bool) {
 	return false, false
 }
 
-// isEmptyCollection handles collection type checks
+// isEmptyCollection checks if a collection type (slice, map, array, func) is empty.
+// It returns (isEmpty, wasHandled) where wasHandled indicates if the type was recognized.
 func isEmptyCollection(v reflect.Value) (bool, bool) {
 	switch v.Kind() {
 	case reflect.Func, reflect.Map, reflect.Slice:
@@ -62,7 +64,8 @@ func isEmptyCollection(v reflect.Value) (bool, bool) {
 	return false, false
 }
 
-// isEmptyStruct handles struct type checks
+// isEmptyStruct checks if a struct type is empty by recursively checking all fields.
+// It handles time.Time as a special case and returns (isEmpty, wasHandled).
 func isEmptyStruct(v reflect.Value) (bool, bool) {
 	if v.Kind() != reflect.Struct {
 		return false, false
@@ -83,6 +86,7 @@ func isEmptyStruct(v reflect.Value) (bool, bool) {
 }
 
 // IsEmpty checks if the given interface value represents an empty or zero value.
+// It supports custom EmptyCheck interface and handles all Go types recursively.
 func IsEmpty[T any](value T) bool {
 	// Check if value implements EmptyCheck interface
 	if v, ok := any(value).(types.EmptyCheck); ok {
@@ -121,7 +125,8 @@ func IsEmpty[T any](value T) bool {
 	return v.Interface() == reflect.Zero(v.Type()).Interface()
 }
 
-// FetchErrorStrings returns a slice of strings containing the error messages
+// FetchErrorStrings extracts error messages from a slice of errors.
+// It filters out nil errors and returns only the error message strings.
 func FetchErrorStrings(errs []error) []string {
 	errStrings := make([]string, 0, len(errs))
 	for _, err := range errs {
@@ -132,7 +137,8 @@ func FetchErrorStrings(errs []error) []string {
 	return errStrings
 }
 
-// FetchErrorStack returns a string after joining all errors
+// FetchErrorStack joins multiple errors into a single error string.
+// It returns an empty string if no errors are provided or all are nil.
 func FetchErrorStack(errs []error) string {
 	err := JoinErrors(errs)
 	if err == nil {
@@ -141,7 +147,8 @@ func FetchErrorStack(errs []error) string {
 	return err.Error()
 }
 
-// JoinErrors returns a new error after joining all errors
+// JoinErrors combines multiple errors into a single error using errors.Join.
+// It returns nil if no errors are provided or all errors are nil.
 func JoinErrors(errs []error) error {
 	err := errors.Join(errs...)
 	if err == nil {
@@ -150,7 +157,8 @@ func JoinErrors(errs []error) error {
 	return err
 }
 
-// FetchHTTPStatusCode returns the HTTP status code associated with the response type
+// FetchHTTPStatusCode maps response error types to their corresponding HTTP status codes.
+// It returns 500 (Internal Server Error) for unknown response types.
 func FetchHTTPStatusCode(response types.ResponseErrorType) int {
 	switch response {
 	case constant.BadRequest:
@@ -167,7 +175,8 @@ func FetchHTTPStatusCode(response types.ResponseErrorType) int {
 	return http.StatusInternalServerError
 }
 
-// IsProdEnvironment returns true if Environment is set to "prod" or "production"
+// IsProdEnvironment checks if the current environment is production.
+// It returns true for "prod" or "production" environment values.
 func IsProdEnvironment() bool {
 	switch GetEnvironment() {
 	case "prod", "production":
@@ -334,6 +343,8 @@ func IsSuccess(status types.Status) bool {
 	return strings.EqualFold(status.String(), constant.Success.String()) || strings.EqualFold(status.String(), constant.Completed.String())
 }
 
+// GetEnvironment retrieves the current environment setting from various sources.
+// It checks environment variables and viper configuration in order of priority.
 func GetEnvironment() string {
 	if os.Getenv(constant.Environment) != "" {
 		return os.Getenv(constant.Environment)
@@ -350,6 +361,8 @@ func GetEnvironment() string {
 	return os.Getenv(constant.Environment)
 }
 
+// GetEnvironmentSlug normalizes environment names to standard slugs.
+// It maps various environment name variations to consistent short forms.
 func GetEnvironmentSlug(environment string) string {
 	switch strings.ToLower(environment) {
 	case "dev", "development":
@@ -394,7 +407,8 @@ func GetAvailablePort(protocol types.Protocol, preferredPort string) (string, er
 	return "0", fmt.Errorf("no available ports found")
 }
 
-// findDynamicPort finds a free port dynamically for the given protocol.
+// findDynamicPort finds an available port dynamically for the specified protocol.
+// It uses the OS to allocate a free port automatically.
 func findDynamicPort(protocol types.Protocol) (int, error) {
 	addr := fmt.Sprintf(":%d", 0)
 
@@ -427,7 +441,8 @@ func findDynamicPort(protocol types.Protocol) (int, error) {
 
 }
 
-// isPortAvailable checks if a TCP or UDP port is available.
+// isPortAvailable tests if a specific port is available for the given protocol.
+// It attempts to bind to the port and returns true if successful.
 func isPortAvailable(protocol types.Protocol, port string) bool {
 	addr := fmt.Sprintf(":%s", port)
 	switch protocol {
@@ -457,7 +472,8 @@ func isPortAvailable(protocol types.Protocol, port string) bool {
 	return false
 }
 
-// **Helper Function: Validate URL**
+// ValidateURL checks if the provided string is a valid URL.
+// It uses url.ParseRequestURI for validation and returns an error if invalid.
 func ValidateURL(requestURL string) error {
 	_, err := url.ParseRequestURI(requestURL)
 	if err != nil {
@@ -466,7 +482,8 @@ func ValidateURL(requestURL string) error {
 	return nil
 }
 
-// **Helper Function: Construct URL with Query Params**
+// ConstructURLWithParams builds a URL by appending query parameters to a base URL.
+// It handles various parameter types and properly encodes them.
 func ConstructURLWithParams(baseURL string, params map[string]any) (string, error) {
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
@@ -493,7 +510,8 @@ func ConstructURLWithParams(baseURL string, params map[string]any) (string, erro
 	return parsedURL.String(), nil
 }
 
-// **Helper Function: Create Log Directory**
+// CreateLogDirectory creates the log directory and file for the service.
+// It ensures proper permissions and returns the log file path.
 func CreateLogDirectory() string {
 	serviceName := GetServiceName()
 	// Define the log file path
@@ -526,13 +544,15 @@ func CreateLogDirectory() string {
 	return logFilePath
 }
 
-// GetIsLogRotationEnabled returns true if log rotation is enabled
+// GetIsLogRotationEnabled checks if log rotation is enabled via environment variables.
+// It parses the LOG_ROTATION_ENABLED environment variable as a boolean.
 func GetIsLogRotationEnabled() bool {
 	enableRotation, _ := strconv.ParseBool(os.Getenv(constant.LogRotationEnabled))
 	return enableRotation
 }
 
-// Println prints a message with the specified log mode and color
+// Println prints a colored log message with timestamp and log level.
+// It exits the program with code 1 if the mode is FATAL.
 func Println(mode types.LogMode, args ...any) {
 	var color string
 	switch mode {
@@ -557,7 +577,8 @@ func Println(mode types.LogMode, args ...any) {
 	}
 }
 
-// Printf prints a formatted message with the specified log mode and color
+// Printf prints a formatted colored log message with timestamp and log level.
+// It exits the program with code 1 if the mode is FATAL.
 func Printf(mode types.LogMode, format string, args ...interface{}) {
 	var color string
 	switch mode {
@@ -583,37 +604,44 @@ func Printf(mode types.LogMode, format string, args ...interface{}) {
 	}
 }
 
-// CorrelationIDFromNatsMsg returns the correlation ID from a nats.Msg.
+// CorrelationIDFromNatsMsg extracts the correlation ID from NATS message headers.
+// It returns the correlation ID used for distributed tracing.
 func CorrelationIDFromNatsMsg(msg *nats.Msg) string {
 	return msg.Header.Get(constant.CorrelationIDHeader)
 }
 
-// MessageIDFromNatsMsg returns the message ID from a nats.Msg.
+// MessageIDFromNatsMsg extracts the message ID from NATS message headers.
+// It returns the unique message identifier for idempotency handling.
 func MessageIDFromNatsMsg(msg *nats.Msg) string {
 	return msg.Header.Get(constant.MessageIdHeader)
 }
 
-// AuthorizationHeaderFromNatsMsg returns the authorization header from a nats.Msg.
+// AuthorizationHeaderFromNatsMsg extracts the authorization header from NATS message.
+// It returns the authorization token for authentication purposes.
 func AuthorizationHeaderFromNatsMsg(msg *nats.Msg) string {
 	return msg.Header.Get(constant.AuthorizationHeader)
 }
 
-// IPHeaderFromNatsMsg returns the ip header from a nats.Msg.
+// IPHeaderFromNatsMsg extracts the IP address header from NATS message.
+// It returns the client IP address for logging and security purposes.
 func IPHeaderFromNatsMsg(msg *nats.Msg) string {
 	return msg.Header.Get(constant.IPHeader)
 }
 
-// ErrorHeadeFromNatsMsg returns the error header from a nats.Msg.
+// ErrorHeadeFromNatsMsg extracts the error header from NATS message.
+// It returns error information passed through message headers.
 func ErrorHeadeFromNatsMsg(msg *nats.Msg) string {
 	return msg.Header.Get(constant.ErrorHeader)
 }
 
-// GetIssuerFromConfig returns the issuer from the config
+// GetIssuerFromConfig retrieves the JWT issuer from configuration.
+// It returns the issuer identifier used for token validation.
 func GetIssuerFromConfig() string {
 	return viper.GetString(constant.IssuerKey)
 }
 
-// ConstructDiscoveryURL returns the discovery url
+// ConstructDiscoveryURL builds a service discovery URL by combining base URL and service name.
+// It returns a properly formatted URL for service discovery.
 func ConstructDiscoveryURL(URL string, serviceName string) string {
 	u, err := url.Parse(URL + serviceName)
 	if err != nil {
@@ -688,14 +716,15 @@ func formatIndexName(serviceName string) string {
 	return serviceName + "-service-" + environment + "-logs"
 }
 
+// Valid returns a pointer to true, commonly used for boolean pointer fields.
+// It provides a convenient way to set boolean pointer values.
 func Valid() *bool {
 	valid := true
 	return &valid
 }
 
-// MustGetEnv retrieves the environment variable named by the key.
-// If the variable is not set or is empty after trimming whitespace,
-// the function logs a fatal error and exits the program.
+// MustGetEnv retrieves a required environment variable or exits the program.
+// If the variable is not set or empty, it logs a fatal error and exits with code 1.
 func MustGetEnv(key string) string {
 	value := os.Getenv(key)
 
@@ -708,11 +737,14 @@ func MustGetEnv(key string) string {
 	return value
 }
 
-// IsURL checks if the given string is a URL
+// IsURL checks if the given string starts with http:// or https://.
+// It performs a simple prefix check to identify URLs.
 func IsURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }
 
+// ToNetIPAddr converts a remote address string to a netip.Addr.
+// It handles addresses with or without ports and validates IP format.
 func ToNetIPAddr(remoteAddress string) (*netip.Addr, error) {
 	var host string
 
@@ -742,16 +774,15 @@ func ToNetIPAddr(remoteAddress string) (*netip.Addr, error) {
 	return &ipAddr, nil
 }
 
-// NormalizePrecision normalizes the precision of a float64 value.
+// NormalizePrecision rounds a float64 value to the specified number of decimal places.
+// It uses math.Pow10 and math.Round for precise decimal rounding.
 func NormalizePrecision(val float64, digits int) float64 {
 	scale := math.Pow10(digits)
 	return math.Round(val*scale) / scale
 }
 
-// DetectInputType checks if the string is a file path or raw JSON.
-// Returns "file", "json", or "unknown".
-// DetectInputType checks if the string is a file path or raw JSON.
-// Returns "file", "json", or "".
+// DetectInputType analyzes input to determine if it's a file path or JSON string.
+// It returns "file", "json", or empty string for unknown types.
 func DetectInputType(input string) string {
 	input = strings.TrimSpace(input)
 
@@ -780,11 +811,9 @@ func DetectInputType(input string) string {
 	return ""
 }
 
-// ParsePhoneNumber parses a raw phone number string into a standardized Info struct.
-//
-// defaultRegion: A two-letter (ISO 3166-1) country code (e.g., "US", "IN", "GB").
-// This is used to guess the country code if the number is not in international
-// format (e.g., to understand that "(415) 555-1212" is a "US" number).
+// ParsePhoneNumber parses and validates a phone number string using libphonenumber.
+// defaultRegion is a two-letter ISO country code used for numbers without country codes.
+// It returns detailed phone number information including validation status.
 func ParsePhoneNumber(rawNumber, defaultRegion string) (*structures.PhoneNumberInfo, error) {
 	// 1. Parse the number using the phonenumbers library
 	num, err := phonenumbers.Parse(rawNumber, strings.ToUpper(defaultRegion))
@@ -808,15 +837,15 @@ func ParsePhoneNumber(rawNumber, defaultRegion string) (*structures.PhoneNumberI
 	return info, nil
 }
 
-// GetRegionForCountryCode gets the primary region (e.g., "IN") for a country code (e.g., 91).
-// Note: Some codes map to multiple regions (e.g., +1 maps to US, CA, etc.).
+// GetRegionForCountryCode returns the primary region code for a given country dialing code.
+// Note: Some country codes map to multiple regions (e.g., +1 for US, CA, etc.).
 func GetRegionForCountryCode(countryCode int) string {
 	// This returns the *main* region for that code (e.g., 1 -> "US")
 	return phonenumbers.GetRegionCodeForCountryCode(countryCode)
 }
 
-// GetCountryInfoForCode gets the primary region and full name for a country code.
-// Note: Some codes map to multiple regions (e.g., +1 maps to US, CA, etc.).
+// GetCountryInfoForCode returns both region code and country name for a dialing code.
+// It provides human-readable country information for phone number display.
 func GetCountryInfoForCode(countryCode int) (regionCode string, countryName string) {
 	// Get the *primary* region for this dialing code
 	regionCode = phonenumbers.GetRegionCodeForCountryCode(countryCode)
@@ -830,6 +859,8 @@ func GetCountryInfoForCode(countryCode int) (regionCode string, countryName stri
 	return regionCode, countryName
 }
 
+// TailCallerEncoder creates a custom zap caller encoder that shows the last n path segments.
+// It provides more readable file paths in log output by trimming deep directory structures.
 func TailCallerEncoder(n int) zapcore.CallerEncoder {
 	if n <= 0 {
 		return zapcore.ShortCallerEncoder

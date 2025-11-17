@@ -13,7 +13,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// PostgreSQL-specific implementation
+// PostgresDB provides a generic PostgreSQL database adapter with connection pooling.
+// It supports query factories, health monitoring, and pgx connection management.
 type PostgresDB[T any] struct {
 	pool               *pgxpool.Pool
 	options            *database.PostgresDBOptions
@@ -26,7 +27,8 @@ type PostgresDB[T any] struct {
 	monitorMu          sync.Mutex
 }
 
-// NewPostgresFactory creates a new PostgresDB with a custom factory.
+// NewPostgresFactory creates a new PostgresDB instance with the specified options and query factory.
+// The factory function is used to create query objects for database operations.
 func NewPostgresFactory[T any](options *database.PostgresDBOptions, factory database.GenericQueriesFactory[T]) *PostgresDB[T] {
 	return &PostgresDB[T]{
 		options: options,
@@ -37,7 +39,8 @@ func NewPostgresFactory[T any](options *database.PostgresDBOptions, factory data
 	}
 }
 
-// Connect establishes a connection and initializes the Queries struct using the factory.
+// Connect establishes a PostgreSQL connection pool and initializes query providers.
+// It configures connection pooling, performs health checks, and sets up monitoring.
 func (p *PostgresDB[T]) Connect(ctx context.Context) error {
 	cfg, err := pgxpool.ParseConfig(p.options.GetDSN())
 	if err != nil {
@@ -75,7 +78,8 @@ func (p *PostgresDB[T]) Connect(ctx context.Context) error {
 	return nil
 }
 
-// applyQueryProvider applies the query provider to the database.
+// applyQueryProvider initializes the query provider based on configuration.
+// It supports different query providers like SQLC for type-safe database operations.
 func (p *PostgresDB[T]) applyQueryProvider() {
 	switch p.options.GetQueryProvider() {
 	case constant.SQLCProvider.String():
@@ -85,7 +89,8 @@ func (p *PostgresDB[T]) applyQueryProvider() {
 	}
 }
 
-// GetProviderDB returns the initialized query struct.
+// GetProviderDB returns the database query provider instance.
+// It supports different query providers and returns the appropriate type.
 func (p *PostgresDB[T]) GetProviderDB() any {
 	switch p.options.GetQueryProvider() {
 	case constant.SQLCProvider.String():
@@ -98,12 +103,14 @@ func (p *PostgresDB[T]) GetProviderDB() any {
 	}
 }
 
-// IsQueryProviderAvailable returns the if queryProvider is provided or not
+// IsQueryProviderAvailable checks if a query provider is configured.
+// It returns true if a query provider is set in the options.
 func (p *PostgresDB[T]) IsQueryProviderAvailable() bool {
 	return !helpers.IsEmpty(p.options.GetQueryProvider())
 }
 
-// Ping checks the connection to the database.
+// Ping tests the PostgreSQL connection and verifies database existence.
+// It performs both connection pool health check and database availability check.
 func (p *PostgresDB[T]) Ping() error {
 	if err := p.pool.Ping(context.Background()); err != nil {
 		return err
@@ -115,7 +122,8 @@ func (p *PostgresDB[T]) Ping() error {
 	return nil
 }
 
-// checkDatabaseExists verifies that the specified database exists.
+// checkDatabaseExists verifies that the target database exists in the PostgreSQL instance.
+// It extracts the database name from DSN and queries the system catalog.
 func (p *PostgresDB[T]) checkDatabaseExists(ctx context.Context) error {
 	// Check if the database exists
 	dbName, err := database.ExtractDBNameFromDSN(constant.PostgreSQL, p.options.GetDSN()) // Extract the database name from the DSN
@@ -135,6 +143,8 @@ func (p *PostgresDB[T]) checkDatabaseExists(ctx context.Context) error {
 	return nil
 }
 
+// StartMonitor begins database health monitoring in a separate goroutine.
+// It stops any existing monitor before starting a new one to prevent duplicates.
 func (p *PostgresDB[T]) StartMonitor() {
 	p.monitorMu.Lock()
 	defer p.monitorMu.Unlock()
@@ -152,6 +162,8 @@ func (p *PostgresDB[T]) StartMonitor() {
 	go database.MonitorDB[database.Database](ctx, p)
 }
 
+// StopMonitor gracefully stops the database health monitoring goroutine.
+// It cancels the context and closes channels to ensure clean shutdown.
 func (p *PostgresDB[T]) StopMonitor() {
 	p.monitorMu.Lock()
 	defer p.monitorMu.Unlock()
@@ -167,6 +179,8 @@ func (p *PostgresDB[T]) StopMonitor() {
 	}
 }
 
+// GetLogger returns the configured logger instance for the PostgreSQL adapter.
+// It provides access to the logger for debugging and monitoring purposes.
 func (p *PostgresDB[T]) GetLogger() *log.Log {
 	return p.options.GetLogger()
 }
