@@ -39,7 +39,8 @@ type NATSManager struct {
 	reconnect          bool                           // Flag to enable auto-reconnection
 }
 
-// subscriptionParams stores the parameters for a subscription
+// subscriptionParams stores the parameters needed to recreate a subscription.
+// This is used for automatic resubscription when connections are lost.
 type subscriptionParams struct {
 	queue   string
 	handler nats.MsgHandler
@@ -52,7 +53,8 @@ foo.>: Matches subjects like foo.bar, foo.bar.baz, foo.baz.qux, etc.
 >.foo.*: Matches subjects like bar.foo.baz, baz.foo.qux, but not foo.bar.
 */
 
-// NewNATSManager initializes a new generic NATS manager
+// NewNATSManager creates and initializes a new NATS manager with circuit breaker support.
+// It establishes a connection to NATS server and configures reliability options.
 func NewNATSManager(url string, options ...Option) (*NATSManager, error) {
 	defaultLog := log.NewBasicLogger(helpers.IsProdEnvironment(), true)
 
@@ -97,7 +99,8 @@ func NewNATSManager(url string, options ...Option) (*NATSManager, error) {
 	return manager, nil
 }
 
-// Ping checks the connection to the nats
+// Ping checks the health of the NATS connection.
+// It returns an error if the connection is not established or has been lost.
 func (w *NATSManager) Ping() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -109,7 +112,8 @@ func (w *NATSManager) Ping() error {
 	return errors.New(ConnectionFailedMessage)
 }
 
-// Close gracefully shuts down the manager
+// Close gracefully shuts down the NATS manager.
+// It unsubscribes from all subjects, closes connections, and cleans up resources.
 func (w *NATSManager) Close() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -201,7 +205,8 @@ func (w *NATSManager) handleMessage(msg *nats.Msg, handler nats.MsgHandler) {
 	w.logger.Info("Message processed", log.Any("message_id", messageID))
 }
 
-// monitorSubscription ensures subscription stays active
+// monitorSubscription continuously monitors a subscription's health.
+// It automatically attempts to resubscribe if the subscription becomes invalid.
 func (w *NATSManager) monitorSubscription(subject string, sub *nats.Subscription) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
@@ -220,8 +225,8 @@ func (w *NATSManager) monitorSubscription(subject string, sub *nats.Subscription
 	}
 }
 
-// resubscribe attempts to reestablish an invalid subscription
-// In resubscribe, re-subscribe using stored parameters:
+// resubscribe attempts to reestablish an invalid subscription using stored parameters.
+// It handles both regular NATS and JetStream subscriptions with appropriate configurations.
 func (w *NATSManager) resubscribe(subject string) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -265,7 +270,8 @@ func (w *NATSManager) resubscribe(subject string) {
 	}
 }
 
-// FetchMessageAndCorrelationField returns a slice of types.Field with request and correlation fields.
+// FetchMessageAndCorrelationField extracts message ID and correlation ID from NATS message headers.
+// It returns a slice of log fields for structured logging.
 func FetchMessageAndCorrelationField(msg *nats.Msg) []types.Field {
 	fields := make([]types.Field, 2)
 	fields[0] = log.String(constant.MessageIdHeader, helpers.MessageIDFromNatsMsg(msg))
@@ -273,7 +279,8 @@ func FetchMessageAndCorrelationField(msg *nats.Msg) []types.Field {
 	return fields
 }
 
-// Slog returns a slice of types.Field with message and correlation fields and additional fields.
+// Slog creates a structured log entry with message metadata and optional additional fields.
+// It combines message ID, correlation ID, IP header, and any provided fields.
 func Slog(msg *nats.Msg, withFields ...types.Field) []types.Field {
 	// Start with the message and correlation fields
 	fields := make([]types.Field, 0, 3+len(withFields))
@@ -285,6 +292,8 @@ func Slog(msg *nats.Msg, withFields ...types.Field) []types.Field {
 	return fields
 }
 
+// RunSafely executes a function with panic recovery.
+// It logs any panics that occur during execution and prevents the application from crashing.
 func (w *NATSManager) RunSafely(fn func()) {
 	defer func() {
 		if r := recover(); r != nil {

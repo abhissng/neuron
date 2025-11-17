@@ -15,12 +15,13 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-// Generic Type Constraints
+// ConvertibleType defines the generic type constraints for parameters that can be converted.
+// It includes integers, booleans, strings, and UUIDs.
 type ConvertibleType interface {
 	constraints.Integer | bool | string | uuid.UUID
 }
 
-// Parameter Source Enum
+// ParamOrigin represents the source of a parameter (route, query, or header).
 type ParamOrigin int
 
 const (
@@ -30,7 +31,7 @@ const (
 	HeaderParam
 )
 
-// String Conversion
+// String returns the string representation of ParamOrigin.
 func (p ParamOrigin) String() string {
 	switch p {
 	case RouteParam:
@@ -44,11 +45,14 @@ func (p ParamOrigin) String() string {
 	}
 }
 
-// Parameter Processing Functions
+// ParamValidatorFunc is a function type for validating parameters of type T.
 type ParamValidatorFunc[T ConvertibleType] func(T) bool
+
+// ParamConverterFunc is a function type for converting string values to type T.
 type ParamConverterFunc[T ConvertibleType] func(string) result.Result[T]
 
-// Fetch Raw Parameter
+// fetchParam retrieves a raw parameter value from the gin context based on its origin.
+// It returns a Result containing the parameter value or an error if not found.
 func fetchParam(c *gin.Context, paramName string, origin ParamOrigin) result.Result[string] {
 	switch origin {
 	case RouteParam:
@@ -68,7 +72,8 @@ func fetchParam(c *gin.Context, paramName string, origin ParamOrigin) result.Res
 	}
 }
 
-// Generic Parameter Getter
+// fetchAndConvertParam is a generic function that fetches, converts, and validates parameters.
+// It handles the complete parameter processing pipeline including validation.
 func fetchAndConvertParam[T ConvertibleType](
 	c *gin.Context,
 	paramName string,
@@ -100,7 +105,8 @@ func fetchAndConvertParam[T ConvertibleType](
 	return result.NewSuccess(convertedValue)
 }
 
-// Integer Parameter
+// FetchIntParam fetches and converts a parameter to int64.
+// It returns a Result containing the converted integer or an error if conversion fails.
 func FetchIntParam(c *gin.Context, paramName string, origin ParamOrigin, required bool) result.Result[int64] {
 	return fetchAndConvertParam(c, paramName, required, origin, func(value string) result.Result[int64] {
 		parsed, err := strconv.ParseInt(value, 10, 64)
@@ -111,7 +117,8 @@ func FetchIntParam(c *gin.Context, paramName string, origin ParamOrigin, require
 	}, nil)
 }
 
-// String Parameter
+// FetchTextParam fetches and validates a string parameter.
+// It ensures the parameter is not empty and returns a Result with the string value.
 func FetchTextParam(c *gin.Context, paramName string, origin ParamOrigin, required bool) result.Result[string] {
 	return fetchAndConvertParam(c, paramName, required, origin, func(value string) result.Result[string] {
 		if helpers.IsEmpty(value) {
@@ -121,7 +128,8 @@ func FetchTextParam(c *gin.Context, paramName string, origin ParamOrigin, requir
 	}, nil)
 }
 
-// Validated String Parameter
+// FetchValidatedTextParam fetches a string parameter and applies custom validation.
+// It combines string fetching with user-provided validation logic.
 func FetchValidatedTextParam(
 	c *gin.Context,
 	paramName string,
@@ -137,7 +145,8 @@ func FetchValidatedTextParam(
 	}, validator)
 }
 
-// UUID Parameter
+// FetchUUIDParam fetches and converts a parameter to UUID.
+// It parses the string value as a UUID and returns a Result with the parsed UUID.
 func FetchUUIDParam(c *gin.Context, paramName string, origin ParamOrigin, required bool) result.Result[uuid.UUID] {
 	return fetchAndConvertParam(c, paramName, required, origin, func(value string) result.Result[uuid.UUID] {
 		parsed, err := uuid.Parse(value)
@@ -148,7 +157,8 @@ func FetchUUIDParam(c *gin.Context, paramName string, origin ParamOrigin, requir
 	}, nil)
 }
 
-// Boolean Parameter
+// FetchBoolParam fetches and converts a parameter to boolean.
+// It parses string values like "true", "false", "1", "0" to boolean.
 func FetchBoolParam(c *gin.Context, paramName string, origin ParamOrigin, required bool) result.Result[bool] {
 	return fetchAndConvertParam(c, paramName, required, origin, func(value string) result.Result[bool] {
 		parsed, err := strconv.ParseBool(value)
@@ -159,7 +169,8 @@ func FetchBoolParam(c *gin.Context, paramName string, origin ParamOrigin, requir
 	}, nil)
 }
 
-// Retrieve Arbitrary Value from Gin Context
+// RetrieveFromGinContext retrieves an arbitrary value from the gin context by key.
+// It performs type assertion and returns a Result with the typed value.
 func RetrieveFromGinContext[T any](c *gin.Context, key string) result.Result[T] {
 	val, exists := c.Get(key)
 	if !exists {
@@ -175,7 +186,8 @@ func RetrieveFromGinContext[T any](c *gin.Context, key string) result.Result[T] 
 	return result.NewSuccess(&typedVal)
 }
 
-// Extract Data from Request Body
+// ExtractDataFromRequestBody extracts and unmarshals JSON data from the request body.
+// It binds the JSON payload to the specified type T.
 func ExtractDataFromRequestBody[T any](c *gin.Context) result.Result[T] {
 	var payload T
 	err := c.ShouldBindJSON(&payload)
@@ -185,7 +197,8 @@ func ExtractDataFromRequestBody[T any](c *gin.Context) result.Result[T] {
 	return result.NewSuccess(&payload)
 }
 
-// Extract Data from Request Form
+// ExtractDataFromForm extracts and binds form data from the request.
+// It supports both URL-encoded and multipart form data.
 func ExtractDataFromForm[T any](c *gin.Context) result.Result[T] {
 	var form T
 	if bindErr := c.ShouldBind(&form); bindErr != nil {
@@ -194,7 +207,8 @@ func ExtractDataFromForm[T any](c *gin.Context) result.Result[T] {
 	return result.NewSuccess(&form)
 }
 
-// Fetch Business ID from Params
+// FetchBusinessIDFromParams fetches the business ID from route parameters.
+// It converts the parameter to BusinessID type and validates it.
 func FetchBusinessIDFromParams(c *gin.Context) result.Result[types.BusinessID] {
 	idResult := FetchIntParam(c, constant.BusinessID, RouteParam, true)
 	if idResult.IsSuccess() {
@@ -205,7 +219,8 @@ func FetchBusinessIDFromParams(c *gin.Context) result.Result[types.BusinessID] {
 	return result.NewFailure[types.BusinessID](blame.BusinessIdPathParamMissing(err.FetchCauses()...))
 }
 
-// Parse Unix Time from Params
+// ParseUnixTimeFromParams parses a Unix timestamp from query parameters.
+// It converts the timestamp to Milliseconds type for time handling.
 func ParseUnixTimeFromParams(key string, mandatory bool, c *gin.Context) result.Result[types.Milliseconds] {
 	paramResult := FetchIntParam(c, key, QueryParam, mandatory)
 	if paramResult.IsSuccess() {
@@ -219,7 +234,8 @@ func ParseUnixTimeFromParams(key string, mandatory bool, c *gin.Context) result.
 	return result.NewFailure[types.Milliseconds](blame.TimeQueryParamInvalid())
 }
 
-// Retrieve User ID from Context
+// RetrieveUserIdFromContext retrieves the user ID from the gin context.
+// This is typically set by authentication middleware.
 func RetrieveUserIdFromContext(c *gin.Context) result.Result[types.UserID] {
 	userIdResult := RetrieveFromGinContext[types.UserID](c, constant.UserID)
 	if userIdResult.IsSuccess() {
@@ -229,7 +245,8 @@ func RetrieveUserIdFromContext(c *gin.Context) result.Result[types.UserID] {
 	return result.NewFailure[types.UserID](blame.UserIdContextMissing(constant.UserID, err.FetchCauses()...))
 }
 
-// Fetch User ID from Params
+// FetchUserIdFromParams fetches the user ID from query parameters.
+// It validates and converts the parameter to UserID type.
 func FetchUserIdFromParams(c *gin.Context) result.Result[types.UserID] {
 	userIdParam := FetchIntParam(c, constant.UserID, QueryParam, true)
 	if userIdParam.IsSuccess() {
@@ -240,7 +257,8 @@ func FetchUserIdFromParams(c *gin.Context) result.Result[types.UserID] {
 	return result.NewFailure[types.UserID](blame.UserIdQueryParamMissing(constant.UserID, err.FetchCauses()...))
 }
 
-// Fetch Business ID from Headers
+// FetchBusinessIdFromHeaders fetches the business ID from request headers.
+// It's commonly used for multi-tenant applications.
 func FetchBusinessIdFromHeaders(c *gin.Context) result.Result[types.BusinessID] {
 	businessIdHeader := FetchIntParam(c, constant.BusinessID, HeaderParam, true)
 	if businessIdHeader.IsSuccess() {
@@ -251,7 +269,8 @@ func FetchBusinessIdFromHeaders(c *gin.Context) result.Result[types.BusinessID] 
 	return result.NewFailure[types.BusinessID](blame.BusinessIdHeaderMissing(constant.BusinessID, err.FetchCauses()...))
 }
 
-// Retrieve User ID from Headers
+// RetrieveUserIdFromHeaders retrieves the user ID from request headers.
+// It validates the header value and converts it to UserID type.
 func RetrieveUserIdFromHeaders(c *gin.Context) result.Result[types.UserID] {
 	userIdHeader := FetchIntParam(c, constant.UserID, HeaderParam, true)
 	if userIdHeader.IsSuccess() {
@@ -262,7 +281,8 @@ func RetrieveUserIdFromHeaders(c *gin.Context) result.Result[types.UserID] {
 	return result.NewFailure[types.UserID](blame.UserIdHeaderMissing(constant.UserID, err.FetchCauses()...))
 }
 
-// Fetch Correlation ID from Headers
+// FetchCorrelationIdFromHeaders fetches the correlation ID from request headers.
+// Correlation IDs are used for distributed tracing and request tracking.
 func FetchCorrelationIdFromHeaders(c *gin.Context) result.Result[types.CorrelationID] {
 	correlationIdHeader := FetchTextParam(c, constant.CorrelationID, HeaderParam, true)
 	if correlationIdHeader.IsSuccess() {
@@ -273,7 +293,8 @@ func FetchCorrelationIdFromHeaders(c *gin.Context) result.Result[types.Correlati
 	return result.NewFailure[types.CorrelationID](blame.CorrelationIDHeaderMissing(constant.CorrelationID, err.FetchCauses()...))
 }
 
-// Retrieve Signature from Headers
+// RetrieveSignatureFromHeaders retrieves the signature from request headers.
+// This is used for request authentication and verification.
 func RetrieveSignatureFromHeaders(c *gin.Context) result.Result[string] {
 	signatureHeader := FetchTextParam(c, constant.XSignature, HeaderParam, true)
 	if signatureHeader.IsSuccess() {
@@ -283,7 +304,8 @@ func RetrieveSignatureFromHeaders(c *gin.Context) result.Result[string] {
 	return result.NewFailure[string](blame.AuthSignatureMissing())
 }
 
-// Extract PASETO Auth Token from Headers
+// ExtractPasetoAuthTokenFromHeaders extracts the PASETO authentication token from headers.
+// PASETO tokens are used for secure authentication and authorization.
 func ExtractPasetoAuthTokenFromHeaders(c *gin.Context) result.Result[string] {
 	authTokenHeader := FetchTextParam(c, constant.XPasetoToken, HeaderParam, true)
 	if authTokenHeader.IsSuccess() {
@@ -293,7 +315,8 @@ func ExtractPasetoAuthTokenFromHeaders(c *gin.Context) result.Result[string] {
 	return result.NewFailure[string](blame.MissingAuthCredential(errors.New("paseto authorization header is missing")))
 }
 
-// Fetch X-Subject Header
+// FetchXSubjectHeader fetches the X-Subject header from the request.
+// This header typically contains the subject identifier for the request.
 func FetchXSubjectHeader(c *gin.Context) result.Result[string] {
 	subjectHeader := FetchTextParam(c, constant.XSubject, HeaderParam, true)
 	if subjectHeader.IsSuccess() {
@@ -303,7 +326,8 @@ func FetchXSubjectHeader(c *gin.Context) result.Result[string] {
 	return result.NewFailure[string](blame.XSubjectHeaderMissing(errors.New("subject header is not present")))
 }
 
-// Extract Refresh Token from Headers
+// ExtractRefreshTokenFromHeaders extracts the refresh token from request headers.
+// Refresh tokens are used to obtain new access tokens without re-authentication.
 func ExtractRefreshTokenFromHeaders(c *gin.Context) result.Result[string] {
 	authTokenHeader := FetchTextParam(c, constant.XRefreshToken, HeaderParam, true)
 	if authTokenHeader.IsSuccess() {
@@ -314,7 +338,8 @@ func ExtractRefreshTokenFromHeaders(c *gin.Context) result.Result[string] {
 	return result.NewFailure[string](blame.MissingAuthCredential(errors.New("paseto authorization header is missing for refresh token")))
 }
 
-// Service Parameter
+// FetchServiceNameFromParams fetches the service name from route parameters.
+// This is used for service identification and routing.
 func FetchServiceNameFromParams(c *gin.Context) result.Result[types.Service] {
 	serviceParam := FetchTextParam(c, constant.Service, RouteParam, true)
 	if serviceParam.IsSuccess() {
@@ -325,7 +350,8 @@ func FetchServiceNameFromParams(c *gin.Context) result.Result[types.Service] {
 	return result.NewFailure[types.Service](blame.ServiceQueryParamMissing(constant.Service, err.FetchCauses()...))
 }
 
-// Fetch Paseto Bearer Token from Headers of gin context
+// FetchPasetoBearerToken fetches and extracts the PASETO bearer token from authorization headers.
+// It validates the Bearer token format and extracts the actual token value.
 func FetchPasetoBearerToken(c *gin.Context) result.Result[string] {
 	tokenResult := FetchTextParam(c, constant.AuthorizationHeader, HeaderParam, true)
 	if !tokenResult.IsSuccess() {
@@ -341,7 +367,8 @@ func FetchPasetoBearerToken(c *gin.Context) result.Result[string] {
 	return result.NewSuccess(&token)
 }
 
-// Fetch X-User-Role Header
+// FetchXUserRoleHeader fetches the X-User-Role header from the request.
+// This header contains the user's role information for authorization.
 func FetchXUserRoleHeader(c *gin.Context) result.Result[string] {
 	userRoleHeader := FetchTextParam(c, constant.XUserRole, HeaderParam, true)
 	if userRoleHeader.IsSuccess() {
@@ -351,22 +378,24 @@ func FetchXUserRoleHeader(c *gin.Context) result.Result[string] {
 	return result.NewFailure[string](blame.MissingXUserRole())
 }
 
-// Fetch X-Org-Id Header
-func FetchXOrgIdHeader(c *gin.Context) result.Result[string] {
-	orgIdHeader := FetchTextParam(c, constant.XOrgId, HeaderParam, true)
+// FetchXOrgIdHeader fetches the X-Org-Id header and converts it to UUID.
+// This header identifies the organization in multi-tenant applications.
+func FetchXOrgIdHeader(c *gin.Context) result.Result[uuid.UUID] {
+	orgIdHeader := FetchUUIDParam(c, constant.XOrgId, HeaderParam, true)
 	if orgIdHeader.IsSuccess() {
 		orgId := orgIdHeader.ToValue()
 		return result.NewSuccess(orgId)
 	}
-	return result.NewFailure[string](blame.MissingXOrgId())
+	return result.NewFailure[uuid.UUID](blame.MissingXOrgId())
 }
 
-// Fetch X-User-Id Header
-func FetchXUserIdHeader(c *gin.Context) result.Result[string] {
-	userIdHeader := FetchTextParam(c, constant.XUserId, HeaderParam, true)
+// FetchXUserIdHeader fetches the X-User-Id header and converts it to UUID.
+// This header contains the user identifier in UUID format.
+func FetchXUserIdHeader(c *gin.Context) result.Result[uuid.UUID] {
+	userIdHeader := FetchUUIDParam(c, constant.XUserId, HeaderParam, true)
 	if userIdHeader.IsSuccess() {
 		userId := userIdHeader.ToValue()
 		return result.NewSuccess(userId)
 	}
-	return result.NewFailure[string](blame.MissingXUserId())
+	return result.NewFailure[uuid.UUID](blame.MissingXUserId())
 }

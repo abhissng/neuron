@@ -13,7 +13,8 @@ import (
 	"github.com/abhissng/neuron/utils/helpers"
 )
 
-// MySQL-specific implementation
+// MySQLDB provides a generic MySQL database adapter with connection management.
+// It supports query factories, health monitoring, and connection pooling.
 type MySQLDB[T any] struct {
 	conn               *sql.DB
 	options            *database.MySQLDBOptions
@@ -26,7 +27,8 @@ type MySQLDB[T any] struct {
 	monitorMu          sync.Mutex
 }
 
-// NewMySQLFactory creates a new MySQLDB factory with the given options.
+// NewMySQLFactory creates a new MySQLDB instance with the specified options and query factory.
+// The factory function is used to create query objects for database operations.
 func NewMySQLFactory[T any](options *database.MySQLDBOptions, factory database.GenericQueriesFactory[T]) *MySQLDB[T] {
 	return &MySQLDB[T]{
 		options: options,
@@ -37,7 +39,8 @@ func NewMySQLFactory[T any](options *database.MySQLDBOptions, factory database.G
 	}
 }
 
-// Connect establishes a connection to the MySQL database.
+// Connect establishes a connection to the MySQL database using the configured options.
+// It sets up connection pooling, performs health checks, and starts monitoring if enabled.
 func (m *MySQLDB[T]) Connect(ctx context.Context) error {
 	conn, err := sql.Open("mysql", m.options.GetDSN())
 	if err != nil {
@@ -65,7 +68,8 @@ func (m *MySQLDB[T]) Connect(ctx context.Context) error {
 	return nil
 }
 
-// GetProviderDB returns the initialized query struct.
+// GetProviderDB returns the database query provider instance.
+// It supports different query providers like SQLC and returns the appropriate type.
 func (m *MySQLDB[T]) GetProviderDB() any {
 	switch m.options.GetQueryProvider() {
 	case constant.SQLCProvider.String():
@@ -78,11 +82,14 @@ func (m *MySQLDB[T]) GetProviderDB() any {
 	}
 }
 
-// IsQueryProviderAvailable returns the if queryProvider is provided or not
+// IsQueryProviderAvailable checks if a query provider is configured.
+// It returns true if a query provider is set in the options.
 func (m *MySQLDB[T]) IsQueryProviderAvailable() bool {
 	return !helpers.IsEmpty(m.options.GetQueryProvider())
 }
 
+// Ping tests the database connection and verifies database existence.
+// It performs both connection health check and database availability check.
 func (m *MySQLDB[T]) Ping() error {
 	if err := m.conn.Ping(); err != nil {
 		return err
@@ -93,7 +100,8 @@ func (m *MySQLDB[T]) Ping() error {
 	return nil
 }
 
-// checkDatabaseExists verifies that the specified database exists.
+// checkDatabaseExists verifies that the target database exists in the MySQL instance.
+// It extracts the database name from DSN and queries the system catalog.
 func (m *MySQLDB[T]) checkDatabaseExists(ctx context.Context) error {
 
 	// Check if the database exists
@@ -114,6 +122,8 @@ func (m *MySQLDB[T]) checkDatabaseExists(ctx context.Context) error {
 	return nil
 }
 
+// StartMonitor begins database health monitoring in a separate goroutine.
+// It stops any existing monitor before starting a new one to prevent duplicates.
 func (m *MySQLDB[T]) StartMonitor() {
 	m.monitorMu.Lock()
 	defer m.monitorMu.Unlock()
@@ -131,6 +141,8 @@ func (m *MySQLDB[T]) StartMonitor() {
 	go database.MonitorDB[database.Database](ctx, m)
 }
 
+// StopMonitor gracefully stops the database health monitoring goroutine.
+// It cancels the context and closes channels to ensure clean shutdown.
 func (m *MySQLDB[T]) StopMonitor() {
 	m.monitorMu.Lock()
 	defer m.monitorMu.Unlock()
@@ -146,6 +158,8 @@ func (m *MySQLDB[T]) StopMonitor() {
 	}
 }
 
+// GetLogger returns the configured logger instance for the MySQL adapter.
+// It provides access to the logger for debugging and monitoring purposes.
 func (m *MySQLDB[T]) GetLogger() *log.Log {
 	return m.options.GetLogger()
 }

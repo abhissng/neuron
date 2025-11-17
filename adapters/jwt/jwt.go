@@ -9,13 +9,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// Claims represents the JWT claims
+// Claims represents the custom JWT claims structure with service information.
+// It embeds jwt.RegisteredClaims and adds service-specific fields.
 type Claims struct {
 	ServiceName string   `json:"service"`
 	Roles       []string `json:"roles"`
 	jwt.RegisteredClaims
 }
 
+// NewJWTClaims creates a new JWT claims structure with the specified parameters.
+// It sets up standard claims like issuer, expiration, and issued-at times.
 func NewJWTClaims(serviceName string, roles []string, expiryDuration time.Duration) *Claims {
 	now := time.Now()
 	claims := Claims{
@@ -30,7 +33,8 @@ func NewJWTClaims(serviceName string, roles []string, expiryDuration time.Durati
 	return &claims
 }
 
-// GenerateJWT generates a JWT token with the given secret and expiration time
+// GenerateJWT creates and signs a JWT token with HMAC SHA256.
+// It includes service name, roles, and standard claims with the specified expiration.
 func GenerateJWT(serviceName string, roles []string, secret string, expiryDuration time.Duration) (string, error) {
 
 	claims := NewJWTClaims(serviceName, roles, expiryDuration)
@@ -47,7 +51,8 @@ func GenerateJWT(serviceName string, roles []string, secret string, expiryDurati
 	return tokenString, nil
 }
 
-// ValidateJWT validates a JWT token with the given secret and expected claims
+// ValidateJWT parses and validates a JWT token against the provided secret and roles.
+// It performs signature verification, expiration checks, and role validation.
 func ValidateJWT(tokenString string, secret string, validRoles []string) (*Claims, error) {
 	// Parse the token
 	token, err := jwt.ParseWithClaims(
