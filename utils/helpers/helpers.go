@@ -920,3 +920,9 @@ func TailCallerEncoder(n int) zapcore.CallerEncoder {
 		enc.AppendString(sb.String())
 	}
 }
+
+// IsLocalhostHost checks if the host is localhost, 127.0.0.1, or ::1.
+func IsLocalhostHost(host string) bool {
+	h := strings.Split(host, ":")[0] // strip possible port
+	return h == "localhost" || h == "127.0.0.1" || h == "::1"
+}
