@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"go.uber.org/zap"
 )
@@ -112,19 +113,29 @@ func (c ContentType) String() string {
 type Field = zap.Field
 
 // BusinessID represents a business ID.
-type BusinessID int64
+type BusinessID uuid.UUID
 
-// Int64 returns the int64 representation of the BusinessID.
-func (e BusinessID) Int64() int64 {
-	return int64(e)
+// String returns the string representation of the BusinessID.
+func (e BusinessID) String() string {
+	return uuid.UUID(e).String()
 }
 
 // UserID represents a user ID.
-type UserID int64
+type UserID uuid.UUID
 
-// Int64 returns the int64 representation of the UserID.
-func (e UserID) Int64() int64 {
-	return int64(e)
+// String returns the string representation of the UserID.
+func (e UserID) String() string {
+	return uuid.UUID(e).String()
+}
+
+// UUID returns the underlying uuid.UUID value.
+func (e UserID) UUID() uuid.UUID {
+	return uuid.UUID(e)
+}
+
+// ToUserID returns the UserID representation of the uuid.
+func ToUserID(uuid uuid.UUID) UserID {
+	return UserID(uuid)
 }
 
 // Milliseconds represents a duration in milliseconds.
@@ -189,4 +200,26 @@ type PgType interface {
 		pgtype.Date |
 		pgtype.Interval |
 		pgtype.Numeric
+}
+
+// IDType is a composite constraint that allows only specific ID types.
+type IDType interface {
+	~string | ~int64 | ~int32 | uuid.UUID
+}
+
+type OrgID uuid.UUID
+
+// String returns the string representation of the OrgID.
+func (e OrgID) String() string {
+	return uuid.UUID(e).String()
+}
+
+// UUID returns the uuid representation of the OrgID.
+func (e OrgID) UUID() uuid.UUID {
+	return uuid.UUID(e)
+}
+
+// ToOrgID returns the OrgID representation of the uuid.
+func ToOrgID(uuid uuid.UUID) OrgID {
+	return OrgID(uuid)
 }

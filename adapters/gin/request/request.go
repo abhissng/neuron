@@ -210,7 +210,7 @@ func ExtractDataFromForm[T any](c *gin.Context) result.Result[T] {
 // FetchBusinessIDFromParams fetches the business ID from route parameters.
 // It converts the parameter to BusinessID type and validates it.
 func FetchBusinessIDFromParams(c *gin.Context) result.Result[types.BusinessID] {
-	idResult := FetchIntParam(c, constant.BusinessID, RouteParam, true)
+	idResult := FetchUUIDParam(c, constant.BusinessID, RouteParam, true)
 	if idResult.IsSuccess() {
 		val, _ := idResult.Value()
 		return result.NewSuccess(types.CreateRef(types.BusinessID(*val)))
@@ -248,7 +248,7 @@ func RetrieveUserIdFromContext(c *gin.Context) result.Result[types.UserID] {
 // FetchUserIdFromParams fetches the user ID from query parameters.
 // It validates and converts the parameter to UserID type.
 func FetchUserIdFromParams(c *gin.Context) result.Result[types.UserID] {
-	userIdParam := FetchIntParam(c, constant.UserID, QueryParam, true)
+	userIdParam := FetchUUIDParam(c, constant.UserID, QueryParam, true)
 	if userIdParam.IsSuccess() {
 		value, _ := userIdParam.Value()
 		return result.NewSuccess(types.CreateRef(types.UserID(*value)))
@@ -260,7 +260,7 @@ func FetchUserIdFromParams(c *gin.Context) result.Result[types.UserID] {
 // FetchBusinessIdFromHeaders fetches the business ID from request headers.
 // It's commonly used for multi-tenant applications.
 func FetchBusinessIdFromHeaders(c *gin.Context) result.Result[types.BusinessID] {
-	businessIdHeader := FetchIntParam(c, constant.BusinessID, HeaderParam, true)
+	businessIdHeader := FetchUUIDParam(c, constant.BusinessID, HeaderParam, true)
 	if businessIdHeader.IsSuccess() {
 		businessIdValue, _ := businessIdHeader.Value()
 		return result.NewSuccess(types.CreateRef(types.BusinessID(*businessIdValue)))
@@ -272,7 +272,7 @@ func FetchBusinessIdFromHeaders(c *gin.Context) result.Result[types.BusinessID] 
 // RetrieveUserIdFromHeaders retrieves the user ID from request headers.
 // It validates the header value and converts it to UserID type.
 func RetrieveUserIdFromHeaders(c *gin.Context) result.Result[types.UserID] {
-	userIdHeader := FetchIntParam(c, constant.UserID, HeaderParam, true)
+	userIdHeader := FetchUUIDParam(c, constant.UserID, HeaderParam, true)
 	if userIdHeader.IsSuccess() {
 		userValue, _ := userIdHeader.Value()
 		return result.NewSuccess(types.CreateRef(types.UserID(*userValue)))
@@ -398,4 +398,15 @@ func FetchXUserIdHeader(c *gin.Context) result.Result[uuid.UUID] {
 		return result.NewSuccess(userId)
 	}
 	return result.NewFailure[uuid.UUID](blame.MissingXUserId())
+}
+
+// FetchXFeatureFlagsHeader fetches the X-Feature-Flags header from the request.
+// This header contains the feature flags for the user.
+func FetchXFeatureFlagsHeader(c *gin.Context) result.Result[string] {
+	featureFlagsHeader := FetchTextParam(c, constant.XFeatureFlags, HeaderParam, true)
+	if featureFlagsHeader.IsSuccess() {
+		featureFlags := featureFlagsHeader.ToValue()
+		return result.NewSuccess(featureFlags)
+	}
+	return result.NewFailure[string](blame.MissingFeatureFlags())
 }

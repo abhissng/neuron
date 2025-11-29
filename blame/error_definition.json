@@ -500,6 +500,13 @@
     "Description": "The session is unauthenticated. Please try logging in again.",
     "Component": "adaptors",
     "ResponseType": "Unauthorized" 
+  },
+  {
+    "Code": "error-missing-feature-flags",
+    "Message": "Feature flags are missing",
+    "Description": "The required feature flags are missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
   }
 
 ]
