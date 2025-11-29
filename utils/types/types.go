@@ -3,6 +3,7 @@ package types
 import (
 	"crypto/ed25519"
 	"encoding/hex"
+	"encoding/json"
 	"strings"
 
 	"github.com/google/uuid"
@@ -133,6 +134,23 @@ func (e UserID) UUID() uuid.UUID {
 	return uuid.UUID(e)
 }
 
+func (o UserID) MarshalJSON() ([]byte, error) {
+	return json.Marshal(o.String())
+}
+
+func (o *UserID) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	oid, err := uuid.Parse(s)
+	if err != nil {
+		return err
+	}
+	*o = UserID(oid)
+	return nil
+}
+
 // ToUserID returns the UserID representation of the uuid.
 func ToUserID(uuid uuid.UUID) UserID {
 	return UserID(uuid)
@@ -222,4 +240,21 @@ func (e OrgID) UUID() uuid.UUID {
 // ToOrgID returns the OrgID representation of the uuid.
 func ToOrgID(uuid uuid.UUID) OrgID {
 	return OrgID(uuid)
+}
+
+func (o OrgID) MarshalJSON() ([]byte, error) {
+	return json.Marshal(o.String())
+}
+
+func (o *OrgID) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	oid, err := uuid.Parse(s)
+	if err != nil {
+		return err
+	}
+	*o = OrgID(oid)
+	return nil
 }

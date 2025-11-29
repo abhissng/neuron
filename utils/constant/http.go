@@ -21,6 +21,7 @@ const (
 	XOrgId              = "X-Org-Id"
 	XUserId             = "X-User-Id"
 	XFeatureFlags       = "X-Feature-Flags"
+	XLocationId         = "X-Location-Id"
 )
 
 // These are middlewares or plugin constant for the application

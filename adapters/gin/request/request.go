@@ -410,3 +410,14 @@ func FetchXFeatureFlagsHeader(c *gin.Context) result.Result[string] {
 	}
 	return result.NewFailure[string](blame.MissingFeatureFlags())
 }
+
+// FetchXLocationIdHeader fetches the X-Location-Id header and converts it to UUID.
+// This header contains the location identifier in UUID format.
+func FetchXLocationIdHeader(c *gin.Context) result.Result[uuid.UUID] {
+	locationIdHeader := FetchUUIDParam(c, constant.XLocationId, HeaderParam, true)
+	if locationIdHeader.IsSuccess() {
+		locationId := locationIdHeader.ToValue()
+		return result.NewSuccess(locationId)
+	}
+	return result.NewFailure[uuid.UUID](blame.MissingXLocationId())
+}

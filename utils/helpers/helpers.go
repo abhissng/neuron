@@ -315,7 +315,7 @@ func GenerateReasonCode(namespace string, code int) string {
 }
 
 // RecoverException recovers from panics and logs the stack trace
-func RecoverException(panic interface{}) {
+func RecoverException(panic any) {
 	if panic != nil {
 		stack := debug.Stack()
 		Println(constant.ERROR, "Exception occured", string(stack))

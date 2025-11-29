@@ -28,9 +28,9 @@ func GetServiceContext(c *gin.Context) (*context.ServiceContext, error) {
 func SetSessionCookie(c *gin.Context, sessionID, env, domain string, ttl time.Duration) {
 	secure := false
 	switch env {
-	case "prod", "staging":
+	case "prod":
 		secure = true
-	case "dev", "development":
+	case "dev", "development", "staging":
 		secure = false
 	default:
 		// Default to secure for unknown environments
