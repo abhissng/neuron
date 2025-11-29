@@ -573,3 +573,8 @@ func SessionUnauthenticated() Blame {
 func MissingFeatureFlags() Blame {
 	return getLocalBlameManager().FetchBlameForError(ErrorMissingFeatureFlags)
 }
+
+// MissingXLocationId is an error when the X-Location-Id is missing.
+func MissingXLocationId() Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorMissingXLocationId)
+}

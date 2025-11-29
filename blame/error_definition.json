@@ -507,6 +507,13 @@
     "Description": "The required feature flags are missing in the request.",
     "Component": "adaptors",
     "ResponseType": "BadRequest" 
+  },
+  {
+    "Code": "error-missing-x-location-id",
+    "Message": "X-Location-Id is missing",
+    "Description": "The required X-Location-Id is missing in the request.",
+    "Component": "adaptors",
+    "ResponseType": "BadRequest" 
   }
 
 ]
