@@ -2,10 +2,13 @@ package middleware
 
 import (
 	"errors"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/abhissng/neuron/context"
 	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,25 +28,48 @@ func GetServiceContext(c *gin.Context) (*context.ServiceContext, error) {
 	return serviceCtx, nil
 }
 
-func SetSessionCookie(c *gin.Context, sessionID, env, domain string, ttl time.Duration) {
+// SetSessionCookie writes a cookie using the request host/scheme defaults.
+// - env: "prod", "staging", "dev", ...
+// - domainOverride: optional; pass empty string to auto-detect
+func SetSessionCookie(c *gin.Context, sessionID, env, domainOverride string, ttl time.Duration) {
+	req := c.Request
+	host := req.Host
+	// detect request scheme (best-effort)
+	scheme := "http"
+	if req.TLS != nil || strings.EqualFold(req.Header.Get("X-Forwarded-Proto"), "https") {
+		scheme = "https"
+	}
 	secure := false
 	switch env {
 	case "prod":
 		secure = true
-	case "dev", "development", "staging":
-		secure = false
+	case "staging":
+		// staging often uses HTTPS; keep secure true if scheme shows https
+		secure = scheme == "https"
 	default:
-		// Default to secure for unknown environments
-		secure = true
+		// dev: default to false unless TLS
+		secure = scheme == "https"
 	}
 
-	c.SetCookie(
-		constant.SessionID,
-		sessionID,
-		int(ttl.Seconds()), // match SessionManager TTL
-		"/",                // valid for all paths
-		domain,             // domain setting
-		secure,             // HTTPS only in prod/staging
-		true,               // HttpOnly always true
-	)
+	// Decide domain: if override provided use it; otherwise, only set Domain when not localhost
+	var domain string
+	if domainOverride != "" {
+		domain = domainOverride
+	} else if helpers.IsLocalhostHost(host) {
+		domain = "" // host-only cookie (do NOT set Domain for localhost)
+	} else {
+		domain = strings.Split(host, ":")[0]
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     constant.SessionID,
+		Value:    sessionID,
+		Path:     "/",
+		Domain:   domain,
+		Expires:  time.Now().Add(ttl),
+		MaxAge:   int(ttl.Seconds()),
+		Secure:   secure,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode, // use None for cross-site requests; requires Secure=true in browsers
+	})
 }
