@@ -10,13 +10,15 @@ import (
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/result"
 	"github.com/abhissng/neuron/utils/helpers"
+	"github.com/abhissng/neuron/utils/types"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 // SessionData represents the data stored in a session
 type SessionData struct {
-	UserID          string         `json:"user_id,omitempty"`
+	OrgID           types.OrgID    `json:"org_id,omitempty"`
+	UserID          types.UserID   `json:"user_id,omitempty"`
 	Username        string         `json:"username,omitempty"`
 	Email           string         `json:"email,omitempty"`
 	Role            string         `json:"role,omitempty"`

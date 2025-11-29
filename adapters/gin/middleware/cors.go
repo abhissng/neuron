@@ -132,7 +132,8 @@ func getAllowedHeaders() string {
 	 X-Refresh-Token,
 	 X-User-Role,
 	 X-Org-Id,
-	 X-User-Id`
+	 X-User-Id,
+	 X-Feature-Flags`
 }
 
 // getAllowedOrigin returns the allowed origin for CORS with wildcard support

@@ -21,6 +21,7 @@ import (
 	"github.com/abhissng/neuron/utils/structures"
 	"github.com/abhissng/neuron/utils/types"
 	"github.com/biter777/countries"
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/nyaruka/phonenumbers"
@@ -71,18 +72,31 @@ func isEmptyStruct(v reflect.Value) (bool, bool) {
 		return false, false
 	}
 
-	// Handle time.Time separately
-	if v.Type() == reflect.TypeOf(time.Time{}) {
-		return v.Interface().(time.Time).IsZero(), true
-	}
-
 	// Check all struct fields recursively
 	for i := 0; i < v.NumField(); i++ {
+		// Skip unexported fields to avoid panics if necessary,
+		// though IsEmpty generally handles interface conversion safely.
 		if !IsEmpty(v.Field(i).Interface()) {
 			return false, true
 		}
 	}
 	return true, true
+}
+
+// isEmptyKnownType checks for specific named types that have well-defined empty states.
+// It handles time.Time and uuid.UUID regardless of their underlying structure (Struct vs Array).
+func isEmptyKnownType(v reflect.Value) (bool, bool) {
+	if !v.CanInterface() {
+		return false, false
+	}
+
+	switch val := v.Interface().(type) {
+	case time.Time:
+		return val.IsZero(), true
+	case uuid.UUID:
+		return val == uuid.Nil, true
+	}
+	return false, false
 }
 
 // IsEmpty checks if the given interface value represents an empty or zero value.
@@ -106,17 +120,22 @@ func IsEmpty[T any](value T) bool {
 		return IsEmpty(v.Elem().Interface())
 	}
 
-	// Check primitive types
+	// 1. Check Known Types (UUID, Time) - Added this priority check
+	if isEmpty, ok := isEmptyKnownType(v); ok {
+		return isEmpty
+	}
+
+	// 2. Check primitive types
 	if isEmpty, ok := isEmptyPrimitive(v); ok {
 		return isEmpty
 	}
 
-	// Check collection types
+	// 3. Check collection types
 	if isEmpty, ok := isEmptyCollection(v); ok {
 		return isEmpty
 	}
 
-	// Check struct types
+	// 4. Check struct types
 	if isEmpty, ok := isEmptyStruct(v); ok {
 		return isEmpty
 	}

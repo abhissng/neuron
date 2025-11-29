@@ -568,3 +568,8 @@ func SessionInvalid() Blame {
 func SessionUnauthenticated() Blame {
 	return getLocalBlameManager().FetchBlameForError(ErrorSessionUnauthenticated)
 }
+
+// MissingFeatureFlags is an error when the feature flags are missing.
+func MissingFeatureFlags() Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrorMissingFeatureFlags)
+}
