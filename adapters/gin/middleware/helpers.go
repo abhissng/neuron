@@ -9,6 +9,7 @@ import (
 	"github.com/abhissng/neuron/context"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
+	"github.com/abhissng/neuron/utils/timeutil"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,43 +34,67 @@ func GetServiceContext(c *gin.Context) (*context.ServiceContext, error) {
 // - domainOverride: optional; pass empty string to auto-detect
 func SetSessionCookie(c *gin.Context, sessionID, env, domainOverride string, ttl time.Duration) {
 	req := c.Request
-	host := req.Host
-	// detect request scheme (best-effort)
+
+	// 1. Determine the Origin Host (Where the user is)
+	origin := req.Header.Get("Origin")
+	originHost := helpers.HostFromOrigin(origin)
+
+	// 2. Determine the Server Host (Where the API is)
+	host := strings.Split(req.Host, ":")[0]
+
+	// ... (Keep your Scheme/Secure detection logic here) ...
 	scheme := "http"
 	if req.TLS != nil || strings.EqualFold(req.Header.Get("X-Forwarded-Proto"), "https") {
 		scheme = "https"
 	}
+
 	secure := false
-	switch env {
+	switch strings.ToLower(env) {
 	case "prod":
 		secure = true
 	case "staging":
-		// staging often uses HTTPS; keep secure true if scheme shows https
 		secure = scheme == "https"
 	default:
-		// dev: default to false unless TLS
 		secure = scheme == "https"
 	}
 
-	// Decide domain: if override provided use it; otherwise, only set Domain when not localhost
+	// 3. FIXED DOMAIN LOGIC
 	var domain string
 	if domainOverride != "" {
 		domain = domainOverride
-	} else if helpers.IsLocalhostHost(host) {
-		domain = "" // host-only cookie (do NOT set Domain for localhost)
 	} else {
-		domain = strings.Split(host, ":")[0]
+		// If the ORIGIN is localhost (Developer Mode), clear the domain.
+		// This creates a "Host-Only" cookie for staging.kitchenao.com,
+		// which reduces friction for cross-site browser rules.
+		if strings.Contains(originHost, "localhost") || originHost == "127.0.0.1" || originHost == "::1" {
+			domain = ""
+		} else {
+			// Otherwise, set it to the server host (standard behavior)
+			domain = host
+		}
 	}
 
-	http.SetCookie(c.Writer, &http.Cookie{
+	// 4. SameSite Logic (Keep existing, but ensure localhost gets None + Secure)
+	// Treat differing origin host as cross-site
+	isCrossSite := originHost != "" && host != "" && originHost != host
+
+	sameSite := http.SameSiteLaxMode
+	if isCrossSite && secure {
+		// Essential for localhost -> staging communication
+		sameSite = http.SameSiteNoneMode
+	}
+
+	cookie := &http.Cookie{
 		Name:     constant.SessionID,
 		Value:    sessionID,
 		Path:     "/",
-		Domain:   domain,
-		Expires:  time.Now().Add(ttl),
+		Domain:   domain, // Now empty if origin is localhost
+		Expires:  timeutil.Now().Add(ttl),
 		MaxAge:   int(ttl.Seconds()),
-		Secure:   secure,
+		Secure:   secure, // Must be TRUE for SameSite=None
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode, // use None for cross-site requests; requires Secure=true in browsers
-	})
+		SameSite: sameSite,
+	}
+
+	http.SetCookie(c.Writer, cookie)
 }

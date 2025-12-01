@@ -926,3 +926,31 @@ func IsLocalhostHost(host string) bool {
 	h := strings.Split(host, ":")[0] // strip possible port
 	return h == "localhost" || h == "127.0.0.1" || h == "::1"
 }
+
+// HostFromOrigin extracts the host from an Origin header, handling ports and URL parsing.
+func HostFromOrigin(origin string) string {
+	if origin == "" {
+		return ""
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(strings.Split(u.Host, ":")[0])
+}
+
+// SameSiteName converts http.SameSite to a human-readable string.
+func SameSiteName(s http.SameSite) string {
+	switch s {
+	case http.SameSiteDefaultMode:
+		return "Default"
+	case http.SameSiteLaxMode:
+		return "Lax"
+	case http.SameSiteStrictMode:
+		return "Strict"
+	case http.SameSiteNoneMode:
+		return "None"
+	default:
+		return "Unknown"
+	}
+}

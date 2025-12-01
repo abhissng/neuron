@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/abhissng/neuron/adapters/log"
+	"github.com/abhissng/neuron/utils/timeutil"
 )
 
 // Option is a functional option type for configuring the Schedule.
@@ -45,8 +46,32 @@ func WithLogger(log *log.Log) Option {
 }
 
 // WithDebugEnabled sets the Debug Mode.
-func WithDebugEnabled() Option {
+func WithDebugEnabled(enabled bool) Option {
 	return func(s *Schedule) {
-		s.isDebugEnabled = true
+		s.isDebugEnabled = enabled
+	}
+}
+
+// WithStartAt sets an exact start time (time.Time should include location).
+// If time.Time has no location, it will be used as-is (UTC).
+func WithStartAt(t time.Time) Option {
+	return func(s *Schedule) {
+		tt := t
+		s.startAt = &tt
+	}
+}
+
+// WithStartAtTime sets start time using hour and minute in the schedule's timezone.
+// Example: WithStartAtTime(1, 0) => starts at 01:00 in s.timeZone (today or next day if already passed).
+func WithStartAtTime(hour, minute int) Option {
+	return func(s *Schedule) {
+		loc, err := timeutil.LoadLocation(s.timeZone)
+		if err != nil {
+			// fallback to local if timezone not found
+			loc = time.UTC
+		}
+		now := time.Now().In(loc)
+		start := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, loc)
+		s.startAt = &start
 	}
 }

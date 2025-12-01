@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"net/http"
-	"slices"
 	"strings"
 
 	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
@@ -27,9 +27,35 @@ func CORSMiddleware(additionalHeaders ...string) gin.HandlerFunc {
 			}
 		}
 
-		// Handle regular CORS request
-		handleRegularCORSRequest(w)
+		// Handle regular CORS request (pass request so we can echo origin when appropriate)
+		handleRegularCORSRequest(r, w, additionalHeaders...)
 		c.Next()
+		// === Re-assert essential CORS headers on the final response ===
+		// This prevents a downstream handler or proxy from accidentally removing them.
+		origin := getAllowedOrigin(r)
+		if origin != "" {
+			h := w.Header()
+			if h.Get("Access-Control-Allow-Origin") == "" {
+				h.Set("Access-Control-Allow-Origin", origin)
+			}
+			if h.Get("Access-Control-Allow-Credentials") == "" {
+				h.Set("Access-Control-Allow-Credentials", "true")
+			}
+			if h.Get("Access-Control-Expose-Headers") == "" {
+				h.Set("Access-Control-Expose-Headers", "Set-Cookie")
+			}
+			// also ensure Allow-Headers/Methods present on final response if absent
+			if h.Get("Access-Control-Allow-Headers") == "" {
+				h.Set("Access-Control-Allow-Headers", getAllowedHeaders(additionalHeaders...))
+			}
+			if h.Get("Access-Control-Allow-Methods") == "" {
+				h.Set("Access-Control-Allow-Methods", getAllowedMethods())
+			}
+
+			if !strings.Contains(h.Get("Vary"), "Origin") {
+				h.Add("Vary", "Origin")
+			}
+		}
 	}
 }
 
@@ -57,14 +83,16 @@ func handlePreflightRequest(r *http.Request, w http.ResponseWriter, additionalHe
 	method := r.Header.Get("Access-Control-Request-Method")
 	if ok := isMethodAllowed(method); ok {
 		origin := getAllowedOrigin(r)
+		// If origin is not allowed, return false so caller can respond with default (403/empty)
+		if origin == "" {
+			return false
+		}
+
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", getAllowedMethods())
-		headers := getAllowedHeaders()
-		if len(additionalHeaders) > 0 {
-			headers += ", " + strings.Join(additionalHeaders, ", ")
-		}
-		w.Header().Set("Access-Control-Allow-Headers", headers)
-		w.Header().Set("Access-Control-Allow-Credentials", "true") // If you allow credentials
+		w.Header().Set("Access-Control-Allow-Headers", getAllowedHeaders(additionalHeaders...))
+		// Always allow credentials for allowed origins (caller intends to set credentials).
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Add("Vary", "Origin")
 		return true
 	}
@@ -72,11 +100,21 @@ func handlePreflightRequest(r *http.Request, w http.ResponseWriter, additionalHe
 }
 
 // handleRegularCORSRequest handles regular CORS requests
-func handleRegularCORSRequest(w http.ResponseWriter) {
-	// Regular CORS request processing (non-preflight)
-	origin := getAllowedOrigin(nil) // Get allowed origin dynamically
+func handleRegularCORSRequest(r *http.Request, w http.ResponseWriter, additionalHeaders ...string) {
+	origin := getAllowedOrigin(r)
+	if origin == "" {
+		return
+	}
+
+	// Required on actual request
 	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Add("Vary", "Origin")
+
+	// Additional recommended headers
+	w.Header().Set("Access-Control-Allow-Headers", getAllowedHeaders(additionalHeaders...))
+	w.Header().Set("Access-Control-Allow-Methods", getAllowedMethods())
+	w.Header().Set("Access-Control-Expose-Headers", "Set-Cookie")
 }
 
 // isMethodAllowed returns true if the method is allowed
@@ -113,64 +151,98 @@ func getAllowedMethods() string {
 	return strings.Join(getAllowedMethodsList(), ", ")
 }
 
-// getAllowedHeaders returns a comma-separated string of allowed headers for CORS
-func getAllowedHeaders() string {
-	// Return allowed headers for CORS
-	return `Content-Type,
-	 Content-Length,
-	 Accept-Encoding,
-	 X-CSRF-Token,
-	 Authorization,
-	 accept,
-	 origin,
-	 Cache-Control,
-	 X-Correlation-ID,
-	 X-Requested-With,
-	 X-Subject,
-	 X-Signature,
-	 X-Paseto-Token,
-	 X-Refresh-Token,
-	 X-User-Role,
-	 X-Org-Id,
-	 X-User-Id,
-	 X-Feature-Flags,
-	 X-Location-Id,
-	 X-RateLimit-Limit,
-	 Retry-After`
-}
-
-// getAllowedOrigin returns the allowed origin for CORS with wildcard support
-func getAllowedOrigin(r *http.Request) string {
-	allowedOrigins := viper.GetStringSlice(constant.CorsAllowedOriginsKey)
-
-	if len(allowedOrigins) == 0 || slices.Contains(allowedOrigins, "*") {
-		return "*"
+// getAllowedHeaders returns a comma-separated string of allowed headers for CORS,
+// appending any optional additional headers provided.
+func getAllowedHeaders(additionalHeaders ...string) string {
+	// Define the base list of allowed headers
+	headers := []string{
+		"Content-Type",
+		"Content-Length",
+		"Accept-Encoding",
+		"X-CSRF-Token",
+		"Authorization",
+		"Accept",
+		"Origin",
+		"Cache-Control",
+		"X-Correlation-ID",
+		"X-Requested-With",
+		"X-Subject",
+		"X-Signature",
+		"X-Paseto-Token",
+		"X-Refresh-Token",
+		"X-User-Role",
+		"X-Org-Id",
+		"X-User-Id",
+		"X-Feature-Flags",
+		"X-Location-Id",
+		"X-RateLimit-Limit",
+		"Retry-After",
 	}
 
+	// If additional headers are provided, append them to the list
+	if len(additionalHeaders) > 0 {
+		headers = append(headers, additionalHeaders...)
+	}
+
+	// Return allowed headers as a string (joined by comma)
+	return strings.Join(headers, ", ")
+}
+
+// getAllowedOrigin returns the allowed origin for CORS with wildcard support.
+// IMPORTANT:
+//   - If allowedOrigins contains "*" and a request Origin header is present, this function will echo the request Origin.
+//     This avoids returning Access-Control-Allow-Origin: * which is incompatible with Allow-Credentials: true.
+//   - If the request Origin is not present or not allowed, returns an empty string.
+func getAllowedOrigin(r *http.Request) string {
+	allowedOrigins := viper.GetStringSlice(constant.CorsAllowedOriginsKey)
+	helpers.Println(constant.DEBUG, "allowedOrigins ", allowedOrigins)
+
+	// If no request available, return a safe default:
 	if r == nil {
-		return "*"
+		// Without a request, we cannot safely echo an origin.
+		return ""
 	}
 
 	origin := r.Header.Get("Origin")
 	if origin == "" {
-		return "*"
+		// No Origin header on request — nothing to do
+		return ""
 	}
 
+	// If allowedOrigins empty -> act permissive but echo origin (to support credentials)
+	if len(allowedOrigins) == 0 {
+		return origin
+	}
+
+	// If wildcard present in allowedOrigins, echo the origin (don't return "*")
+	for _, ao := range allowedOrigins {
+		if ao == "*" {
+			return origin
+		}
+	}
+
+	// Try exact matches
 	for _, allowedOrigin := range allowedOrigins {
-		// Exact match
 		if allowedOrigin == origin {
 			return origin
 		}
+	}
 
-		// Wildcard pattern like https://*.abhishek.com
+	// Try wildcard patterns like https://*.example.com
+	for _, allowedOrigin := range allowedOrigins {
 		if strings.Contains(allowedOrigin, "*") {
-			prefix := strings.Split(allowedOrigin, "*")[0]
-			suffix := strings.Split(allowedOrigin, "*")[1]
+			parts := strings.SplitN(allowedOrigin, "*", 2)
+			prefix := parts[0]
+			suffix := ""
+			if len(parts) > 1 {
+				suffix = parts[1]
+			}
 			if strings.HasPrefix(origin, prefix) && strings.HasSuffix(origin, suffix) {
 				return origin
 			}
 		}
 	}
 
-	return "*"
+	// Not allowed
+	return ""
 }
