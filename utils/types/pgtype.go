@@ -225,6 +225,16 @@ func ToPgTypeDate(t time.Time) pgtype.Date {
 	}
 }
 
+func ToPgTime(t time.Time) pgtype.Time {
+	return pgtype.Time{
+		Microseconds: int64(t.Hour()*3600*1_000_000 +
+			t.Minute()*60*1_000_000 +
+			t.Second()*1_000_000 +
+			t.Nanosecond()/1000),
+		Valid: true,
+	}
+}
+
 // ToPgType converts a Go value into a specific pgtype, constrained by PgType.
 func ToPgType[T PgType](value any, opts ...DecimalOpt) (T, error) {
 	var zero T
