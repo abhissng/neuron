@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"slices"
 	"strings"
 
 	"github.com/abhissng/neuron/utils/constant"
@@ -29,7 +28,7 @@ func CORSMiddleware(additionalHeaders ...string) gin.HandlerFunc {
 		}
 
 		// Handle regular CORS request (pass request so we can echo origin when appropriate)
-		handleRegularCORSRequest(r, w)
+		handleRegularCORSRequest(r, w, additionalHeaders...)
 		c.Next()
 		// === Re-assert essential CORS headers on the final response ===
 		// This prevents a downstream handler or proxy from accidentally removing them.
@@ -52,7 +51,10 @@ func CORSMiddleware(additionalHeaders ...string) gin.HandlerFunc {
 			if h.Get("Access-Control-Allow-Methods") == "" {
 				h.Set("Access-Control-Allow-Methods", getAllowedMethods())
 			}
-			h.Add("Vary", "Origin")
+
+			if !strings.Contains(h.Get("Vary"), "Origin") {
+				h.Add("Vary", "Origin")
+			}
 		}
 	}
 }
@@ -197,16 +199,8 @@ func getAllowedOrigin(r *http.Request) string {
 
 	// If no request available, return a safe default:
 	if r == nil {
-		// If allowedOrigins explicitly configured, return first configured origin (or "*")
-		if len(allowedOrigins) == 0 {
-			return "*"
-		}
-		// If there is a configured wildcard, return "*" (no request to echo)
-		if slices.Contains(allowedOrigins, "*") {
-			return "*"
-		}
-		// Otherwise return first configured origin as a fallback
-		return allowedOrigins[0]
+		// Without a request, we cannot safely echo an origin.
+		return ""
 	}
 
 	origin := r.Header.Get("Origin")
