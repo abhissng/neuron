@@ -149,13 +149,20 @@ func loadAWSConfig(cfg AWSConfig) (aws.Config, error) {
 
 // S3 Operations
 
-// UploadToS3 uploads a file to an S3 bucket
-func (a *AWSManager) UploadToS3(ctx context.Context, bucket, key string, data []byte, contentType string, metadata map[string]string) (*s3.PutObjectOutput, error) {
+// UploadToS3FromReader uploads data from an io.Reader to an S3 bucket.
+// This method supports streaming uploads for large files and multipart data.
+// The contentLength parameter is optional; pass -1 if unknown (AWS SDK will buffer).
+func (a *AWSManager) UploadToS3FromReader(ctx context.Context, bucket, key string, reader io.Reader, contentLength int64, contentType string, metadata map[string]string) (*s3.PutObjectOutput, error) {
 	input := &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(key),
-		Body:        bytes.NewReader(data),
+		Body:        reader,
 		ContentType: aws.String(contentType),
+	}
+
+	// Only set content length if provided (> 0)
+	if contentLength > 0 {
+		input.ContentLength = &contentLength
 	}
 
 	if metadata != nil {
@@ -172,6 +179,12 @@ func (a *AWSManager) UploadToS3(ctx context.Context, bucket, key string, data []
 	}
 
 	return result, nil
+}
+
+// UploadToS3 uploads a byte slice to an S3 bucket.
+// For streaming uploads or large files, use UploadToS3FromReader instead.
+func (a *AWSManager) UploadToS3(ctx context.Context, bucket, key string, data []byte, contentType string, metadata map[string]string) (*s3.PutObjectOutput, error) {
+	return a.UploadToS3FromReader(ctx, bucket, key, bytes.NewReader(data), int64(len(data)), contentType, metadata)
 }
 
 // DownloadFromS3 downloads a file from an S3 bucket

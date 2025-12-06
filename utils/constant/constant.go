@@ -17,6 +17,10 @@ const (
 	TraceID        = "trace_id"
 	MetaData       = "meta_data"
 	SessionID      = "session_id"
+	Claims         = "claims"
+	ClaimsData     = "claims_data"
+	Issuer         = "issuer"
+	TokenID        = "token_id"
 
 	// These are general constant for config file
 	Service              = "Service"

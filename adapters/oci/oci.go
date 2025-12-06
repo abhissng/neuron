@@ -217,6 +217,38 @@ func WithCtxTimeout(ctx context.Context, d time.Duration) (context.Context, cont
 
 // ========================= OBJECT STORAGE METHODS =========================
 
+// UploadObjectFromReader uploads data from an io.Reader to OCI Object Storage.
+// This method supports in-memory uploads and large files.
+func (cm *OCIManager) UploadObjectFromReader(ctx context.Context, namespace, bucket, objectName string, reader io.Reader, contentLength int64, metadata map[string]string) error {
+	if cm.objectClient == nil {
+		return errors.New("object storage client not initialized")
+	}
+
+	// Convert io.Reader to io.ReadCloser if necessary
+	var readCloser io.ReadCloser
+	if rc, ok := reader.(io.ReadCloser); ok {
+		readCloser = rc
+	} else {
+		readCloser = io.NopCloser(reader)
+	}
+
+	req := objectstorage.PutObjectRequest{
+		NamespaceName: &namespace,
+		BucketName:    &bucket,
+		ObjectName:    &objectName,
+		PutObjectBody: readCloser,
+		ContentLength: &contentLength,
+	}
+
+	if metadata != nil {
+		req.OpcMeta = metadata
+	}
+
+	return cm.withRetry(ctx, func() error { _, e := cm.objectClient.PutObject(ctx, req); return e })
+}
+
+// UploadObject uploads a file from disk to OCI Object Storage.
+// For in-memory uploads, use UploadObjectFromReader instead.
 func (cm *OCIManager) UploadObject(ctx context.Context, namespace, bucket, objectName, filePath string) error {
 	if cm.objectClient == nil {
 		return errors.New("object storage client not initialized")
@@ -240,6 +272,36 @@ func (cm *OCIManager) UploadObject(ctx context.Context, namespace, bucket, objec
 	return cm.withRetry(ctx, func() error { _, e := cm.objectClient.PutObject(ctx, req); return e })
 }
 
+// DownloadObjectToMemory downloads an object from OCI Object Storage to memory.
+// Returns the object content as a byte slice.
+// Warning: For large objects, consider using DownloadObject to stream to disk instead.
+func (cm *OCIManager) DownloadObjectToMemory(ctx context.Context, namespace, bucket, objectName string) ([]byte, error) {
+	if cm.objectClient == nil {
+		return nil, errors.New("object storage client not initialized")
+	}
+
+	resp, err := cm.objectClient.GetObject(ctx, objectstorage.GetObjectRequest{
+		NamespaceName: &namespace,
+		BucketName:    &bucket,
+		ObjectName:    &objectName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = resp.Content.Close()
+	}()
+
+	data, err := io.ReadAll(resp.Content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read object content: %w", err)
+	}
+
+	return data, nil
+}
+
+// DownloadObject downloads an object from OCI Object Storage to a file.
+// For in-memory downloads, use DownloadObjectToMemory instead.
 func (cm *OCIManager) DownloadObject(ctx context.Context, namespace, bucket, objectName, destPath string) error {
 	if cm.objectClient == nil {
 		return errors.New("object storage client not initialized")
