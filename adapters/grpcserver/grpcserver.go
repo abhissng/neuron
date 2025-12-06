@@ -11,9 +11,11 @@ import (
 	"github.com/abhissng/neuron/adapters/jwt"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/adapters/paseto"
+	neuronctx "github.com/abhissng/neuron/context"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/random"
+	"github.com/abhissng/neuron/utils/structures/claims"
 	"github.com/abhissng/neuron/utils/types"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
@@ -28,93 +30,76 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ServerConfig holds gRPC server configurations
-type ServerConfig struct {
-	port           int
-	certFile       string
-	keyFile        string
-	caFile         string
-	jwtSecret      string
-	enableMetrics  bool
-	serviceName    string
-	maxRecvMsgSize int
-	maxSendMsgSize int
-	log            *log.Log
-	authMode       string
-	pasetoManager  *paseto.PasetoManager
-}
+// ServiceRegistrar is a callback function for registering gRPC services.
+// It receives the underlying grpc.Server so users can register their proto services.
+type ServiceRegistrar func(server *grpc.Server)
 
-// Option is a function that modifies ServerConfig
-type Option func(*ServerConfig)
-
-// WithPort sets the gRPC server port
-func WithPort(port int) Option {
-	return func(c *ServerConfig) {
-		c.port = port
-	}
-}
-
-// WithTLS enables TLS with provided cert/key
-func WithTLS(certFile, keyFile, caFile string) Option {
-	return func(c *ServerConfig) {
-		c.certFile = certFile
-		c.keyFile = keyFile
-		c.caFile = caFile
-	}
-}
-
-// WithJWT enables authentication using JWT secret
-func WithJWT(secret string) Option {
-	return func(c *ServerConfig) {
-		c.jwtSecret = secret
-	}
-}
-
-// WithMetrics enables Prometheus monitoring
-func WithMetrics() Option {
-	return func(c *ServerConfig) {
-		c.enableMetrics = true
-	}
-}
-
-// WithMaxRecvMsgSize sets max received message size (MB)
-func WithMaxRecvMsgSize(size int) Option {
-	return func(c *ServerConfig) {
-		c.maxRecvMsgSize = size
-	}
-}
-
-// WithMaxSendMsgSize sets max send message size (MB)
-func WithMaxSendMsgSize(size int) Option {
-	return func(c *ServerConfig) {
-		c.maxSendMsgSize = size
-	}
-}
-
-func WithLogger(log *log.Log) Option {
-	return func(c *ServerConfig) {
-		c.log = log
-	}
-}
-
-// WithAuthMode selects auth mode: "jwt" or "paseto". Empty means no auth.
-func WithAuthMode(mode string) Option {
-	return func(c *ServerConfig) {
-		c.authMode = mode
-	}
-}
-
-// WithPasetoManager provides a PasetoManager when using PASETO auth mode.
-func WithPasetoManager(pm *paseto.PasetoManager) Option {
-	return func(c *ServerConfig) {
-		c.pasetoManager = pm
-	}
-}
+// CustomValidatorFunc is a function signature for external validation logic.
+// It is called after token parsing but before the handler.
+// Parameters:
+//   - ctx: the context with claims already populated
+//   - fullMethod: the full gRPC method name (e.g., "/package.Service/Method")
+//   - claims: the parsed claims from the token
+//
+// Return an error to reject the request.
+type CustomValidatorFunc func(ctx context.Context, fullMethod string, claims *claims.StandardClaims) error
 
 // Server represents a gRPC server
 type Server struct {
 	server *grpc.Server
 	config ServerConfig
+}
+
+// NeuronServer is an enhanced gRPC server wrapper with lifecycle management,
+// ServiceContext propagation, Paseto authentication, and external validation hooks.
+type NeuronServer struct {
+	*Server
+	listener net.Listener
+}
+
+// NewNeuronServer creates a new NeuronServer with the provided options.
+// It wraps the standard Server with additional lifecycle management.
+func NewNeuronServer(opts ...Option) (*NeuronServer, error) {
+	s, err := NewServer(opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Register services if a registrar was provided
+	if s.config.serviceRegistrar != nil {
+		s.config.serviceRegistrar(s.server)
+	}
+
+	return &NeuronServer{Server: s}, nil
+}
+
+// Start starts the NeuronServer and blocks until stopped.
+func (ns *NeuronServer) Start() error {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", ns.config.port))
+	if err != nil {
+		return fmt.Errorf("failed to listen: %v", err)
+	}
+	ns.listener = lis
+	ns.config.log.Info(fmt.Sprintf("NeuronServer starting on port %d", ns.config.port),
+		zap.String("service", ns.config.serviceName),
+		zap.String("auth_mode", ns.config.authMode),
+	)
+	return ns.server.Serve(lis)
+}
+
+// Stop gracefully stops the NeuronServer.
+func (ns *NeuronServer) Stop() {
+	ns.GracefulStop()
+}
+
+// GetGRPCServer returns the underlying grpc.Server for advanced use cases.
+func (ns *NeuronServer) GetGRPCServer() *grpc.Server {
+	return ns.server
+}
+
+// RegisterService allows registering additional services after creation.
+func (ns *NeuronServer) RegisterService(registrar ServiceRegistrar) {
+	registrar(ns.server)
 }
 
 // NewServer creates a new gRPC server with option pattern
@@ -220,6 +205,12 @@ func buildInterceptors(config ServerConfig) ([]grpc.UnaryServerInterceptor, []gr
 	unary = append(unary, unaryRequestIDInterceptor())
 	stream = append(stream, streamRequestIDInterceptor())
 
+	// Add ServiceContext propagation interceptor
+	if config.appContext != nil {
+		unary = append(unary, unaryServiceContextInterceptor(config.appContext))
+		stream = append(stream, streamServiceContextInterceptor(config.appContext))
+	}
+
 	loggingOpts := []logging.Option{
 		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
 	}
@@ -235,9 +226,9 @@ func buildInterceptors(config ServerConfig) ([]grpc.UnaryServerInterceptor, []gr
 		}
 	case "paseto":
 		if config.pasetoManager != nil {
-			pAuth := createPasetoAuthFunc(config.pasetoManager)
-			unary = append(unary, auth.UnaryServerInterceptor(pAuth))
-			stream = append(stream, auth.StreamServerInterceptor(pAuth))
+			// Use enhanced Paseto auth with custom validator support
+			unary = append(unary, unaryPasetoAuthInterceptor(config))
+			stream = append(stream, streamPasetoAuthInterceptor(config))
 		}
 	}
 
@@ -259,6 +250,9 @@ func unaryCorrelationIDInterceptor() grpc.UnaryServerInterceptor {
 				}
 			}
 		}
+		if _, ok := ctx.Value(types.StringConstant(constant.CorrelationID)).(string); !ok {
+			ctx = context.WithValue(ctx, types.StringConstant(constant.CorrelationID), random.GenerateUUID())
+		}
 		return handler(ctx, req)
 	}
 }
@@ -273,6 +267,15 @@ func streamCorrelationIDInterceptor() grpc.StreamServerInterceptor {
 					return handler(srv, wrapped)
 				}
 			}
+			// metadata missing value, generate correlation id
+			newCtx := context.WithValue(ss.Context(), types.StringConstant(constant.CorrelationID), random.GenerateUUID())
+			wrapped := &serverStreamWithContext{ServerStream: ss, ctx: newCtx}
+			return handler(srv, wrapped)
+		}
+		if _, ok := ss.Context().Value(types.StringConstant(constant.CorrelationID)).(string); !ok {
+			newCtx := context.WithValue(ss.Context(), types.StringConstant(constant.CorrelationID), random.GenerateUUID())
+			wrapped := &serverStreamWithContext{ServerStream: ss, ctx: newCtx}
+			return handler(srv, wrapped)
 		}
 		return handler(srv, ss)
 	}
@@ -378,40 +381,240 @@ func createAuthFunc(secret string) auth.AuthFunc {
 	}
 }
 
-func createPasetoAuthFunc(pm *paseto.PasetoManager) auth.AuthFunc {
-	return func(ctx context.Context) (context.Context, error) {
+// unaryServiceContextInterceptor creates a ServiceContext and stores it in the context.
+func unaryServiceContextInterceptor(appCtx *neuronctx.AppContext) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		// Create ServiceContext with AppContext
+		svcCtx := neuronctx.NewServiceContext(
+			neuronctx.WithAppContext(appCtx),
+		)
+
+		// Propagate request ID and correlation ID from gRPC context
+		if reqID, ok := ctx.Value(types.StringConstant(constant.RequestID)).(string); ok {
+			svcCtx = svcCtx.WithRequestID(reqID)
+		}
+		if corrID, ok := ctx.Value(types.StringConstant(constant.CorrelationID)).(string); ok {
+			svcCtx = svcCtx.WithValue(constant.CorrelationID, corrID)
+		}
+
+		// Store ServiceContext in the context
+		ctx = context.WithValue(ctx, types.StringConstant(constant.ServiceContext), svcCtx)
+
+		return handler(ctx, req)
+	}
+}
+
+// streamServiceContextInterceptor creates a ServiceContext for stream handlers.
+func streamServiceContextInterceptor(appCtx *neuronctx.AppContext) grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx := ss.Context()
+
+		// Create ServiceContext with AppContext
+		svcCtx := neuronctx.NewServiceContext(
+			neuronctx.WithAppContext(appCtx),
+		)
+
+		// Propagate request ID and correlation ID from gRPC context
+		if reqID, ok := ctx.Value(types.StringConstant(constant.RequestID)).(string); ok {
+			svcCtx = svcCtx.WithRequestID(reqID)
+		}
+		if corrID, ok := ctx.Value(types.StringConstant(constant.CorrelationID)).(string); ok {
+			svcCtx = svcCtx.WithValue(constant.CorrelationID, corrID)
+		}
+
+		// Store ServiceContext in the context
+		newCtx := context.WithValue(ctx, types.StringConstant(constant.ServiceContext), svcCtx)
+		wrapped := &serverStreamWithContext{ServerStream: ss, ctx: newCtx}
+
+		return handler(srv, wrapped)
+	}
+}
+
+// unaryPasetoAuthInterceptor handles Paseto authentication with custom validator support.
+func unaryPasetoAuthInterceptor(config ServerConfig) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		// Check if method should skip auth
+		if config.skipAuthMethods != nil && config.skipAuthMethods[info.FullMethod] {
+			return handler(ctx, req)
+		}
+
+		// Extract and validate token
 		token, err := auth.AuthFromMD(ctx, "bearer")
 		if err != nil {
-			return nil, err
+			config.log.Warn("Missing or invalid authorization header",
+				zap.String("method", info.FullMethod),
+				zap.Error(err),
+			)
+			return nil, status.Errorf(codes.Unauthenticated, "missing or invalid authorization")
 		}
 
-		res := pm.ValidateToken(token, nil, paseto.WithValidateEssentialTags)
+		res := config.pasetoManager.ValidateToken(token, nil, paseto.WithValidateEssentialTags)
 		if res.IsFailure() {
+			config.log.Warn("Invalid Paseto token",
+				zap.String("method", info.FullMethod),
+			)
 			return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 		}
+
 		cl, err := res.Value()
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(codes.Internal, "failed to extract claims")
 		}
 
-		if cl != nil {
-			if cl.Sub != "" {
-				ctx = context.WithValue(ctx, types.StringConstant(constant.UserID), cl.Sub)
-			}
-			if cl.Data != nil {
-				if svc, ok := cl.Data["service"].(string); ok {
-					ctx = context.WithValue(ctx, types.StringConstant(constant.Service), svc)
-				}
-				if roles, ok := cl.Data["roles"].([]string); ok {
-					ctx = context.WithValue(ctx, types.StringConstant(constant.Roles), roles)
-				}
+		// Populate context with claims
+		ctx = populateContextWithClaims(ctx, cl)
+
+		// Store claims in context for custom validator
+		ctx = context.WithValue(ctx, types.StringConstant(constant.Claims), cl)
+
+		// Call custom validator if provided
+		if config.customValidator != nil {
+			if err := config.customValidator(ctx, info.FullMethod, cl); err != nil {
+				config.log.Warn("Custom validation failed",
+					zap.String("method", info.FullMethod),
+					zap.String("user_id", cl.Sub),
+					zap.Error(err),
+				)
+				return nil, status.Errorf(codes.PermissionDenied, "validation failed: %v", err)
 			}
 		}
-		if _, ok := ctx.Value(constant.RequestID).(types.StringConstant); !ok {
-			ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUID())
-		}
-		return ctx, nil
+
+		config.log.Debug("Request authenticated",
+			zap.String("method", info.FullMethod),
+			zap.String("user_id", cl.Sub),
+		)
+
+		return handler(ctx, req)
 	}
+}
+
+// streamPasetoAuthInterceptor handles Paseto authentication for streams.
+func streamPasetoAuthInterceptor(config ServerConfig) grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx := ss.Context()
+
+		// Check if method should skip auth
+		if config.skipAuthMethods != nil && config.skipAuthMethods[info.FullMethod] {
+			return handler(srv, ss)
+		}
+
+		// Extract and validate token
+		token, err := auth.AuthFromMD(ctx, "bearer")
+		if err != nil {
+			config.log.Warn("Missing or invalid authorization header",
+				zap.String("method", info.FullMethod),
+				zap.Error(err),
+			)
+			return status.Errorf(codes.Unauthenticated, "missing or invalid authorization")
+		}
+
+		res := config.pasetoManager.ValidateToken(token, nil, paseto.WithValidateEssentialTags)
+		if res.IsFailure() {
+			config.log.Warn("Invalid Paseto token",
+				zap.String("method", info.FullMethod),
+			)
+			return status.Errorf(codes.Unauthenticated, "invalid token")
+		}
+
+		cl, err := res.Value()
+		if err != nil {
+			return status.Errorf(codes.Internal, "failed to extract claims")
+		}
+
+		// Populate context with claims
+		ctx = populateContextWithClaims(ctx, cl)
+
+		// Store claims in context for custom validator
+		ctx = context.WithValue(ctx, types.StringConstant(constant.Claims), cl)
+
+		// Call custom validator if provided
+		if config.customValidator != nil {
+			if err := config.customValidator(ctx, info.FullMethod, cl); err != nil {
+				config.log.Warn("Custom validation failed",
+					zap.String("method", info.FullMethod),
+					zap.String("user_id", cl.Sub),
+					zap.Error(err),
+				)
+				return status.Errorf(codes.PermissionDenied, "validation failed: %v", err)
+			}
+		}
+
+		config.log.Debug("Stream authenticated",
+			zap.String("method", info.FullMethod),
+			zap.String("user_id", cl.Sub),
+		)
+
+		wrapped := &serverStreamWithContext{ServerStream: ss, ctx: ctx}
+		return handler(srv, wrapped)
+	}
+}
+
+// populateContextWithClaims adds claim values to the context.
+func populateContextWithClaims(ctx context.Context, cl *claims.StandardClaims) context.Context {
+	if cl == nil {
+		return ctx
+	}
+
+	if cl.Sub != "" {
+		ctx = context.WithValue(ctx, types.StringConstant(constant.UserID), cl.Sub)
+	}
+	if cl.Iss != "" {
+		ctx = context.WithValue(ctx, types.StringConstant(constant.Issuer), cl.Iss)
+	}
+	if cl.Jti != "" {
+		ctx = context.WithValue(ctx, types.StringConstant(constant.TokenID), cl.Jti)
+	}
+	if cl.Data != nil {
+		// if svc, ok := cl.Data["service"].(string); ok {
+		// 	ctx = context.WithValue(ctx, types.StringConstant(constant.Service), svc)
+		// }
+		// if roles, ok := cl.Data["roles"].([]string); ok {
+		// 	ctx = context.WithValue(ctx, types.StringConstant(constant.Roles), roles)
+		// }
+		// Store all custom data
+		ctx = context.WithValue(ctx, types.StringConstant(constant.ClaimsData), cl.Data)
+	}
+
+	// Ensure request ID is set
+	if _, ok := ctx.Value(types.StringConstant(constant.RequestID)).(string); !ok {
+		ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUID())
+	}
+
+	return ctx
+}
+
+// GetServiceContextFromContext extracts the ServiceContext from a gRPC context.
+// Returns nil if not found.
+func GetServiceContextFromContext(ctx context.Context) *neuronctx.ServiceContext {
+	if svcCtx, ok := ctx.Value(types.StringConstant(constant.ServiceContext)).(*neuronctx.ServiceContext); ok {
+		return svcCtx
+	}
+	return nil
+}
+
+// GetClaimsFromContext extracts the StandardClaims from a gRPC context.
+// Returns nil if not found.
+func GetClaimsFromContext(ctx context.Context) *claims.StandardClaims {
+	if cl, ok := ctx.Value(types.StringConstant(constant.Claims)).(*claims.StandardClaims); ok {
+		return cl
+	}
+	return nil
+}
+
+// GetUserIDFromContext extracts the user ID from a gRPC context.
+func GetUserIDFromContext(ctx context.Context) string {
+	if userID, ok := ctx.Value(types.StringConstant(constant.UserID)).(string); ok {
+		return userID
+	}
+	return ""
+}
+
+// GetRolesFromContext extracts the roles from a gRPC context.
+func GetRolesFromContext(ctx context.Context) []string {
+	if roles, ok := ctx.Value(types.StringConstant(constant.Roles)).([]string); ok {
+		return roles
+	}
+	return nil
 }
 
 // Start the gRPC server

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/abhissng/neuron/utils/constant"
-	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
@@ -195,7 +194,6 @@ func getAllowedHeaders(additionalHeaders ...string) string {
 //   - If the request Origin is not present or not allowed, returns an empty string.
 func getAllowedOrigin(r *http.Request) string {
 	allowedOrigins := viper.GetStringSlice(constant.CorsAllowedOriginsKey)
-	helpers.Println(constant.DEBUG, "allowedOrigins ", allowedOrigins)
 
 	// If no request available, return a safe default:
 	if r == nil {
