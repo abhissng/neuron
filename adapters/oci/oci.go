@@ -274,6 +274,7 @@ func (cm *OCIManager) UploadObject(ctx context.Context, namespace, bucket, objec
 
 // DownloadObjectToMemory downloads an object from OCI Object Storage to memory.
 // Returns the object content as a byte slice.
+// Warning: For large objects, consider using DownloadObject to stream to disk instead.
 func (cm *OCIManager) DownloadObjectToMemory(ctx context.Context, namespace, bucket, objectName string) ([]byte, error) {
 	if cm.objectClient == nil {
 		return nil, errors.New("object storage client not initialized")

@@ -102,9 +102,17 @@ err := manager.UploadFileFromReader(
 import "os"
 
 file, err := os.Open("/path/to/large-file.dat")
+if err != nil {
+    // handle error
+    return
+}
 defer file.Close()
 
-fileInfo, _ := file.Stat()
+fileInfo, err := file.Stat()
+if err != nil {
+    // handle error
+    return
+}
 err = manager.UploadFileFromReader(
     ctx,
     "my-bucket",

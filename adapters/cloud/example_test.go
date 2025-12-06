@@ -224,7 +224,11 @@ func Example_streamingUpload() {
 		}
 	}()
 
-	fileInfo, _ := file.Stat()
+	fileInfo, err := file.Stat()
+	if err != nil {
+		log.Printf("Failed to stat file: %v", err)
+		return
+	}
 	err = manager.UploadFileFromReader(
 		ctx,
 		"my-bucket",

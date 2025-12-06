@@ -142,7 +142,7 @@ func newAWSCloudManager(cfg Config) (*cloudManager, error) {
 		return nil, errors.New("cloud: AWSConfig is required for AWS provider")
 	}
 
-	awsMgr, err := aws.NewAWSManager(*cfg.AWSConfig)
+	awsMgr, err := aws.NewAWSManager(*cfg.AWSConfig, cfg.AWSOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("cloud: failed to initialize AWS manager: %w", err)
 	}
@@ -174,6 +174,10 @@ func newOCICloudManager(cfg Config) (*cloudManager, error) {
 // NewCloudManagerFromExisting creates a CloudManager from existing manager instances.
 // This is useful when you already have initialized AWS or OCI managers.
 func NewCloudManagerFromExisting(awsMgr *aws.AWSManager, ociMgr *oci.OCIManager, ociNamespace string) (CloudManager, error) {
+	if awsMgr != nil && ociMgr != nil {
+		return nil, errors.New("cloud: cannot provide both AWS and OCI managers; specify only one")
+	}
+
 	if awsMgr != nil {
 		return &cloudManager{
 			provider:   ProviderAWS,
