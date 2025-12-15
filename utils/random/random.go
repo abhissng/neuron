@@ -11,9 +11,14 @@ import (
 )
 
 // GenerateUUID generates a UUID
-func GenerateUUID() string {
+func GenerateUUIDString() string {
 	// Implement your UUID generation logic here
 	return uuid.New().String()
+}
+
+func GenerateUUID() uuid.UUID {
+	// Implement your UUID generation logic here
+	return uuid.New()
 }
 
 // JoinComponentsToID joins multiple strings into a single ID

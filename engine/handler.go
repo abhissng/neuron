@@ -22,7 +22,7 @@ type ServiceHandler[T any] func(*context.ServiceContext, *nats.Msg) result.Resul
 func WrapServiceWithNATSHandler[T any](ctx *context.ServiceContext, handler ServiceHandler[T]) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		defer helpers.RecoverException(recover())
-		blameInfo := blame.NilBlame()
+		cause := blame.NilBlame()
 
 		// Add standard middleware headers
 		middlewareFunc := []natsInternal.MiddlewareFunc{
@@ -32,27 +32,29 @@ func WrapServiceWithNATSHandler[T any](ctx *context.ServiceContext, handler Serv
 		var response any
 		defer func() {
 
-			if blameInfo != nil {
-				response = encodeErrorRespondMesage[any](ctx, constant.Execute, msg, blameInfo)
+			if cause != nil {
+				response = encodeErrorRespondMesage[any](ctx, constant.Execute, msg, cause)
 			}
-			ctx.Info(constant.ServiceHandlerMessage, ctx.SlogEvent(msg, log.String("handlers", "WrapServiceWithNATSHandler"), log.Any("response", response))...)
-			// Use the NATS connection to send a response
-			_, err := ctx.PublishWithMiddleware(
-				msg.Reply, response,
-				middlewareFunc...,
-			)
-			if err != nil {
-				ctx.Log.Error(constant.ServiceHandlerMessage, ctx.SlogEvent(msg, log.String("function", "ctx.NATSManager.PublishWithMiddleware"), log.Err(err))...)
-				return
+			ctx.SlogEventInfo(constant.ServiceHandlerMessage, msg, log.String("handlers", "WrapServiceWithNATSHandler"), log.Any("response", response))
+			// Only publish response if JetStream is not enabled
+			if !ctx.IsJetStreamEnabled() {
+				_, err := ctx.PublishWithMiddleware(
+					msg.Reply, response,
+					middlewareFunc...,
+				)
+				if err != nil {
+					ctx.Log.Error(constant.ServiceHandlerMessage, ctx.SlogEvent(msg, log.String("function", "ctx.NATSManager.PublishWithMiddleware"), log.Err(err))...)
+					return
+				}
 			}
 		}()
 
 		// Execute your handler with the received message
 		responseResult := handler(ctx, msg)
 		if !responseResult.IsSuccess() {
-			_, blameInfo = responseResult.Value()
-			ctx.Log.Error(constant.ServiceHandlerMessage, ctx.SlogEvent(msg, log.String("handlers", "WrapServiceWithNATSHandler"), log.String("error", blameInfo.FetchErrCode().String()))...)
-			middlewareFunc = append(middlewareFunc, natsInternal.AddHeaderMiddleware(constant.ErrorHeader, blameInfo.FetchErrCode().String()))
+			_, cause = responseResult.Value()
+			ctx.SlogEventError(constant.ServiceHandlerMessage, msg, log.String("handlers", "WrapServiceWithNATSHandler"), log.Blame(cause))
+			middlewareFunc = append(middlewareFunc, natsInternal.AddHeaderMiddleware(constant.ErrorHeader, cause.FetchErrCode().String()))
 			return
 		}
 

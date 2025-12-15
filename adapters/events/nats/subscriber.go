@@ -47,14 +47,20 @@ func (w *NATSManager) subscribeInternal(subject string, handler nats.MsgHandler,
 			messageID := w.processMessageIDHeader(msg)
 			if messageID == "" {
 				w.logger.Error("subscribeInternal Message ID not found in header", log.Any(constant.MessageIdHeader, messageID))
+				// ACK duplicate/invalid messages to prevent redelivery
+				w.ackIfJetStream(msg)
 				return
 			}
 
 			// Apply middleware and get blame
 			if middlewareBlame := applyMiddleware(wrappedHandler, middlewares...)(msg); middlewareBlame != nil {
 				w.logger.Error(constant.MiddlewareFailed, log.Any(constant.MessageIdHeader, messageID), log.Any("subscribeInternal", middlewareBlame.FetchErrCode()))
+				// NAK on middleware failure to allow redelivery
+				w.nakIfJetStream(msg)
 				return
 			}
+			// ACK successful processing
+			w.ackIfJetStream(msg)
 			w.logger.Info(constant.MessageProcessed, log.Any(constant.MessageIdHeader, messageID))
 		}
 	} else {
@@ -129,12 +135,22 @@ func (w *NATSManager) subscribeQueueInternal(subject, queue string, handler nats
 		wrappedHandler := w.WrapNATSMsgProcessor(handler)
 		finalHandler = func(msg *nats.Msg) {
 			messageID := w.processMessageIDHeader(msg)
+			if messageID == "" {
+				w.logger.Error("subscribeQueueInternal Message ID not found in header", log.Any(constant.MessageIdHeader, messageID))
+				// ACK duplicate/invalid messages to prevent redelivery
+				w.ackIfJetStream(msg)
+				return
+			}
 
 			// Apply middleware and get blame
 			if middlewareBlame := applyMiddleware(wrappedHandler, middlewares...)(msg); middlewareBlame != nil {
 				w.logger.Error(constant.MiddlewareFailed, log.Any(constant.MessageIdHeader, messageID), log.Any("subscribeQueueInternal", middlewareBlame))
+				// NAK on middleware failure to allow redelivery
+				w.nakIfJetStream(msg)
 				return
 			}
+			// ACK successful processing
+			w.ackIfJetStream(msg)
 			w.logger.Info(constant.MessageProcessed, log.Any(constant.MessageIdHeader, messageID))
 		}
 	} else {
@@ -151,6 +167,11 @@ func (w *NATSManager) subscribeQueueInternal(subject, queue string, handler nats
 		opts = append(opts, nats.ManualAck())
 		opts = append(opts, nats.Durable(queue)) // Optional: Persistent consumer
 		opts = append(opts, nats.DeliverNew())
+
+		// IMPORTANT: Add these for proper acknowledgment
+		opts = append(opts, nats.AckExplicit())
+		// opts = append(opts, nats.MaxDeliver(10)) // Max redelivery attempts
+		// opts = append(opts, nats.AckWait(30*time.Second))
 
 		sub, err = w.js.QueueSubscribe(
 			subject,

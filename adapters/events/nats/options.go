@@ -53,7 +53,7 @@ func WithJetStream(cfgs JetStreamOptions, opts ...nats.JSOpt) Option {
 				w.logger.Error("Failed to create stream", log.Any("error", err))
 				continue
 			}
-			w.logger.Info("Stream created or exists", log.Any("stream", cfg.Name))
+			w.logger.Info("Stream created or exists", log.Any("stream", cfg.Name), log.Any("subjects", cfg.Subjects))
 		}
 
 	}

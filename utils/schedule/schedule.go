@@ -12,7 +12,7 @@ import (
 const (
 	DefaultName       = "Schedule"
 	SchedulerStarted  = "Schedule started"
-	DefaultTimeFormat = "01-02-2006 03:04:05 PM"
+	DefaultTimeFormat = "02-01-2006 03:04:05 PM"
 	DefaultTimeZone   = "Asia/Kolkata"
 )
 

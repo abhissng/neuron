@@ -1,7 +1,6 @@
 package email
 
 import (
-	"crypto/tls"
 	"fmt"
 
 	"github.com/abhissng/neuron/adapters/log"
@@ -9,7 +8,7 @@ import (
 )
 
 type EmailClient interface {
-	Send(data EmailData) error
+	Send(data *EmailData) error
 }
 
 type GomailClient struct {
@@ -21,14 +20,12 @@ type GomailClient struct {
 // @return: The gomail client
 // @return: The error if any
 // must provide logger
-func NewGomailClient(opts ...Option) (*GomailClient, error) {
+func NewGomailClient(opts ...Option) (EmailClient, error) {
 	// default options
 	o := &ClientOptions{
-		Type:       "SMTP",
-		Host:       "localhost",
-		Port:       25,
-		TLS:        true,
-		SkipVerify: false,
+		Type: "SMTP",
+		Host: "localhost",
+		Port: 25,
 	}
 	for _, opt := range opts {
 		opt(o)
@@ -39,11 +36,18 @@ func NewGomailClient(opts ...Option) (*GomailClient, error) {
 	return &GomailClient{opts: *o}, nil
 }
 
-func (c *GomailClient) Send(data EmailData) error {
+func (c *GomailClient) Send(data *EmailData) error {
 	// Template replacements
-	subject := applyTemplate(data.Subject, data.TemplateData)
-	html := applyTemplate(data.HTMLBody, data.TemplateData)
-	text := applyTemplate(data.TextBody, data.TemplateData)
+	var subject, html, text string
+	if data.TemplateData != nil {
+		subject = applyTemplate(data.Subject, data.TemplateData)
+		html = applyTemplate(data.HTMLBody, data.TemplateData)
+		text = applyTemplate(data.TextBody, data.TemplateData)
+	} else {
+		subject = data.Subject
+		html = data.HTMLBody
+		text = data.TextBody
+	}
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", data.From)
@@ -80,13 +84,9 @@ func (c *GomailClient) Send(data EmailData) error {
 
 	// Dialer
 	d := gomail.NewDialer(c.opts.Host, c.opts.Port, c.opts.Username, c.opts.Password)
-	if c.opts.SkipVerify {
-		d.TLSConfig = &tls.Config{InsecureSkipVerify: c.opts.SkipVerify} //#nosec
+	if c.opts.TLSConfig != nil {
+		d.TLSConfig = c.opts.TLSConfig
 	}
-	// optionally enforce startTLS etc
-
-	// Decide TLS vs not:
-	// gomail handles TLS automatically depending on port/dialer settings
 
 	// Send
 	if err := d.DialAndSend(m); err != nil {

@@ -90,7 +90,7 @@ func ProcessServiceStates[T any](
 		payloadToSend.CurrentService = state.Service
 
 		// Make the external call using the NATS wrapper.
-		msg, blameInfo := ctx.PublishAndWait(
+		msg, cause := ctx.PublishAndWait(
 			state.ExecuteSubject,
 			svcDef.QueueGroup,
 			payloadToSend,
@@ -100,8 +100,8 @@ func ProcessServiceStates[T any](
 			nats.AddHeaderMiddleware(constant.IPHeader, ctx.ClientIP()),
 			nats.LogMiddleware(constant.Publish, ctx.Log))
 
-		if blameInfo != nil {
-			return result.NewFailureWithValue(serviceResult, blameInfo)
+		if cause != nil {
+			return result.NewFailureWithValue(serviceResult, cause)
 		}
 
 		resp, err := codec.Decode[*message.Message[T]](msg.Data, codec.JSON)
@@ -113,9 +113,9 @@ func ProcessServiceStates[T any](
 		ctx.SlogInfo("Response Retrieved", log.Any("response", resp))
 
 		if !helpers.IsSuccess(resp.Status) {
-			blameInfo := resp.Error.NewErrorResponseBlame(ctx.BlameManager)
-			ctx.SlogError("State Execution Failed", log.Any("state", state.Service), log.Any("error", blameInfo.ErrorFromBlame()))
-			return result.NewFailureWithValue(serviceResult, blameInfo)
+			cause := resp.Error.NewErrorResponseBlame(ctx.BlameManager)
+			ctx.SlogError("State Execution Failed", log.Any("state", state.Service), log.Any("error", cause.ErrorFromBlame()))
+			return result.NewFailureWithValue(serviceResult, cause)
 		}
 		// Update initial payload
 		payloadToSend = resp
@@ -206,13 +206,13 @@ func executeStateRollback[T any](ctx *context.ServiceContext, state *service.Ser
 		return
 	}
 
-	_, blameInfo := ctx.PublishWithMiddleware(
+	_, cause := ctx.PublishWithMiddleware(
 		state.RollbackSubject,
 		reqBytes,
 		nats.AddHeaderMiddleware(constant.CorrelationIDHeader, respPayload.CorrelationID.String()),
 		nats.LogMiddleware(constant.Publish, ctx.Log))
-	if blameInfo != nil {
-		ctx.Log.Error("rollback request failed", log.String("state", state.Service), log.Any("error", blameInfo.ErrorFromBlame()))
+	if cause != nil {
+		ctx.Log.Error("rollback request failed", log.String("state", state.Service), log.Any("error", cause.ErrorFromBlame()))
 		return
 	}
 	ctx.Info("Rollback successful for state", log.String("state", state.Service))

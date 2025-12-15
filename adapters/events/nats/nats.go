@@ -60,7 +60,7 @@ func NewNATSManager(url string, options ...Option) (*NATSManager, error) {
 
 	// Configure NATS options for reliability
 	opts := []nats.Option{
-		nats.MaxReconnects(DefautMaxReconnects),
+		nats.MaxReconnects(DefaultMaxReconnects),
 		nats.ReconnectWait(DefaultReconnectWait),
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
 			defaultLog.Error("NATS disconnected", log.Any("error", err))
@@ -112,6 +112,17 @@ func (w *NATSManager) Ping() error {
 	return errors.New(ConnectionFailedMessage)
 }
 
+// IsClosed reports whether the underlying NATS connection has been closed.
+// It is safe for concurrent use.
+func (w *NATSManager) IsClosed() bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.nc == nil {
+		return true
+	}
+	return w.nc.IsClosed()
+}
+
 // Close gracefully shuts down the NATS manager.
 // It unsubscribes from all subjects, closes connections, and cleans up resources.
 func (w *NATSManager) Close() {
@@ -142,9 +153,12 @@ func (w *NATSManager) Close() {
 	w.logger.Info(constant.ConnectionClosed, log.Any("message", "NATS connection closed"))
 }
 
+// IsJetStreamEnabled returns true if JetStream is enabled for this manager
+func (w *NATSManager) IsJetStreamEnabled() bool {
+	return w.js != nil
+}
+
 // ackIfJetStream sends an ACK if using JetStream
-//
-//lint:ignore U1000 // This function is used for JetStream acking and might be called later, so we're keeping it for now.
 func (w *NATSManager) ackIfJetStream(msg *nats.Msg) {
 	if w.js != nil {
 		if err := msg.Ack(); err != nil {
@@ -154,8 +168,6 @@ func (w *NATSManager) ackIfJetStream(msg *nats.Msg) {
 }
 
 // nakIfJetStream sends a NAK if using JetStream
-//
-//lint:ignore U1000 // This function is used for JetStream acking and might be called later, so we're keeping it for now.
 func (w *NATSManager) nakIfJetStream(msg *nats.Msg) {
 	if w.js != nil {
 		if err := msg.Nak(); err != nil {
@@ -194,14 +206,37 @@ func (w *NATSManager) processMessageIDHeader(msg *nats.Msg) string {
 //
 // 1. It calls the processMessageIDHeader function to process the message id header
 // 2. It calls the provided handler function to process the message.
-// 3. A log message is printed indicating that the message has been successfully processed.
+// 3. ACKs the message on success (JetStream only)
+// 4. A log message is printed indicating that the message has been successfully processed.
 func (w *NATSManager) handleMessage(msg *nats.Msg, handler nats.MsgHandler) {
-
 	messageID := w.processMessageIDHeader(msg)
+	if messageID == "" {
+		// Message already processed or invalid - ACK to prevent redelivery
+		w.ackIfJetStream(msg)
+		return
+	}
 
-	// Process the message
-	handler(msg)
+	// Process the message with panic recovery
+	var processingError error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				stack := debug.Stack()
+				processingError = fmt.Errorf("panic recovered: %v\nStack Trace:\n%s", r, string(stack))
+				w.logger.Error("Panic in message handler", log.Any("error", processingError))
+			}
+		}()
+		handler(msg)
+	}()
 
+	if processingError != nil {
+		// NAK on processing failure to allow redelivery
+		w.nakIfJetStream(msg)
+		return
+	}
+
+	// ACK successful processing
+	w.ackIfJetStream(msg)
 	w.logger.Info("Message processed", log.Any("message_id", messageID))
 }
 

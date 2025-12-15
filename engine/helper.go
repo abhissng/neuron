@@ -13,7 +13,7 @@ import (
 )
 
 // encodeErrorRespondMesage encodes a error response map to a message
-func encodeErrorRespondMesage[T any](ctx *context.ServiceContext, action types.Action, msg *nats.Msg, blameInfo blame.Blame) T {
+func encodeErrorRespondMesage[T any](ctx *context.ServiceContext, action types.Action, msg *nats.Msg, cause blame.Blame) T {
 	var zero T
 	coreMessage := message.NewMessage(
 		action,
@@ -21,7 +21,7 @@ func encodeErrorRespondMesage[T any](ctx *context.ServiceContext, action types.A
 		types.CorrelationID(helpers.CorrelationIDFromNatsMsg(msg)),
 		zero,
 	)
-	coreMessage.AddError(blameInfo.FetchErrorResponse(blame.WithTranslation()))
+	coreMessage.AddError(cause.FetchErrorResponse(blame.WithTranslation()))
 	// Ensure coreMessage is of the correct type
 	if result, ok := any(coreMessage).(T); ok {
 		return result

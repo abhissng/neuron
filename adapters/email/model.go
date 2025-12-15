@@ -28,10 +28,21 @@ type EmailData struct {
 	Headers map[string]string
 }
 
-// Apply simple templating: replace {{key}} with value
+func NewEmailData() *EmailData {
+	return &EmailData{
+		To:           make([]string, 0),
+		CC:           make([]string, 0),
+		BCC:          make([]string, 0),
+		Attachments:  make([]string, 0),
+		TemplateData: make(map[string]string),
+		Headers:      make(map[string]string),
+	}
+}
+
+// Apply simple templating: replace {{.key}} with value
 func applyTemplate(input string, data map[string]string) string {
 	for k, v := range data {
-		placeholder := "{{" + k + "}}"
+		placeholder := "{{." + k + "}}"
 		input = strings.ReplaceAll(input, placeholder, v)
 	}
 	return input

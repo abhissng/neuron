@@ -31,7 +31,7 @@ func (w *NATSManager) publishInternal(subject string, payload any, middlewares .
 		w.logger.Error(constant.EventPublishedFailed, log.Any("codec.Encode", err))
 		return nil, blame.MarshalError(codec.JSON, err)
 	}
-	messageId := random.GenerateUUID()
+	messageId := random.GenerateUUIDString()
 	// Create the message with headers
 	msg := &nats.Msg{
 		Subject: subject,
@@ -86,7 +86,7 @@ func (w *NATSManager) PublishAndWait(subject, queueGroup string, payload any, ti
 		w.logger.Error(constant.EventPublishedFailed, log.Any("codec.Encode", err))
 		return nil, blame.MarshalError(codec.JSON, err)
 	}
-	messageId := random.GenerateUUID()
+	messageId := random.GenerateUUIDString()
 
 	result, err := w.breaker.Execute(func() (interface{}, error) {
 		replySubj := w.createReplySubject(subject)
@@ -233,7 +233,7 @@ func (w *NATSManager) PublishAndWaitUsingStream(subject, queueGroup string, payl
 	if err != nil {
 		return nil, blame.MarshalError(codec.JSON, err)
 	}
-	messageId := random.GenerateUUID()
+	messageId := random.GenerateUUIDString()
 
 	result, err := w.breaker.Execute(func() (interface{}, error) {
 		replySubj := w.createReplySubject(subject)
