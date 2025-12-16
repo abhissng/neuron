@@ -143,12 +143,12 @@ func (s *ServiceContext) GetServiceID() string {
 
 // WithGeneratedRequestID adds a generated request ID to the AppContext.
 func (s *ServiceContext) WithGeneratedRequestID() *ServiceContext {
-	return s.WithValue(constant.RequestID, random.GenerateUUID())
+	return s.WithValue(constant.RequestID, random.GenerateUUIDString())
 }
 
 // WithGeneratedCorrelationID adds a generated correlation ID to the AppContext.
 func (s *ServiceContext) WithGeneratedCorrelationID() *ServiceContext {
-	return s.WithValue(constant.CorrelationID, random.GenerateUUID())
+	return s.WithValue(constant.CorrelationID, random.GenerateUUIDString())
 }
 
 // RecoverFromException recovers from panics and logs the stack trace

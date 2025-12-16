@@ -4,8 +4,8 @@ import (
 	"errors"
 	"runtime/debug"
 
-	"github.com/abhissng/neuron/adapters/jwt"
 	"github.com/abhissng/neuron/adapters/log"
+	"github.com/abhissng/neuron/adapters/paseto"
 	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/utils/codec"
 	"github.com/abhissng/neuron/utils/constant"
@@ -13,7 +13,6 @@ import (
 	"github.com/abhissng/neuron/utils/structures/message"
 	"github.com/abhissng/neuron/utils/types"
 	"github.com/nats-io/nats.go"
-	"github.com/spf13/viper"
 )
 
 // ----------------------
@@ -93,22 +92,44 @@ func sendErrorResponse(msg *nats.Msg, err error) {
 	_ = msg.Respond(msgByt)
 }
 
-// validateAuthToken validates the authorization token from headers
-func validateAuthToken(msg *nats.Msg) blame.Blame {
+// validateAuthToken validates the authorization token from headers using paseto
+func validateAuthToken(msg *nats.Msg, pasetoManager *paseto.PasetoManager, validators ...paseto.TokenValidator) blame.Blame {
 	token := helpers.AuthorizationHeaderFromNatsMsg(msg)
 	if helpers.IsEmpty(token) {
 		return blame.MalformedAuthToken(errors.New("token is empty"))
 	}
 
-	_, err := jwt.ValidateJWT(token, viper.GetString(constant.JWTSecret), []string{"admin"})
-	if err != nil {
-		return blame.MalformedAuthToken(err)
+	// Extract bearer token if present
+	token = helpers.ExtractBearerToken(token)
+	if helpers.IsEmpty(token) {
+		return blame.MalformedAuthToken(errors.New("bearer token is empty"))
 	}
+
+	if pasetoManager == nil {
+		return blame.MalformedAuthToken(errors.New("paseto manager is not configured"))
+	}
+
+	// Build extra context from NATS message headers
+	extra := make(map[string]any)
+	if subject := msg.Header.Get(constant.XSubject); subject != "" {
+		extra["subject"] = subject
+	}
+	if ip := helpers.IPHeaderFromNatsMsg(msg); ip != "" {
+		extra["ip"] = ip
+	}
+
+	// Validate token using paseto with custom validators
+	res := pasetoManager.ValidateToken(token, extra, validators...)
+	if !res.IsSuccess() {
+		return res.Blame()
+	}
+
 	return nil
 }
 
 // ValidateHeadersMiddleware checks for the existence and validity of required headers.
-func ValidateHeadersMiddleware() MiddlewareFunc {
+// It uses paseto for token validation with optional custom validators.
+func ValidateHeadersMiddleware(pasetoManager *paseto.PasetoManager, validators ...paseto.TokenValidator) MiddlewareFunc {
 	defer helpers.RecoverException(recover())
 	return func(next NATSMsgProcessor) NATSMsgProcessor {
 		return func(msg *nats.Msg) blame.Blame {
@@ -118,7 +139,7 @@ func ValidateHeadersMiddleware() MiddlewareFunc {
 				return blame.HeadersNotFound(err)
 			}
 
-			if blameErr := validateAuthToken(msg); blameErr != nil {
+			if blameErr := validateAuthToken(msg, pasetoManager, validators...); blameErr != nil {
 				sendErrorResponse(msg, blameErr.ErrorFromBlame())
 				return blameErr
 			}

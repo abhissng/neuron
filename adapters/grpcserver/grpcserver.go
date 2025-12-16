@@ -243,15 +243,16 @@ func buildInterceptors(config ServerConfig) ([]grpc.UnaryServerInterceptor, []gr
 
 func unaryCorrelationIDInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		if _, ok := ctx.Value(constant.CorrelationID).(types.StringConstant); !ok {
+		if _, ok := ctx.Value(types.StringConstant(constant.CorrelationIDHeader)).(string); !ok {
 			if md, ok := metadata.FromIncomingContext(ctx); ok {
-				if vals := md.Get(constant.CorrelationID); len(vals) > 0 {
-					ctx = context.WithValue(ctx, types.StringConstant(constant.CorrelationID), vals[0])
+				if vals := md.Get(constant.CorrelationIDHeader); len(vals) > 0 {
+					ctx = context.WithValue(ctx, types.StringConstant(constant.CorrelationIDHeader), vals[0])
 				}
 			}
 		}
-		if _, ok := ctx.Value(types.StringConstant(constant.CorrelationID)).(string); !ok {
-			ctx = context.WithValue(ctx, types.StringConstant(constant.CorrelationID), random.GenerateUUID())
+		// Generate UUID if still not set after checking metadata
+		if _, ok := ctx.Value(types.StringConstant(constant.CorrelationIDHeader)).(string); !ok {
+			ctx = context.WithValue(ctx, types.StringConstant(constant.CorrelationIDHeader), random.GenerateUUIDString())
 		}
 		return handler(ctx, req)
 	}
@@ -259,21 +260,21 @@ func unaryCorrelationIDInterceptor() grpc.UnaryServerInterceptor {
 
 func streamCorrelationIDInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		if _, ok := ss.Context().Value(constant.CorrelationID).(types.StringConstant); !ok {
+		if _, ok := ss.Context().Value(constant.CorrelationIDHeader).(types.StringConstant); !ok {
 			if md, ok := metadata.FromIncomingContext(ss.Context()); ok {
-				if vals := md.Get(constant.CorrelationID); len(vals) > 0 {
-					newCtx := context.WithValue(ss.Context(), types.StringConstant(constant.CorrelationID), vals[0])
+				if vals := md.Get(constant.CorrelationIDHeader); len(vals) > 0 {
+					newCtx := context.WithValue(ss.Context(), types.StringConstant(constant.CorrelationIDHeader), vals[0])
 					wrapped := &serverStreamWithContext{ServerStream: ss, ctx: newCtx}
 					return handler(srv, wrapped)
 				}
 			}
 			// metadata missing value, generate correlation id
-			newCtx := context.WithValue(ss.Context(), types.StringConstant(constant.CorrelationID), random.GenerateUUID())
+			newCtx := context.WithValue(ss.Context(), types.StringConstant(constant.CorrelationIDHeader), random.GenerateUUIDString())
 			wrapped := &serverStreamWithContext{ServerStream: ss, ctx: newCtx}
 			return handler(srv, wrapped)
 		}
-		if _, ok := ss.Context().Value(types.StringConstant(constant.CorrelationID)).(string); !ok {
-			newCtx := context.WithValue(ss.Context(), types.StringConstant(constant.CorrelationID), random.GenerateUUID())
+		if _, ok := ss.Context().Value(types.StringConstant(constant.CorrelationIDHeader)).(string); !ok {
+			newCtx := context.WithValue(ss.Context(), types.StringConstant(constant.CorrelationIDHeader), random.GenerateUUIDString())
 			wrapped := &serverStreamWithContext{ServerStream: ss, ctx: newCtx}
 			return handler(srv, wrapped)
 		}
@@ -284,7 +285,7 @@ func streamCorrelationIDInterceptor() grpc.StreamServerInterceptor {
 func unaryRequestIDInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		if _, ok := ctx.Value(constant.RequestID).(types.StringConstant); !ok {
-			ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUID())
+			ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUIDString())
 		}
 		return handler(ctx, req)
 	}
@@ -293,7 +294,7 @@ func unaryRequestIDInterceptor() grpc.UnaryServerInterceptor {
 func streamRequestIDInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		if _, ok := ss.Context().Value(constant.RequestID).(types.StringConstant); !ok {
-			ctx := context.WithValue(ss.Context(), types.StringConstant(constant.RequestID), random.GenerateUUID())
+			ctx := context.WithValue(ss.Context(), types.StringConstant(constant.RequestID), random.GenerateUUIDString())
 			wrapped := &serverStreamWithContext{ServerStream: ss, ctx: ctx}
 			return handler(srv, wrapped)
 		}
@@ -325,7 +326,7 @@ func InterceptorLogger(l *log.Log) logging.Logger {
 
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
 		requestID, _ := ctx.Value(constant.RequestID).(types.StringConstant)
-		correlationID, _ := ctx.Value(constant.CorrelationID).(types.StringConstant)
+		correlationID, _ := ctx.Value(constant.CorrelationIDHeader).(types.StringConstant)
 
 		zFields := []zap.Field{
 			zap.String("correlation_id", string(correlationID)),
@@ -375,7 +376,7 @@ func createAuthFunc(secret string) auth.AuthFunc {
 
 		ctx = context.WithValue(ctx, types.StringConstant(constant.Service), claims.ServiceName)
 		ctx = context.WithValue(ctx, types.StringConstant(constant.Roles), claims.Roles)
-		ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUID())
+		ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUIDString())
 
 		return ctx, nil
 	}
@@ -393,8 +394,8 @@ func unaryServiceContextInterceptor(appCtx *neuronctx.AppContext) grpc.UnaryServ
 		if reqID, ok := ctx.Value(types.StringConstant(constant.RequestID)).(string); ok {
 			svcCtx = svcCtx.WithRequestID(reqID)
 		}
-		if corrID, ok := ctx.Value(types.StringConstant(constant.CorrelationID)).(string); ok {
-			svcCtx = svcCtx.WithValue(constant.CorrelationID, corrID)
+		if corrID, ok := ctx.Value(types.StringConstant(constant.CorrelationIDHeader)).(string); ok {
+			svcCtx = svcCtx.WithValue(constant.CorrelationIDHeader, corrID)
 		}
 
 		// Store ServiceContext in the context
@@ -418,8 +419,8 @@ func streamServiceContextInterceptor(appCtx *neuronctx.AppContext) grpc.StreamSe
 		if reqID, ok := ctx.Value(types.StringConstant(constant.RequestID)).(string); ok {
 			svcCtx = svcCtx.WithRequestID(reqID)
 		}
-		if corrID, ok := ctx.Value(types.StringConstant(constant.CorrelationID)).(string); ok {
-			svcCtx = svcCtx.WithValue(constant.CorrelationID, corrID)
+		if corrID, ok := ctx.Value(types.StringConstant(constant.CorrelationIDHeader)).(string); ok {
+			svcCtx = svcCtx.WithValue(constant.CorrelationIDHeader, corrID)
 		}
 
 		// Store ServiceContext in the context
@@ -577,7 +578,7 @@ func populateContextWithClaims(ctx context.Context, cl *claims.StandardClaims) c
 
 	// Ensure request ID is set
 	if _, ok := ctx.Value(types.StringConstant(constant.RequestID)).(string); !ok {
-		ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUID())
+		ctx = context.WithValue(ctx, types.StringConstant(constant.RequestID), random.GenerateUUIDString())
 	}
 
 	return ctx
@@ -784,7 +785,7 @@ func startPasetoServer(pubKey ed25519.PublicKey) error {
 
 // ===== Unary handler: read correlation_id/request_id from context =====
 func (h *handler) SomeRPC(ctx context.Context, req *pb.SomeRequest) (*pb.SomeReply, error) {
-    corr, _ := ctx.Value(types.StringConstant(constant.CorrelationID)).(types.StringConstant)
+    corr, _ := ctx.Value(types.StringConstant(constant.CorrelationIDHeader)).(types.StringConstant)
     reqID, _ := ctx.Value(types.StringConstant(constant.RequestID)).(types.StringConstant)
     h.log.Info("handling request", "correlation_id", corr, "request_id", reqID)
     // ...

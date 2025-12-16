@@ -17,6 +17,7 @@ type EssentialHeaders struct {
 	FeatureFlags string       `json:"feature_flags"`
 }
 
+// NewEssentialHeaders creates and returns an empty EssentialHeaders value.
 func NewEssentialHeaders() *EssentialHeaders {
 	return &EssentialHeaders{}
 }
@@ -44,6 +45,7 @@ func WithLocationIdRequired() EssentialHeadersOption {
 	}
 }
 
+// GetEssentialHeadersValues extracts essential header values from the request using the provided options.
 func GetEssentialHeadersValues(ctx *context.ServiceContext, options ...EssentialHeadersOption) (*EssentialHeaders, blame.Blame) {
 	defer func() { helpers.RecoverException(recover()) }()
 	cfg := &essentialHeadersConfig{
@@ -119,4 +121,107 @@ func GetEssentialHeadersValues(ctx *context.ServiceContext, options ...Essential
 		FeatureFlags: featureFlag,
 		LocationId:   locationId,
 	}, nil
+}
+
+type RequestAuthValues struct {
+	Token         string
+	CorrelationID types.CorrelationID
+	XSubject      string
+}
+
+type RequestAuthConfig struct {
+	RequireToken         bool
+	RequireCorrelationID bool
+	RequireXSubject      bool
+}
+
+type RequestAuthOption func(*RequestAuthConfig)
+
+// WithRequireToken marks the auth token as required when fetching request auth values.
+func WithRequireToken() RequestAuthOption {
+	return func(cfg *RequestAuthConfig) {
+		cfg.RequireToken = true
+	}
+}
+
+// WithRequireCorrelationID marks the correlation ID header as required when fetching request auth values.
+func WithRequireCorrelationID() RequestAuthOption {
+	return func(cfg *RequestAuthConfig) {
+		cfg.RequireCorrelationID = true
+	}
+}
+
+// WithRequireXSubject marks the X-Subject header as required when fetching request auth values.
+func WithRequireXSubject() RequestAuthOption {
+	return func(cfg *RequestAuthConfig) {
+		cfg.RequireXSubject = true
+	}
+}
+
+// GetRequestAuthValues returns the request auth values
+func GetRequestAuthValues(ctx *context.ServiceContext, options ...RequestAuthOption) (*RequestAuthValues, blame.Blame) {
+	defer func() { helpers.RecoverException(recover()) }()
+
+	// Default configuration - both required by default
+	cfg := &RequestAuthConfig{
+		RequireToken:         false,
+		RequireCorrelationID: false,
+		RequireXSubject:      false,
+	}
+
+	// Apply options
+	for _, opt := range options {
+		opt(cfg)
+	}
+
+	// -------- TOKEN ----------
+	var token string
+	tokenResult := FetchPasetoBearerToken(ctx.Context)
+	if !tokenResult.IsSuccess() {
+		if cfg.RequireToken {
+			ctx.SlogError("unable to get the authentication token", log.Blame(tokenResult.Blame()))
+			return nil, tokenResult.Blame()
+		}
+	} else {
+		token = *tokenResult.ToValue()
+	}
+
+	// -------- CORRELATION ID ----------
+	var correlationID types.CorrelationID
+	correlationIdResult := FetchCorrelationIdFromHeaders(ctx.Context)
+	if !correlationIdResult.IsSuccess() {
+		if cfg.RequireCorrelationID {
+			ctx.SlogError("unable to get the correlation ID", log.Blame(correlationIdResult.Blame()))
+			return nil, correlationIdResult.Blame()
+		}
+	} else {
+		correlationID = *correlationIdResult.ToValue()
+	}
+
+	var xSubject string
+	xSubjectResult := FetchXSubjectHeader(ctx.Context)
+	if !xSubjectResult.IsSuccess() {
+		if cfg.RequireXSubject {
+			ctx.SlogError("unable to get the X-Subject header", log.Blame(xSubjectResult.Blame()))
+			return nil, xSubjectResult.Blame()
+		}
+	} else {
+		xSubject = *xSubjectResult.ToValue()
+	}
+
+	return &RequestAuthValues{
+		Token:         token,
+		CorrelationID: correlationID,
+		XSubject:      xSubject,
+	}, nil
+}
+
+// MustGetRequestAuthValues returns the request auth values or if an error occurs
+func MustGetRequestAuthValues(ctx *context.ServiceContext) (*RequestAuthValues, blame.Blame) {
+	return GetRequestAuthValues(
+		ctx,
+		WithRequireToken(),
+		WithRequireCorrelationID(),
+		WithRequireXSubject(),
+	)
 }

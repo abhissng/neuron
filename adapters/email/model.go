@@ -1,6 +1,6 @@
 package email
 
-import "strings"
+import "github.com/abhissng/neuron/utils/helpers"
 
 // EmailData represents the data for an email message
 // This is the data that is passed to the email client to send an email
@@ -15,6 +15,7 @@ import "strings"
 // @field TemplateData: The data to be used for templating <map[string]string>
 // @field Headers: The custom headers to be added to the email <map[string]string>
 type EmailData struct {
+	FromName     string
 	From         string
 	To           []string
 	CC           []string
@@ -28,11 +29,36 @@ type EmailData struct {
 	Headers map[string]string
 }
 
-// Apply simple templating: replace {{key}} with value
-func applyTemplate(input string, data map[string]string) string {
-	for k, v := range data {
-		placeholder := "{{" + k + "}}"
-		input = strings.ReplaceAll(input, placeholder, v)
+func NewEmailData() *EmailData {
+	return &EmailData{
+		To:           make([]string, 0),
+		CC:           make([]string, 0),
+		BCC:          make([]string, 0),
+		Attachments:  make([]string, 0),
+		TemplateData: make(map[string]string),
+		Headers:      make(map[string]string),
 	}
-	return input
+}
+
+func formatFromHeader(fromEmail, fromName string) string {
+	if fromName == "" {
+		return fromEmail
+	}
+	if fromEmail == "" {
+		return fromName
+	}
+	return fromName + " <" + fromEmail + ">"
+}
+
+// Apply templating using the shared helper
+func applyTemplate(input string, data map[string]string) string {
+	params := make(map[string]any, len(data))
+	for k, v := range data {
+		params[k] = v
+	}
+	result, err := helpers.ReplacePlaceholders(input, params)
+	if err != nil {
+		return input // fallback to original on error
+	}
+	return result
 }

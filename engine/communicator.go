@@ -37,9 +37,9 @@ func CommunicateWithDiscovery[T any](ctx *http.HttpClientManager, payload *disco
 
 	// If request fails, return an error
 	if !res.IsSuccess() {
-		_, blameInfo := res.Value()
-		ctx.Log.Error(constant.APICallMessage, log.Any("error", blameInfo.FetchCauses()))
-		return result.NewFailure[CommunicateResult[T]](blameInfo)
+		_, cause := res.Value()
+		ctx.Log.Error(constant.APICallMessage, log.Any("error", cause.FetchCauses()))
+		return result.NewFailure[CommunicateResult[T]](cause)
 	}
 
 	if res.ToValue().Result == nil {

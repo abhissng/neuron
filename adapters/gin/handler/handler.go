@@ -113,10 +113,10 @@ func processResult[T any](res result.Result[T], ctx *context.ServiceContext) {
 			return
 		}
 
-		_, blameInfo := res.Value()
-		status := helpers.FetchHTTPStatusCode(blameInfo.FetchResponseType())
-		errorResponse := blameInfo.FetchErrorResponse(blame.WithTranslation())
-		ctx.SlogError(constant.HandlerFailed, log.Blame(blameInfo))
+		_, cause := res.Value()
+		status := helpers.FetchHTTPStatusCode(cause.FetchResponseType())
+		errorResponse := cause.FetchErrorResponse(blame.WithTranslation())
+		ctx.SlogError(constant.HandlerFailed, log.Blame(cause))
 		ctx.JSON(status, acknowledgment.NewAPIResponse[any](false, types.CorrelationID(ctx.GetGinContextCorrelationID()), errorResponse))
 		return
 	}

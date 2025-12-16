@@ -1,18 +1,20 @@
 package email
 
-import "github.com/abhissng/neuron/adapters/log"
+import (
+	"crypto/tls"
+
+	"github.com/abhissng/neuron/adapters/log"
+)
 
 // ClientOptions holds the configuration for the email client
 type ClientOptions struct {
-	Type     string
-	Host     string
-	Port     int
-	Username string
-	Password string
-	TLS      bool
-	// maybe allow skipping TLS verify
-	SkipVerify bool
-	log        *log.Log
+	Type      string
+	Host      string
+	Port      int
+	Username  string
+	Password  string
+	TLSConfig *tls.Config
+	log       *log.Log
 }
 
 type Option func(*ClientOptions)
@@ -41,18 +43,11 @@ func WithCredentials(username, password string) Option {
 	}
 }
 
-// WithTLS sets the TLS for the email client
-func WithTLS(on bool) Option {
+// WithTLSConfig sets the TLS configuration for the email client
+// @param config: The TLS configuration for the email client
+func WithTLSConfig(config *tls.Config) Option {
 	return func(o *ClientOptions) {
-		o.TLS = on
-	}
-}
-
-// WithSkipVerify sets the skip verify for the email client
-// @param skip: The skip verify for the email client
-func WithSkipVerify(skip bool) Option {
-	return func(o *ClientOptions) {
-		o.SkipVerify = skip
+		o.TLSConfig = config
 	}
 }
 

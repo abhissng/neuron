@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math"
@@ -15,6 +16,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/abhissng/neuron/utils/constant"
@@ -953,4 +955,70 @@ func SameSiteName(s http.SameSite) string {
 	default:
 		return "Unknown"
 	}
+}
+
+// replacePlaceholders replaces {{.key}} in src with values from params.
+func ReplacePlaceholders(src string, params map[string]any) (string, error) {
+	funcMap := template.FuncMap{
+		"upper": strings.ToUpper,
+		"lower": strings.ToLower,
+		"trim":  strings.TrimSpace,
+	}
+
+	tmpl, err := template.New("template").Funcs(funcMap).Parse(src)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, params); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// SplitAny splits a string into parts using any of the specified separators.
+// It returns a slice of non-empty strings after removing leading/trailing whitespace.
+func SplitAny(s string, delims ...string) []string {
+	if s == "" {
+		return nil
+	}
+
+	if len(delims) == 0 {
+		delims = []string{"||", ",", "|", ";"}
+	}
+
+	var result []string
+
+	for len(s) > 0 {
+		idx := -1
+		dlen := 0
+
+		// Find earliest delimiter match
+		for _, d := range delims {
+			if i := strings.Index(s, d); i >= 0 && (idx == -1 || i < idx) {
+				idx = i
+				dlen = len(d)
+			}
+		}
+
+		if idx == -1 {
+			// No more delimiters
+			s = strings.TrimSpace(s)
+			if s != "" {
+				result = append(result, s)
+			}
+			break
+		}
+
+		part := strings.TrimSpace(s[:idx])
+		if part != "" {
+			result = append(result, part)
+		}
+
+		// Move forward past delimiter
+		s = s[idx+dlen:]
+	}
+
+	return result
 }

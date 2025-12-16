@@ -284,7 +284,7 @@ func RetrieveUserIdFromHeaders(c *gin.Context) result.Result[types.UserID] {
 // FetchCorrelationIdFromHeaders fetches the correlation ID from request headers.
 // Correlation IDs are used for distributed tracing and request tracking.
 func FetchCorrelationIdFromHeaders(c *gin.Context) result.Result[types.CorrelationID] {
-	correlationIdHeader := FetchTextParam(c, constant.CorrelationID, HeaderParam, true)
+	correlationIdHeader := FetchTextParam(c, constant.CorrelationIDHeader, HeaderParam, true)
 	if correlationIdHeader.IsSuccess() {
 		entityValue, _ := correlationIdHeader.Value()
 		return result.NewSuccess(types.CreateRef(types.CorrelationID(*entityValue)))

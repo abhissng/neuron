@@ -3,6 +3,7 @@ package timeutil
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -220,4 +221,46 @@ func GetCurrentTimeIn(timezone string) time.Time {
 		return now.Time
 	}
 	return now.In(location).Time
+}
+
+// HMS represents an hour/minute/second in 24-hour time (HH:MM[:SS]).
+type HMS struct {
+	Hour   int
+	Minute int
+	Second int
+}
+
+// ParseHMS parses time with the format HH:MM or HH:MM:SS
+// e.g., 14:15(02:15 PM) or 10:10 (10:10am)
+func ParseHMS(value string) (HMS, error) {
+	value = strings.TrimSpace(value)
+	parts := strings.Split(value, ":")
+
+	if len(parts) < 2 || len(parts) > 3 {
+		return HMS{}, fmt.Errorf("invalid time format, expected HH:MM or HH:MM:SS")
+	}
+
+	hour, err := strconv.Atoi(parts[0])
+	if err != nil || hour < 0 || hour > 23 {
+		return HMS{}, fmt.Errorf("invalid hour: %s", parts[0])
+	}
+
+	minute, err := strconv.Atoi(parts[1])
+	if err != nil || minute < 0 || minute > 59 {
+		return HMS{}, fmt.Errorf("invalid minute: %s", parts[1])
+	}
+
+	second := 0
+	if len(parts) == 3 {
+		second, err = strconv.Atoi(parts[2])
+		if err != nil || second < 0 || second > 59 {
+			return HMS{}, fmt.Errorf("invalid second: %s", parts[2])
+		}
+	}
+
+	return HMS{
+		Hour:   hour,
+		Minute: minute,
+		Second: second,
+	}, nil
 }

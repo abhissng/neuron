@@ -20,6 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	smTypes "github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
+	sesTypes "github.com/aws/aws-sdk-go-v2/service/ses/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	ssmTypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 )
@@ -51,6 +53,7 @@ type AWSManager struct {
 	kmsClient      *kms.Client
 	secretsManager *secretsmanager.Client
 	awsSSMClient   *ssm.Client
+	sesClient      *ses.Client
 }
 
 // Option is a function that configures the AWSManager
@@ -101,6 +104,7 @@ func NewAWSManager(cfg AWSConfig, opts ...Option) (*AWSManager, error) {
 	kmsClient := kms.NewFromConfig(awsConfig)
 	secretsManagerClient := secretsmanager.NewFromConfig(awsConfig)
 	ssmClient := ssm.NewFromConfig(awsConfig)
+	sesClient := ses.NewFromConfig(awsConfig)
 
 	// Apply options
 	awsManager := &AWSManager{
@@ -109,6 +113,7 @@ func NewAWSManager(cfg AWSConfig, opts ...Option) (*AWSManager, error) {
 		kmsClient:      kmsClient,
 		secretsManager: secretsManagerClient,
 		awsSSMClient:   ssmClient,
+		sesClient:      sesClient,
 	}
 
 	for _, opt := range opts {
@@ -490,4 +495,119 @@ func (a *AWSManager) DeleteParameter(ctx context.Context, name string) error {
 	}
 
 	return nil
+}
+
+// SES Email Operations
+
+// SESEmailInput represents the input for sending an email via SES
+type SESEmailInput struct {
+	From     string
+	To       []string
+	CC       []string
+	BCC      []string
+	Subject  string
+	TextBody string
+	HTMLBody string
+	ReplyTo  []string
+	CharSet  string
+}
+
+// SendEmail sends an email using AWS SES
+func (a *AWSManager) SendEmail(ctx context.Context, input *SESEmailInput) (*ses.SendEmailOutput, error) {
+	if a.sesClient == nil {
+		return nil, errors.New("AWS SES client not initialized")
+	}
+
+	if input == nil {
+		return nil, errors.New("email input is required")
+	}
+
+	charSet := input.CharSet
+	if charSet == "" {
+		charSet = "UTF-8"
+	}
+	if len(input.To) == 0 && len(input.CC) == 0 && len(input.BCC) == 0 {
+		return nil, errors.New("at least one recipient (To, CC, or BCC) is required")
+	}
+
+	// Build destination
+	destination := &sesTypes.Destination{}
+	if len(input.To) > 0 {
+		destination.ToAddresses = input.To
+	}
+	if len(input.CC) > 0 {
+		destination.CcAddresses = input.CC
+	}
+	if len(input.BCC) > 0 {
+		destination.BccAddresses = input.BCC
+	}
+
+	// Build message body
+	body := &sesTypes.Body{}
+	if input.TextBody != "" {
+		body.Text = &sesTypes.Content{
+			Charset: aws.String(charSet),
+			Data:    aws.String(input.TextBody),
+		}
+	}
+	if input.HTMLBody != "" {
+		body.Html = &sesTypes.Content{
+			Charset: aws.String(charSet),
+			Data:    aws.String(input.HTMLBody),
+		}
+	}
+
+	// Build message
+	message := &sesTypes.Message{
+		Subject: &sesTypes.Content{
+			Charset: aws.String(charSet),
+			Data:    aws.String(input.Subject),
+		},
+		Body: body,
+	}
+
+	// Build SES input
+	sesInput := &ses.SendEmailInput{
+		Source:      aws.String(input.From),
+		Destination: destination,
+		Message:     message,
+	}
+
+	if len(input.ReplyTo) > 0 {
+		sesInput.ReplyToAddresses = input.ReplyTo
+	}
+
+	result, err := a.sesClient.SendEmail(ctx, sesInput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send email via SES: %w", err)
+	}
+
+	return result, nil
+}
+
+// SendRawEmail sends a raw email using AWS SES (for attachments and complex emails)
+func (a *AWSManager) SendRawEmail(ctx context.Context, rawMessage []byte, from string, to []string) (*ses.SendRawEmailOutput, error) {
+	if a.sesClient == nil {
+		return nil, errors.New("AWS SES client not initialized")
+	}
+
+	input := &ses.SendRawEmailInput{
+		RawMessage: &sesTypes.RawMessage{
+			Data: rawMessage,
+		},
+	}
+
+	if from != "" {
+		input.Source = aws.String(from)
+	}
+	if len(to) > 0 {
+		input.Destinations = to
+	}
+
+	result, err := a.sesClient.SendRawEmail(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send raw email via SES: %w", err)
+	}
+
+	return result, nil
 }

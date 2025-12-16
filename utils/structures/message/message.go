@@ -35,7 +35,7 @@ func NewMessage[T any](
 ) *Message[T] {
 	return &Message[T]{
 		CorrelationID: correlationID,
-		RequestId:     types.RequestID(random.GenerateUUID()),
+		RequestId:     types.RequestID(random.GenerateUUIDString()),
 		Payload:       payload,
 		Status:        status,
 		Action:        action,

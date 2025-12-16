@@ -27,7 +27,7 @@ import (
 func RequestIDMiddleware(log1 *log.Log) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Generate a unique requestId
-		requestId := random.GenerateUUID()
+		requestId := random.GenerateUUIDString()
 
 		// Check if correlationId is passed in the headers
 		correlationId := c.GetHeader(constant.CorrelationIDHeader)

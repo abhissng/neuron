@@ -132,6 +132,34 @@ func (ctx *ServiceContext) SlogEvent(msg *nats.Msg, withFields ...types.Field) [
 	return natsInternal.Slog(msg, withFields...)
 }
 
+// SlogEventInfo logs a message at the InfoLevel with NATS event metadata.
+func (ctx *ServiceContext) SlogEventInfo(logMessage string, natsMsg *nats.Msg, withFields ...types.Field) {
+	fields := ctx.SlogEvent(natsMsg, withFields...)
+	logger := ctx.WithOptions(zap.AddCaller())
+	logger.Info(logMessage, fields...)
+}
+
+// SlogEventWarn logs a message at the WarnLevel with NATS event metadata.
+func (ctx *ServiceContext) SlogEventWarn(logMessage string, natsMsg *nats.Msg, withFields ...types.Field) {
+	fields := ctx.SlogEvent(natsMsg, withFields...)
+	logger := ctx.WithOptions(zap.AddCaller())
+	logger.Warn(logMessage, fields...)
+}
+
+// SlogEventError logs a message at the ErrorLevel with NATS event metadata.
+func (ctx *ServiceContext) SlogEventError(logMessage string, natsMsg *nats.Msg, withFields ...types.Field) {
+	fields := ctx.SlogEvent(natsMsg, withFields...)
+	logger := ctx.WithOptions(zap.AddCaller())
+	logger.Error(logMessage, fields...)
+}
+
+// SlogEventDebug logs a message at the DebugLevel with NATS event metadata.
+func (ctx *ServiceContext) SlogEventDebug(logMessage string, natsMsg *nats.Msg, withFields ...types.Field) {
+	fields := ctx.SlogEvent(natsMsg, withFields...)
+	logger := ctx.WithOptions(zap.AddCaller())
+	logger.Debug(logMessage, fields...)
+}
+
 // GetRequestID returns the request ID from the AppContext or the Gin context.
 func (ctx *ServiceContext) GetRequestID() types.RequestID {
 	if requestId, ok := ctx.GetAppContextRequestID(); ok {
