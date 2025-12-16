@@ -49,26 +49,22 @@ func fetchAttachment(att string) ([]byte, string, string, error) {
 	}
 
 	// Local file
-	data, err := io.ReadAll(mustOpen(att))
+	return readLocalFile(att)
+}
+
+// openFile opens a file and returns its contents, filename, and content type
+func readLocalFile(path string) ([]byte, string, string, error) {
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
-		return nil, "", "", fmt.Errorf("failed to read local file %s: %w", att, err)
+		return nil, "", "", fmt.Errorf("failed to read local file %s: %w", path, err)
 	}
-	fname := filepath.Base(att)
-	ext := path.Ext(fname)
+	fname := filepath.Base(path)
+	ext := filepath.Ext(fname)
 	ctype := mime.TypeByExtension(ext)
 	if ctype == "" {
 		ctype = "application/octet-stream"
 	}
 	return data, fname, ctype, nil
-}
-
-// mustOpen opens a file and panics on error (used internally)
-func mustOpen(path string) io.Reader {
-	f, err := os.Open(path)
-	if err != nil {
-		return bytes.NewReader(nil)
-	}
-	return f
 }
 
 // attachFiles attaches files to the email message

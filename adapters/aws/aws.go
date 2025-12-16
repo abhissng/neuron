@@ -526,6 +526,9 @@ func (a *AWSManager) SendEmail(ctx context.Context, input *SESEmailInput) (*ses.
 	if charSet == "" {
 		charSet = "UTF-8"
 	}
+	if len(input.To) == 0 && len(input.CC) == 0 && len(input.BCC) == 0 {
+		return nil, errors.New("at least one recipient (To, CC, or BCC) is required")
+	}
 
 	// Build destination
 	destination := &sesTypes.Destination{}
