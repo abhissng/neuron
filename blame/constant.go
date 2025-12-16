@@ -84,4 +84,5 @@ const (
 	ErrorSessionUnauthenticated          types.ErrorCode = "error-session-unauthenticated"
 	ErrorMissingFeatureFlags             types.ErrorCode = "error-missing-feature-flags"
 	ErrorMissingXLocationId              types.ErrorCode = "error-missing-x-location-id"
+	ErrGeneralKnownError                 types.ErrorCode = "error-general-known-error"
 )

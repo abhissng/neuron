@@ -578,3 +578,11 @@ func MissingFeatureFlags() Blame {
 func MissingXLocationId() Blame {
 	return getLocalBlameManager().FetchBlameForError(ErrorMissingXLocationId)
 }
+
+// GeneralKnownError is an error when we want to return any kind of error
+func GeneralKnownError(cause error) Blame {
+	data := map[string]any{
+		"Error": cause.Error(),
+	}
+	return getLocalBlameManager().FetchBlameForError(ErrGeneralKnownError, WithCauses(cause), WithFields(data))
+}

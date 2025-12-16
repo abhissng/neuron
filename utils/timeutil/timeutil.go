@@ -223,6 +223,7 @@ func GetCurrentTimeIn(timezone string) time.Time {
 	return now.In(location).Time
 }
 
+// HMS represents an hour/minute/second in 24-hour time (HH:MM[:SS]).
 type HMS struct {
 	Hour   int
 	Minute int
@@ -232,6 +233,7 @@ type HMS struct {
 // ParseHMS parses time with the format HH:MM or HH:MM:SS
 // e.g., 14:15(02:15 PM) or 10:10 (10:10am)
 func ParseHMS(value string) (HMS, error) {
+	value = strings.TrimSpace(value)
 	parts := strings.Split(value, ":")
 
 	if len(parts) < 2 || len(parts) > 3 {

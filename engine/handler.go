@@ -21,7 +21,7 @@ type ServiceHandler[T any] func(*context.ServiceContext, *nats.Msg) result.Resul
 // WrapServiceWithNATSHandler wraps a handler logic with a nats.MsgHandler (func (msg *nats.Msg))
 func WrapServiceWithNATSHandler[T any](ctx *context.ServiceContext, handler ServiceHandler[T]) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		defer helpers.RecoverException(recover())
+		defer func() { helpers.RecoverException(recover()) }()
 		cause := blame.NilBlame()
 
 		// Add standard middleware headers

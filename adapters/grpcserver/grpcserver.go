@@ -243,13 +243,14 @@ func buildInterceptors(config ServerConfig) ([]grpc.UnaryServerInterceptor, []gr
 
 func unaryCorrelationIDInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		if _, ok := ctx.Value(constant.CorrelationIDHeader).(types.StringConstant); !ok {
+		if _, ok := ctx.Value(types.StringConstant(constant.CorrelationIDHeader)).(string); !ok {
 			if md, ok := metadata.FromIncomingContext(ctx); ok {
 				if vals := md.Get(constant.CorrelationIDHeader); len(vals) > 0 {
 					ctx = context.WithValue(ctx, types.StringConstant(constant.CorrelationIDHeader), vals[0])
 				}
 			}
 		}
+		// Generate UUID if still not set after checking metadata
 		if _, ok := ctx.Value(types.StringConstant(constant.CorrelationIDHeader)).(string); !ok {
 			ctx = context.WithValue(ctx, types.StringConstant(constant.CorrelationIDHeader), random.GenerateUUIDString())
 		}

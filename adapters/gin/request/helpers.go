@@ -132,7 +132,7 @@ type RequestAuthValues struct {
 type RequestAuthConfig struct {
 	RequireToken         bool
 	RequireCorrelationID bool
-	XSubject             bool
+	RequireXSubject      bool
 }
 
 type RequestAuthOption func(*RequestAuthConfig)
@@ -154,7 +154,7 @@ func WithRequireCorrelationID() RequestAuthOption {
 // WithRequireXSubject marks the X-Subject header as required when fetching request auth values.
 func WithRequireXSubject() RequestAuthOption {
 	return func(cfg *RequestAuthConfig) {
-		cfg.XSubject = true
+		cfg.RequireXSubject = true
 	}
 }
 
@@ -164,8 +164,9 @@ func GetRequestAuthValues(ctx *context.ServiceContext, options ...RequestAuthOpt
 
 	// Default configuration - both required by default
 	cfg := &RequestAuthConfig{
-		RequireToken:         true,
-		RequireCorrelationID: true,
+		RequireToken:         false,
+		RequireCorrelationID: false,
+		RequireXSubject:      false,
 	}
 
 	// Apply options
@@ -200,7 +201,7 @@ func GetRequestAuthValues(ctx *context.ServiceContext, options ...RequestAuthOpt
 	var xSubject string
 	xSubjectResult := FetchXSubjectHeader(ctx.Context)
 	if !xSubjectResult.IsSuccess() {
-		if cfg.XSubject {
+		if cfg.RequireXSubject {
 			ctx.SlogError("unable to get the X-Subject header", log.Blame(xSubjectResult.Blame()))
 			return nil, xSubjectResult.Blame()
 		}

@@ -514,6 +514,12 @@
     "Description": "The required X-Location-Id is missing in the request.",
     "Component": "adaptors",
     "ResponseType": "BadRequest" 
+  },{
+    "Code": "error-general-known-error",
+    "Message": "An error occurred. {{.Error}}",
+    "Description": "An error occurred. {{.Error}}",
+    "Component": "service",
+    "ResponseType": "InternalServerError" 
   }
 
 ]
