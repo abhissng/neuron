@@ -1,73 +1,73 @@
+########################################
+# Base stage: download neuron deps
+########################################
 FROM golang:1.25.3-alpine3.22 AS base
 
-# Install git and necessary build tools
+# Install required tools
 RUN apk add --no-cache git make build-base
 
-# Set up Go environment
+# Docker-provided platform args
+ARG TARGETOS
+ARG TARGETARCH
+
+# Go environment (DO NOT hardcode arch)
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+    GOOS=$TARGETOS \
+    GOARCH=$TARGETARCH
 
 WORKDIR /go/deps
 
-# Set up token-based authentication (will be passed at build time)
+# Build args
 ARG GITHUB_TOKEN
 ARG NEURON_TAG
-ARG CORE_TAG
+
+# GitHub auth for private modules
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
 
-# Create a minimal module to download neuron dependencies
+# Private modules
 RUN go env -w GOPRIVATE="github.com/abhissng*"
 
+# Copy base module files
 COPY go.mod go.sum ./
-
 COPY . .
 
 # Download dependencies explicitly
 RUN go mod tidy -v \
     && go mod download
 
+# Create minimal module only for neuron deps
 RUN cat > go.mod <<EOF
- module github.com/yourusername/neuron-deps/test
- 
- go 1.25.3
- 
- require (
+module github.com/abhissng/neuron-deps/test
+
+go 1.25.3
+
+require (
     github.com/abhissng/neuron ${NEURON_TAG}
 )
 EOF
 
-# Download dependencies explicitly
-RUN go mod tidy -v \
-    && go mod download
+# Download neuron deps
+RUN go mod tidy -v && go mod download
 
-# RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest 
-
-
-# Verify that the dependencies were downloaded
-RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not found github.com"
-RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not found github.com/abhissng"
-
-# RUN chmod -R 755 /go/pkg/mod 
-
-# Create a new stage to ensure clean environment
+########################################
+# Final image: only Go toolchain + deps
+########################################
 FROM golang:1.25.3-alpine3.22
 
-# Copy the downloaded modules from the previous stage
-COPY --from=base /go/pkg/mod/ /go/pkg/mod/
+ARG TARGETOS
+ARG TARGETARCH
 
-# # Create directory structure for validation
-# RUN mkdir -p /go/pkg/mod/github.com/abhissng
-
-# Set up Go environment in this stage too
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+    GOOS=$TARGETOS \
+    GOARCH=$TARGETARCH
 
+# Copy cached modules
+COPY --from=base /go/pkg/mod /go/pkg/mod
+
+# Fix permissions (important for downstream builds)
 RUN chmod -R 755 /go/pkg/mod/github.com/abhissng
 
-# Verify modules
-RUN ls -la /go/pkg/mod/github.com/ || echo "Dependencies directory not copied properly for github.com"
-RUN ls -la /go/pkg/mod/github.com/abhissng/ || echo "Dependencies directory not copied properly for github.com/abhissng"
+# Optional verification (safe to keep)
+RUN ls -la /go/pkg/mod/github.com/abhissng
