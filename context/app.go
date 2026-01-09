@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/abhissng/neuron/adapters/aws"
+	"github.com/abhissng/neuron/adapters/cloud"
 	"github.com/abhissng/neuron/adapters/email"
 	"github.com/abhissng/neuron/adapters/events/nats"
 	"github.com/abhissng/neuron/adapters/http"
@@ -44,6 +45,7 @@ type AppContext struct {
 	*mongo.MongoManager
 	*session.SessionManager
 	*store.StoreManager
+	cloud.CloudManager
 
 	serviceId      string
 	isDebugEnabled bool
@@ -218,5 +220,12 @@ func WithSessionManager(manager *session.SessionManager) AppContextOption {
 func WithStoreManager(manager *store.StoreManager) AppContextOption {
 	return func(ctx *AppContext) {
 		ctx.StoreManager = manager
+	}
+}
+
+// WithCloudManager sets the cloud manager for the AppContext
+func WithCloudManager(manager cloud.CloudManager) AppContextOption {
+	return func(ctx *AppContext) {
+		ctx.CloudManager = manager
 	}
 }

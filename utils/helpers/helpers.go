@@ -1022,3 +1022,12 @@ func SplitAny(s string, delims ...string) []string {
 
 	return result
 }
+
+func MatchesAny(s string, patterns ...string) bool {
+	for _, p := range patterns {
+		if strings.Contains(s, p) {
+			return true
+		}
+	}
+	return false
+}
