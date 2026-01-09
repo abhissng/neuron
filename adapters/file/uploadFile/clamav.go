@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 
 	"github.com/abhissng/neuron/utils/helpers"
 )
@@ -18,13 +19,18 @@ func NewClamAVScanner(addr string) *ClamAVScanner {
 }
 
 func (c *ClamAVScanner) Scan(r io.Reader) (bool, error) {
-	conn, err := net.Dial("tcp", c.Address)
+	conn, err := net.DialTimeout("tcp", c.Address, 10*time.Second)
 	if err != nil {
 		return false, err
 	}
 	defer func() {
 		_ = conn.Close()
 	}()
+
+	// Set overall deadline for the scan operation
+	if err := conn.SetDeadline(time.Now().Add(5 * time.Minute)); err != nil {
+		return false, err
+	}
 
 	// INSTREAM command
 	if _, err := conn.Write([]byte("zINSTREAM\000")); err != nil {

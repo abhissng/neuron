@@ -3,6 +3,9 @@ package uploadFile
 import (
 	"errors"
 	"sync"
+
+	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/helpers"
 )
 
 /*
@@ -106,6 +109,10 @@ func init() {
 }
 
 func RegisterUploadProfile(name UploadProfile, rule *FileRule) {
+	if rule == nil {
+		helpers.Println(constant.ERROR, "RegisterUploadProfile: rule is nil")
+		return
+	}
 	registryMu.Lock()
 	defer registryMu.Unlock()
 	ruleRegistry[name] = rule
@@ -125,11 +132,14 @@ func MergeUploadProfiles(profiles ...UploadProfile) *FileRule {
 		AllowedExts:  map[string]struct{}{},
 	}
 
+	foundAny := false
+
 	for _, p := range profiles {
 		rule, ok := GetUploadProfile(p)
 		if !ok {
 			continue
 		}
+		foundAny = true
 
 		if rule.MaxSizeBytes > merged.MaxSizeBytes {
 			merged.MaxSizeBytes = rule.MaxSizeBytes
@@ -142,6 +152,10 @@ func MergeUploadProfiles(profiles ...UploadProfile) *FileRule {
 			merged.AllowedExts[k] = struct{}{}
 		}
 	}
+	if !foundAny {
+		helpers.Println(constant.ERROR, "MergeUploadProfiles: no profiles found")
+		return nil
+	}
 
 	return merged
 }
@@ -153,6 +167,9 @@ func MergeUploadProfiles(profiles ...UploadProfile) *FileRule {
 */
 
 func NewCustomRule(maxSize int64, mimes []string, exts []string) *FileRule {
+	if maxSize <= 0 {
+		maxSize = 10 * MB
+	}
 	return &FileRule{
 		MaxSizeBytes: maxSize,
 		AllowedMIMEs: set(mimes...),

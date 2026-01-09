@@ -1,5 +1,12 @@
 package uploadFile
 
+import (
+	"errors"
+
+	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/helpers"
+)
+
 /*
 ========================================
  Validation Options - Functional Pattern
@@ -21,9 +28,12 @@ func WithRule(rule *FileRule) Option {
 
 func WithProfile(profile UploadProfile) Option {
 	return func(c *Config) {
-		if rule, ok := GetUploadProfile(profile); ok {
-			c.rule = rule
+		rule, ok := GetUploadProfile(profile)
+		if !ok {
+			helpers.Println(constant.ERROR, "WithProfile: profile not found")
+			return
 		}
+		c.rule = rule
 	}
 }
 
@@ -45,10 +55,14 @@ func WithCustomRule(maxSize int64, mimes []string, exts []string) Option {
 	}
 }
 
-func NewUploadFileValidator(opts ...Option) *Config {
+func NewUploadFileValidator(opts ...Option) (*Config, error) {
 	cfg := &Config{}
 	for _, opt := range opts {
 		opt(cfg)
 	}
-	return cfg
+	if cfg.rule == nil {
+		helpers.Println(constant.ERROR, "NewUploadFileValidator: rule is required")
+		return nil, errors.New("rule is required")
+	}
+	return cfg, nil
 }

@@ -57,8 +57,12 @@ func (cfg *Config) validateSingleFile(file *multipart.FileHeader) error {
 	}
 
 	if cfg.virusScanner != nil {
-		if seeker, ok := f.(io.Seeker); ok {
-			_, _ = seeker.Seek(0, io.SeekStart)
+		seeker, ok := f.(io.Seeker)
+		if !ok {
+			return errors.New("virus scanning requires seekable file")
+		}
+		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
+			return fmt.Errorf("failed to rewind file for virus scanning: %w", err)
 		}
 
 		clean, err := cfg.virusScanner.Scan(f)
@@ -74,10 +78,6 @@ func (cfg *Config) validateSingleFile(file *multipart.FileHeader) error {
 }
 
 func (cfg *Config) ValidateFiles(files []*multipart.FileHeader) error {
-	if len(files) == 0 {
-		return errors.New("no files to validate")
-	}
-
 	for _, file := range files {
 		if err := cfg.validateSingleFile(file); err != nil {
 			return fmt.Errorf("%s: %w", file.Filename, err)

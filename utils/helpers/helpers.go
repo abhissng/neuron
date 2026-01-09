@@ -1023,6 +1023,8 @@ func SplitAny(s string, delims ...string) []string {
 	return result
 }
 
+// MatchesAny checks if the string s contains any of the provided patterns.
+// It performs substring matching using strings.Contains for each pattern.
 func MatchesAny(s string, patterns ...string) bool {
 	for _, p := range patterns {
 		if strings.Contains(s, p) {
