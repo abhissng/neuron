@@ -71,7 +71,7 @@ func (s *Schedule) Run() {
 	location, err := time.LoadLocation(s.timeZone)
 	if err != nil {
 		// if invalid timezone, fallback to local and log
-		s.log.Warn(fmt.Sprintf("invalid timezone '%s', falling back to Local", s.timeZone))
+		s.log.Warn(fmt.Sprintf("invalid timezone '%s', falling back to Local. Error: %s", s.timeZone, err.Error()))
 		location = time.Local
 	}
 
