@@ -1,7 +1,7 @@
 ########################################
 # Base stage: download neuron deps
 ########################################
-FROM golang:1.25.3-alpine3.22 AS base
+FROM golang:1.25.5-alpine3.22 AS base
 
 # Install required tools
 RUN apk add --no-cache git make build-base
@@ -40,7 +40,7 @@ RUN go mod tidy -v \
 RUN cat > go.mod <<EOF
 module github.com/abhissng/neuron-deps/test
 
-go 1.25.3
+go 1.25.5
 
 require (
     github.com/abhissng/neuron ${NEURON_TAG}
@@ -53,7 +53,7 @@ RUN go mod tidy -v && go mod download
 ########################################
 # Final image: only Go toolchain + deps
 ########################################
-FROM golang:1.25.3-alpine3.22
+FROM golang:1.25.5-alpine3.22
 
 ARG TARGETOS
 ARG TARGETARCH

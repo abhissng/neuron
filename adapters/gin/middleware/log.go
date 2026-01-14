@@ -13,7 +13,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-// GinRequestLogger logs the incoming request
+// GinRequestLogger returns a gin.HandlerFunc that logs incoming HTTP requests and their corresponding responses.
+// It records method, URL, client IP, request body, request and correlation IDs, user agent, and headers for each request.
+// It also logs response status and request latency, and — when enabled by configuration or when not running in production — captures and logs the response body.
 func GinRequestLogger(logger *log.Log) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		logResponseBody := viper.GetBool(constant.ResponseBodyPrint)
@@ -37,7 +39,7 @@ func GinRequestLogger(logger *log.Log) gin.HandlerFunc {
 			log.String("client_ip", c.ClientIP()),
 			log.String("body", requestBody),
 			log.String("request_id", c.GetString(constant.RequestID)),
-			log.String("correlation_id", c.GetString(constant.CorrelationID)),
+			log.String(constant.CorrelationIDHeader, c.GetString(constant.CorrelationID)),
 			log.Any("user_agent", c.Request.UserAgent()),
 			log.Any("headers", c.Request.Header),
 		)
@@ -60,7 +62,7 @@ func GinRequestLogger(logger *log.Log) gin.HandlerFunc {
 			log.Int("status_code", c.Writer.Status()),
 			log.String("latency", latency.String()),
 			log.String("request_id", c.GetString(constant.RequestID)),
-			log.String("correlation_id", c.GetString(constant.CorrelationID)),
+			log.String(constant.CorrelationIDHeader, c.GetString(constant.CorrelationID)),
 		}
 
 		if logResponseBody {

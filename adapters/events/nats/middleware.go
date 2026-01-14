@@ -149,7 +149,8 @@ func ValidateHeadersMiddleware(pasetoManager *paseto.PasetoManager, validators .
 	}
 }
 
-// RecoveryMiddleware wraps the NATS message handler to recover from panics.
+// RecoveryMiddleware wraps the provided NATS message handler and returns a handler that recovers from panics.
+// If the wrapped handler panics, the returned handler logs an error message and the stack trace.
 func RecoveryMiddleware(handler nats.MsgHandler) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		defer func() {
@@ -159,5 +160,30 @@ func RecoveryMiddleware(handler nats.MsgHandler) nats.MsgHandler {
 			}
 		}()
 		handler(msg) // Call the actual handler
+	}
+}
+
+// ValidateJetstreamHeadersMiddleware checks for the existence and validity of required headers.
+// ValidateJetstreamHeadersMiddleware returns a middleware that ensures JetStream message headers are present and validates the Authorization token using the provided Paseto manager and optional token validators.
+// If headers are missing or token validation fails, the middleware acknowledges the message to prevent reprocessing and returns the corresponding blame; otherwise it forwards the message to the next processor.
+func ValidateJetstreamHeadersMiddleware(pasetoManager *paseto.PasetoManager, validators ...paseto.TokenValidator) MiddlewareFunc {
+	defer helpers.RecoverException(recover())
+	return func(next NATSMsgProcessor) NATSMsgProcessor {
+		return func(msg *nats.Msg) blame.Blame {
+			if msg.Header == nil {
+				err := errors.New("missing headers")
+				// Acknowledge message to prevent reprocessing
+				_ = msg.Ack()
+				return blame.HeadersNotFound(err)
+			}
+
+			if blameErr := validateAuthToken(msg, pasetoManager, validators...); blameErr != nil {
+				// Acknowledge message to prevent reprocessing
+				_ = msg.Ack()
+				return blameErr
+			}
+
+			return next(msg)
+		}
 	}
 }

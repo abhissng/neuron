@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"regexp"
@@ -34,8 +35,14 @@ func ToPgTypeInt8(value int64) pgtype.Int8 {
 		Valid: true}
 }
 
-// ToPgTypeText converts a string to pgtype.Text.
+// ToPgTypeText converts the provided string into a pgtype.Text for PostgreSQL.
+// It returns a Text with Valid set to false when the input is empty or contains only whitespace; otherwise it sets String to the input and Valid to true.
 func ToPgTypeText(value string) pgtype.Text {
+	if strings.TrimSpace(value) == "" {
+		return pgtype.Text{
+			Valid: false,
+		}
+	}
 	return pgtype.Text{
 		String: value,
 		Valid:  true,
@@ -58,16 +65,26 @@ func ToPgTypeFloat8(value float64) pgtype.Float8 {
 	}
 }
 
-// ToPgTypeTimestamptz converts a time.Time to pgtype.Timestamptz.
+// ToPgTypeTimestamptz converts a time.Time to a pgtype.Timestamptz, marking the result invalid if the input is the zero time.
 func ToPgTypeTimestamptz(value time.Time) pgtype.Timestamptz {
+	if value.IsZero() || value.Equal(time.Time{}) {
+		return pgtype.Timestamptz{
+			Valid: false,
+		}
+	}
 	return pgtype.Timestamptz{
 		Time:  value,
 		Valid: true,
 	}
 }
 
-// ToPgTypeTimestamp converts a time.Time to pgtype.Timestamp.
+// ToPgTypeTimestamp converts the provided time.Time into a pgtype.Timestamp and marks the result invalid when the input is the zero time value.
 func ToPgTypeTimestamp(value time.Time) pgtype.Timestamp {
+	if value.IsZero() || value.Equal(time.Time{}) {
+		return pgtype.Timestamp{
+			Valid: false,
+		}
+	}
 	return pgtype.Timestamp{
 		Time:  value,
 		Valid: true,
@@ -82,8 +99,14 @@ func ToUUID(p pgtype.UUID) (uuid.UUID, error) {
 	return uuid.UUID(p.Bytes), nil
 }
 
-// ToPgTypeUUID converts a uuid.UUID to pgtype.UUID.
+// ToPgTypeUUID converts a uuid.UUID to a pgtype.UUID, treating uuid.Nil as a NULL value.
+// If u is uuid.Nil the returned pgtype.UUID has Valid set to false; otherwise Bytes is set to u and Valid is true.
 func ToPgTypeUUID(u uuid.UUID) pgtype.UUID {
+	if u == uuid.Nil {
+		return pgtype.UUID{
+			Valid: false,
+		}
+	}
 	return pgtype.UUID{
 		Bytes: u,
 		Valid: true,
@@ -217,15 +240,31 @@ func ParseToPgTypeInterval(input string) pgtype.Interval {
 	return iv
 }
 
-// ToPgTypeDate converts a time.Time to pgtype.Date
+// ToPgTypeDate converts t to a pgtype.Date; if t is the zero time the returned Date has Valid set to false.
 func ToPgTypeDate(t time.Time) pgtype.Date {
+	if t.IsZero() || t.Equal(time.Time{}) {
+		return pgtype.Date{
+			Valid: false,
+		}
+	}
 	return pgtype.Date{
 		Time:  t,
 		Valid: true,
 	}
 }
 
+// ToPgTime converts t to a pgtype.Time representing the number of microseconds
+// since midnight and marks it invalid if t is the zero time.
+// 
+// When t is not the zero value, Microseconds is set to the total microseconds
+// elapsed since midnight (hours, minutes, seconds, and nanoseconds converted)
+// and Valid is true. When t is zero, Valid is false.
 func ToPgTime(t time.Time) pgtype.Time {
+	if t.IsZero() || t.Equal(time.Time{}) {
+		return pgtype.Time{
+			Valid: false,
+		}
+	}
 	return pgtype.Time{
 		Microseconds: int64(t.Hour()*3600*1_000_000 +
 			t.Minute()*60*1_000_000 +
@@ -342,7 +381,21 @@ func ToPgType[T PgType](value any, opts ...DecimalOpt) (T, error) {
 	}
 }
 
+// ToPgTypeNil returns the zero value of the specified pgtype T, which can be used to represent a NULL/invalid value for that PostgreSQL type.
 func ToPgTypeNil[T PgType]() T {
 	var zero T
 	return zero
+}
+
+// ToJSONBAny marshals v to JSON and returns the resulting bytes suitable for JSONB storage.
+// If v is nil or marshaling fails, it returns nil.
+func ToJSONBAny(v any) []byte {
+	if v == nil {
+		return nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	return b
 }

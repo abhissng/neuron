@@ -114,7 +114,10 @@ func readFilesConcurrently(paths []string) <-chan FileContent {
 	return resultChan
 }
 
-// Main utility function
+// GetFilesContent locates files under rootDir that match any of the provided patterns and returns a channel streaming their contents.
+// 
+// It returns a receive-only channel that yields a FileContent for each matched file (the Path, Content, and any Error encountered while reading).
+// An error is returned if pattern compilation or file discovery fails, or if no files match the supplied patterns.
 func GetFilesContent(rootDir string, patterns []string) (<-chan FileContent, error) {
 	matchedFiles, err := findMatchingFiles(rootDir, patterns)
 	if err != nil {
@@ -126,4 +129,12 @@ func GetFilesContent(rootDir string, patterns []string) (<-chan FileContent, err
 	}
 
 	return readFilesConcurrently(matchedFiles), nil
+}
+
+// NormalizeFileName trims leading and trailing whitespace from name and replaces all spaces with underscores.
+// It returns the normalized filename.
+func NormalizeFileName(name string) string {
+	name = strings.TrimSpace(name)
+	name = strings.ReplaceAll(name, " ", "_")
+	return name
 }

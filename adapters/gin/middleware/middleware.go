@@ -23,7 +23,12 @@ import (
 	"github.com/google/uuid"
 )
 
-// Middleware to generate requestId and correlationId
+// RequestIDMiddleware creates a Gin middleware that generates a request ID and a correlation ID,
+// stores them in the request context, and logs both identifiers.
+//
+// The middleware reads the correlation ID from the request header named by constant.CorrelationIDHeader;
+// if absent, it generates a new UUID. Both IDs are stored in the Gin context under constant.RequestID
+// and constant.CorrelationID. The provided logger is used to emit a debug log containing the IDs.
 func RequestIDMiddleware(log1 *log.Log) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Generate a unique requestId
@@ -40,7 +45,7 @@ func RequestIDMiddleware(log1 *log.Log) gin.HandlerFunc {
 		c.Set(constant.CorrelationID, correlationId)
 
 		// Log the IDs
-		log1.Debug("Request ID and Correlation ID", log.String(constant.RequestID, requestId), log.String(constant.CorrelationID, correlationId))
+		log1.Debug("Request ID and Correlation ID", log.String(constant.RequestID, requestId), log.String(constant.CorrelationIDHeader, correlationId))
 		// Pass control to the next middleware/handler
 		c.Next()
 	}

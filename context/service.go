@@ -55,7 +55,7 @@ func NewServiceContext(opts ...ServiceContextOption) *ServiceContext {
 func (ctx *ServiceContext) FetchGinRequestSlogFields() []types.Field {
 	fields := make([]types.Field, 2)
 	fields[0] = log.String(constant.RequestID, ctx.GetGinContextRequestID().String())
-	fields[1] = log.String(constant.CorrelationID, ctx.GetGinContextCorrelationID().String())
+	fields[1] = log.String(constant.CorrelationIDHeader, ctx.GetGinContextCorrelationID().String())
 	if ctx.GetCookieSessionID() != "" {
 		fields = append(fields, log.String(constant.SessionID, ctx.GetCookieSessionID()))
 	}

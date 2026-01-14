@@ -19,5 +19,4 @@ type ExecutionHistory struct {
 	CorrelationID types.CorrelationID
 	Services      []string // Ordered list of executed services
 }
-
 */
