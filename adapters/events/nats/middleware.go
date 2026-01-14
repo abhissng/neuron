@@ -161,3 +161,27 @@ func RecoveryMiddleware(handler nats.MsgHandler) nats.MsgHandler {
 		handler(msg) // Call the actual handler
 	}
 }
+
+// ValidateJetstreamHeadersMiddleware checks for the existence and validity of required headers.
+// It uses paseto for token validation with optional custom validators.
+func ValidateJetstreamHeadersMiddleware(pasetoManager *paseto.PasetoManager, validators ...paseto.TokenValidator) MiddlewareFunc {
+	defer helpers.RecoverException(recover())
+	return func(next NATSMsgProcessor) NATSMsgProcessor {
+		return func(msg *nats.Msg) blame.Blame {
+			if msg.Header == nil {
+				err := errors.New("missing headers")
+				// Acknowledge message to prevent reprocessing
+				_ = msg.Ack()
+				return blame.HeadersNotFound(err)
+			}
+
+			if blameErr := validateAuthToken(msg, pasetoManager, validators...); blameErr != nil {
+				// Acknowledge message to prevent reprocessing
+				_ = msg.Ack()
+				return blameErr
+			}
+
+			return next(msg)
+		}
+	}
+}

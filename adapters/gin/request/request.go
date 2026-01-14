@@ -290,7 +290,7 @@ func FetchCorrelationIdFromHeaders(c *gin.Context) result.Result[types.Correlati
 		return result.NewSuccess(types.CreateRef(types.CorrelationID(*entityValue)))
 	}
 	_, err := correlationIdHeader.Value()
-	return result.NewFailure[types.CorrelationID](blame.CorrelationIDHeaderMissing(constant.CorrelationID, err.FetchCauses()...))
+	return result.NewFailure[types.CorrelationID](blame.CorrelationIDHeaderMissing(constant.CorrelationIDHeader, err.FetchCauses()...))
 }
 
 // RetrieveSignatureFromHeaders retrieves the signature from request headers.

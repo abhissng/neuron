@@ -127,3 +127,9 @@ func GetFilesContent(rootDir string, patterns []string) (<-chan FileContent, err
 
 	return readFilesConcurrently(matchedFiles), nil
 }
+
+func NormalizeFileName(name string) string {
+	name = strings.TrimSpace(name)
+	name = strings.ReplaceAll(name, " ", "_")
+	return name
+}

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"regexp"
@@ -36,6 +37,11 @@ func ToPgTypeInt8(value int64) pgtype.Int8 {
 
 // ToPgTypeText converts a string to pgtype.Text.
 func ToPgTypeText(value string) pgtype.Text {
+	if strings.TrimSpace(value) == "" {
+		return pgtype.Text{
+			Valid: false,
+		}
+	}
 	return pgtype.Text{
 		String: value,
 		Valid:  true,
@@ -60,6 +66,11 @@ func ToPgTypeFloat8(value float64) pgtype.Float8 {
 
 // ToPgTypeTimestamptz converts a time.Time to pgtype.Timestamptz.
 func ToPgTypeTimestamptz(value time.Time) pgtype.Timestamptz {
+	if value.IsZero() || value.Equal(time.Time{}) {
+		return pgtype.Timestamptz{
+			Valid: false,
+		}
+	}
 	return pgtype.Timestamptz{
 		Time:  value,
 		Valid: true,
@@ -68,6 +79,11 @@ func ToPgTypeTimestamptz(value time.Time) pgtype.Timestamptz {
 
 // ToPgTypeTimestamp converts a time.Time to pgtype.Timestamp.
 func ToPgTypeTimestamp(value time.Time) pgtype.Timestamp {
+	if value.IsZero() || value.Equal(time.Time{}) {
+		return pgtype.Timestamp{
+			Valid: false,
+		}
+	}
 	return pgtype.Timestamp{
 		Time:  value,
 		Valid: true,
@@ -84,6 +100,11 @@ func ToUUID(p pgtype.UUID) (uuid.UUID, error) {
 
 // ToPgTypeUUID converts a uuid.UUID to pgtype.UUID.
 func ToPgTypeUUID(u uuid.UUID) pgtype.UUID {
+	if u == uuid.Nil {
+		return pgtype.UUID{
+			Valid: false,
+		}
+	}
 	return pgtype.UUID{
 		Bytes: u,
 		Valid: true,
@@ -219,6 +240,11 @@ func ParseToPgTypeInterval(input string) pgtype.Interval {
 
 // ToPgTypeDate converts a time.Time to pgtype.Date
 func ToPgTypeDate(t time.Time) pgtype.Date {
+	if t.IsZero() || t.Equal(time.Time{}) {
+		return pgtype.Date{
+			Valid: false,
+		}
+	}
 	return pgtype.Date{
 		Time:  t,
 		Valid: true,
@@ -226,6 +252,11 @@ func ToPgTypeDate(t time.Time) pgtype.Date {
 }
 
 func ToPgTime(t time.Time) pgtype.Time {
+	if t.IsZero() || t.Equal(time.Time{}) {
+		return pgtype.Time{
+			Valid: false,
+		}
+	}
 	return pgtype.Time{
 		Microseconds: int64(t.Hour()*3600*1_000_000 +
 			t.Minute()*60*1_000_000 +
@@ -345,4 +376,16 @@ func ToPgType[T PgType](value any, opts ...DecimalOpt) (T, error) {
 func ToPgTypeNil[T PgType]() T {
 	var zero T
 	return zero
+}
+
+// ToJSONBAny - placeholder for future metadata handling
+func ToJSONBAny(v any) []byte {
+	if v == nil {
+		return nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	return b
 }

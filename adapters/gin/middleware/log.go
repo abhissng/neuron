@@ -37,7 +37,7 @@ func GinRequestLogger(logger *log.Log) gin.HandlerFunc {
 			log.String("client_ip", c.ClientIP()),
 			log.String("body", requestBody),
 			log.String("request_id", c.GetString(constant.RequestID)),
-			log.String("correlation_id", c.GetString(constant.CorrelationID)),
+			log.String(constant.CorrelationIDHeader, c.GetString(constant.CorrelationID)),
 			log.Any("user_agent", c.Request.UserAgent()),
 			log.Any("headers", c.Request.Header),
 		)
@@ -60,7 +60,7 @@ func GinRequestLogger(logger *log.Log) gin.HandlerFunc {
 			log.Int("status_code", c.Writer.Status()),
 			log.String("latency", latency.String()),
 			log.String("request_id", c.GetString(constant.RequestID)),
-			log.String("correlation_id", c.GetString(constant.CorrelationID)),
+			log.String(constant.CorrelationIDHeader, c.GetString(constant.CorrelationID)),
 		}
 
 		if logResponseBody {

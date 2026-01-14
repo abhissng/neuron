@@ -40,7 +40,7 @@ func RequestIDMiddleware(log1 *log.Log) gin.HandlerFunc {
 		c.Set(constant.CorrelationID, correlationId)
 
 		// Log the IDs
-		log1.Debug("Request ID and Correlation ID", log.String(constant.RequestID, requestId), log.String(constant.CorrelationID, correlationId))
+		log1.Debug("Request ID and Correlation ID", log.String(constant.RequestID, requestId), log.String(constant.CorrelationIDHeader, correlationId))
 		// Pass control to the next middleware/handler
 		c.Next()
 	}
