@@ -13,7 +13,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-// GinRequestLogger logs the incoming request
+// GinRequestLogger returns a gin.HandlerFunc that logs incoming HTTP requests and their corresponding responses.
+// It records method, URL, client IP, request body, request and correlation IDs, user agent, and headers for each request.
+// It also logs response status and request latency, and — when enabled by configuration or when not running in production — captures and logs the response body.
 func GinRequestLogger(logger *log.Log) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		logResponseBody := viper.GetBool(constant.ResponseBodyPrint)
