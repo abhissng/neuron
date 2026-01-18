@@ -70,7 +70,9 @@ func (p *PostgresDB[T]) initPool(ctx context.Context) error {
 	if d := p.options.GetMaxConnLifetime(); d > 0 {
 		cfg.MaxConnLifetime = d
 	}
-	cfg.HealthCheckPeriod = p.options.GetHealthCheckPeriod()
+	if p.options.GetHealthCheckPeriod() > 0 {
+		cfg.HealthCheckPeriod = p.options.GetHealthCheckPeriod()
+	}
 
 	p.pool, err = pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
