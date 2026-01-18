@@ -21,6 +21,7 @@ type PostgresDBOptions struct {
 	debugMode          bool
 	log                *log.Log
 	checkAliveInterval time.Duration
+	startMonitor       bool
 }
 
 // PostgresDBTX is the common interface for executing database queries using SQLC.
@@ -63,6 +64,11 @@ func (p *PostgresDBOptions) GetCheckAliveInterval() time.Duration {
 	return p.checkAliveInterval
 }
 
+// GetStartMonitor returns whether health monitoring should start automatically.
+func (p *PostgresDBOptions) GetStartMonitor() bool {
+	return p.startMonitor
+}
+
 // setDSN sets the Data Source Name (DSN) for the PostgreSQL connection.
 // The DSN string should be in the format:
 // "postgresql://user:password@host:port/dbname?options
@@ -95,6 +101,11 @@ func (p *PostgresDBOptions) setLogger(logger *log.Log) {
 // setCheckAliveInterval sets the interval for checking the health of the database connection.
 func (p *PostgresDBOptions) setCheckAliveInterval(interval time.Duration) {
 	p.checkAliveInterval = interval
+}
+
+// setStartMonitor toggles whether health monitoring should start automatically.
+func (p *PostgresDBOptions) setStartMonitor(start bool) {
+	p.startMonitor = start
 }
 
 // GetMinConns returns the minimum number of connections for PostgreSQL.

@@ -29,6 +29,11 @@ func (db *MySQLDB[T]) FetchCheckAliveInterval() time.Duration {
 	return db.checkAliveInterval
 }
 
+// StartMonitorEnabled returns whether health monitoring should start automatically.
+func (db *MySQLDB[T]) StartMonitorEnabled() bool {
+	return db.options.GetStartMonitor()
+}
+
 // Query executes a SQL query and returns a Rows object.
 func (db *MySQLDB[T]) Query(ctx context.Context, query string, args ...any) (database.Rows, error) {
 	db.IsDebugQuery(query, args...)

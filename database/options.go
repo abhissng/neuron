@@ -24,6 +24,7 @@ func NewDBOptions[T DBConfig](opts ...DBOption) T {
 			debugMode:          false,
 			checkAliveInterval: constant.DatabaseCheckAliveInterval,
 			healthCheckPeriod:  48 * time.Hour,
+			startMonitor:       false,
 		}).(T)
 	case *MySQLDBOptions:
 		defaultConfig = any(&MySQLDBOptions{
@@ -31,6 +32,7 @@ func NewDBOptions[T DBConfig](opts ...DBOption) T {
 			maxConns:           10,
 			debugMode:          false,
 			checkAliveInterval: constant.DatabaseCheckAliveInterval,
+			startMonitor:       false,
 		}).(T)
 	}
 
@@ -89,13 +91,18 @@ func WithCheckAliveInterval(interval time.Duration) DBOption {
 	}
 }
 
+// WithStartMonitor toggles whether health monitoring starts automatically.
+func WithStartMonitor(start bool) DBOption {
+	return func(c DBConfig) {
+		c.setStartMonitor(start)
+	}
+}
+
 // WithMinConns sets the minimum number of connections in the pool.
 // Set to 0 for serverless databases like Neon to allow pool to be fully idle.
 func WithMinConns(minConns int) DBOption {
 	return func(c DBConfig) {
-		if pg, ok := c.(*PostgresDBOptions); ok {
-			pg.setMinConns(minConns)
-		}
+		c.setMinConns(minConns)
 	}
 }
 
@@ -103,9 +110,7 @@ func WithMinConns(minConns int) DBOption {
 // Recommended: 30s-5min for serverless databases like Neon.
 func WithMaxConnIdleTime(d time.Duration) DBOption {
 	return func(c DBConfig) {
-		if pg, ok := c.(*PostgresDBOptions); ok {
-			pg.setMaxConnIdleTime(d)
-		}
+		c.setMaxConnIdleTime(d)
 	}
 }
 
@@ -113,19 +118,14 @@ func WithMaxConnIdleTime(d time.Duration) DBOption {
 // Recommended: 1h for serverless databases.
 func WithMaxConnLifetime(d time.Duration) DBOption {
 	return func(c DBConfig) {
-		if pg, ok := c.(*PostgresDBOptions); ok {
-			pg.setMaxConnLifetime(d)
-		}
+		c.setMaxConnLifetime(d)
 	}
 }
 
 // WithHealthCheckPeriod sets the health check period for connections.
-// Default: 0 (disabled) for serverless databases like Neon.
 func WithHealthCheckPeriod(d time.Duration) DBOption {
 	return func(c DBConfig) {
-		if pg, ok := c.(*PostgresDBOptions); ok {
-			pg.setHealthCheckPeriod(d)
-		}
+		c.setHealthCheckPeriod(d)
 	}
 }
 
@@ -133,11 +133,9 @@ func WithHealthCheckPeriod(d time.Duration) DBOption {
 // MinConns=0, MaxConnIdleTime=30s, MaxConnLifetime=1h, HealthCheckPeriod=0
 func WithNeonDefaults() DBOption {
 	return func(c DBConfig) {
-		if pg, ok := c.(*PostgresDBOptions); ok {
-			pg.setMinConns(0)
-			pg.setMaxConnIdleTime(30 * time.Second)
-			pg.setMaxConnLifetime(1 * time.Hour)
-			pg.setHealthCheckPeriod(48 * time.Hour)
-		}
+		c.setMinConns(0)
+		c.setMaxConnIdleTime(30 * time.Second)
+		c.setMaxConnLifetime(1 * time.Hour)
+		c.setHealthCheckPeriod(48 * time.Hour)
 	}
 }
