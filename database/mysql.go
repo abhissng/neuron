@@ -16,6 +16,7 @@ type MySQLDBOptions struct {
 	debugMode          bool
 	log                *log.Log
 	checkAliveInterval time.Duration
+	startMonitor       bool
 }
 
 // MySqlDBTX is the common interface for executing database queries using SQLC.
@@ -59,6 +60,11 @@ func (m *MySQLDBOptions) GetCheckAliveInterval() time.Duration {
 	return m.checkAliveInterval
 }
 
+// GetStartMonitor returns whether health monitoring should start automatically.
+func (m *MySQLDBOptions) GetStartMonitor() bool {
+	return m.startMonitor
+}
+
 // setDSN sets the Data Source Name (DSN) for the MySQL connection.
 // The DSN string should be in the format:
 // user:password@tcp(host:port)/dbname?options
@@ -86,6 +92,11 @@ func (m *MySQLDBOptions) setQueryProvider(queryProvider string) {
 // setCheckAliveInterval sets the interval for checking the health of the database connection.
 func (m *MySQLDBOptions) setCheckAliveInterval(interval time.Duration) {
 	m.checkAliveInterval = interval
+}
+
+// setStartMonitor toggles whether health monitoring should start automatically.
+func (m *MySQLDBOptions) setStartMonitor(start bool) {
+	m.startMonitor = start
 }
 
 // setLogger sets the logger for the MySQL client to use for logging messages.

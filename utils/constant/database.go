@@ -12,7 +12,7 @@ const (
 	MySQL                      types.DBType  = "mysql"
 	SQLCProvider               types.DBType  = "sqlc"
 	MongoDB                    types.DBType  = "mongo"
-	DatabaseCheckAliveInterval time.Duration = 30 * time.Second
+	DatabaseCheckAliveInterval time.Duration = 60 * time.Second
 )
 
 // Database constant Queries

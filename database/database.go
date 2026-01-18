@@ -29,6 +29,7 @@ type Database interface {
 	IsQueryProviderAvailable() bool
 	FetchStopChannel() <-chan struct{}
 	FetchCheckAliveInterval() time.Duration
+	StartMonitorEnabled() bool
 	StartMonitor()
 	StopMonitor()
 	GetLogger() *log.Log
@@ -54,7 +55,9 @@ func NewDatabase[T Database, O DBOptions, Q any](
 		return nil, fmt.Errorf("failed to connect to the database: %w", err)
 	}
 	// go MonitorDB[Database](context.Background(), db)
-	db.StartMonitor()
+	if db.StartMonitorEnabled() {
+		db.StartMonitor()
+	}
 
 	return db, nil
 }
@@ -111,12 +114,22 @@ type DBConfig interface {
 	GetQueryProvider() string
 	GetLogger() *log.Log
 	GetCheckAliveInterval() time.Duration
+	GetStartMonitor() bool
 	setDSN(string)
 	setMaxConns(int)
 	setDebugMode(bool)
 	setQueryProvider(string)
 	setLogger(*log.Log)
 	setCheckAliveInterval(time.Duration)
+	setStartMonitor(bool)
+	GetMinConns() int
+	GetMaxConnIdleTime() time.Duration
+	GetMaxConnLifetime() time.Duration
+	GetHealthCheckPeriod() time.Duration
+	setMinConns(int)
+	setMaxConnIdleTime(time.Duration)
+	setMaxConnLifetime(time.Duration)
+	setHealthCheckPeriod(time.Duration)
 }
 
 // MonitorDB continuously monitors the database connection.
