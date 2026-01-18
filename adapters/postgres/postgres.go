@@ -77,10 +77,12 @@ func (p *PostgresDB[T]) initPool(ctx context.Context) error {
 	}
 
 	if err := p.pool.Ping(ctx); err != nil {
+		p.pool.Close()
 		return fmt.Errorf("failed to ping PostgreSQL: %w", err)
 	}
 
 	if err := p.checkDatabaseExists(ctx); err != nil {
+		p.pool.Close()
 		return err
 	}
 
@@ -138,7 +140,8 @@ func (p *PostgresDB[T]) IsQueryProviderAvailable() bool {
 // Ping tests the PostgreSQL connection and verifies database existence.
 // It performs both connection pool health check and database availability check.
 func (p *PostgresDB[T]) Ping() error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	if err := p.pool.Ping(ctx); err != nil {
 		return err
 	}

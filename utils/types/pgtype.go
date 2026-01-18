@@ -67,7 +67,7 @@ func ToPgTypeFloat8(value float64) pgtype.Float8 {
 
 // ToPgTypeTimestamptz converts a time.Time to a pgtype.Timestamptz, marking the result invalid if the input is the zero time.
 func ToPgTypeTimestamptz(value time.Time) pgtype.Timestamptz {
-	if value.IsZero() || value.Equal(time.Time{}) {
+	if value.IsZero() {
 		return pgtype.Timestamptz{
 			Valid: false,
 		}
@@ -255,7 +255,7 @@ func ToPgTypeDate(t time.Time) pgtype.Date {
 
 // ToPgTime converts t to a pgtype.Time representing the number of microseconds
 // since midnight and marks it invalid if t is the zero time.
-// 
+//
 // When t is not the zero value, Microseconds is set to the total microseconds
 // elapsed since midnight (hours, minutes, seconds, and nanoseconds converted)
 // and Valid is true. When t is zero, Valid is false.
