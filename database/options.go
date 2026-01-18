@@ -23,7 +23,7 @@ func NewDBOptions[T DBConfig](opts ...DBOption) T {
 			maxConns:           10,
 			debugMode:          false,
 			checkAliveInterval: constant.DatabaseCheckAliveInterval,
-			healthCheckPeriod:  0,
+			healthCheckPeriod:  48 * time.Hour,
 		}).(T)
 	case *MySQLDBOptions:
 		defaultConfig = any(&MySQLDBOptions{
@@ -137,7 +137,7 @@ func WithNeonDefaults() DBOption {
 			pg.setMinConns(0)
 			pg.setMaxConnIdleTime(30 * time.Second)
 			pg.setMaxConnLifetime(1 * time.Hour)
-			pg.setHealthCheckPeriod(0)
+			pg.setHealthCheckPeriod(48 * time.Hour)
 		}
 	}
 }
