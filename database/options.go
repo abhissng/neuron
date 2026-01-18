@@ -87,3 +87,45 @@ func WithCheckAliveInterval(interval time.Duration) DBOption {
 		c.setCheckAliveInterval(interval)
 	}
 }
+
+// WithMinConns sets the minimum number of connections in the pool.
+// Set to 0 for serverless databases like Neon to allow pool to be fully idle.
+func WithMinConns(minConns int) DBOption {
+	return func(c DBConfig) {
+		if pg, ok := c.(*PostgresDBOptions); ok {
+			pg.setMinConns(minConns)
+		}
+	}
+}
+
+// WithMaxConnIdleTime sets the max time a connection can be idle before being closed.
+// Recommended: 30s-5min for serverless databases like Neon.
+func WithMaxConnIdleTime(d time.Duration) DBOption {
+	return func(c DBConfig) {
+		if pg, ok := c.(*PostgresDBOptions); ok {
+			pg.setMaxConnIdleTime(d)
+		}
+	}
+}
+
+// WithMaxConnLifetime sets the max lifetime for a connection before it's closed.
+// Recommended: 1h for serverless databases.
+func WithMaxConnLifetime(d time.Duration) DBOption {
+	return func(c DBConfig) {
+		if pg, ok := c.(*PostgresDBOptions); ok {
+			pg.setMaxConnLifetime(d)
+		}
+	}
+}
+
+// WithNeonDefaults applies recommended settings for Neon PostgreSQL serverless.
+// MinConns=0, MaxConnIdleTime=30s, MaxConnLifetime=1h
+func WithNeonDefaults() DBOption {
+	return func(c DBConfig) {
+		if pg, ok := c.(*PostgresDBOptions); ok {
+			pg.setMinConns(0)
+			pg.setMaxConnIdleTime(30 * time.Second)
+			pg.setMaxConnLifetime(1 * time.Hour)
+		}
+	}
+}

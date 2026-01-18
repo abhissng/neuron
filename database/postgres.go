@@ -14,6 +14,9 @@ type PostgresDBOptions struct {
 	dsn                string
 	queryProvider      string
 	maxConns           int
+	minConns           int
+	maxConnIdleTime    time.Duration
+	maxConnLifetime    time.Duration
 	debugMode          bool
 	log                *log.Log
 	checkAliveInterval time.Duration
@@ -91,4 +94,34 @@ func (p *PostgresDBOptions) setLogger(logger *log.Log) {
 // setCheckAliveInterval sets the interval for checking the health of the database connection.
 func (p *PostgresDBOptions) setCheckAliveInterval(interval time.Duration) {
 	p.checkAliveInterval = interval
+}
+
+// GetMinConns returns the minimum number of connections for PostgreSQL.
+func (p *PostgresDBOptions) GetMinConns() int {
+	return p.minConns
+}
+
+// setMinConns sets the minimum number of connections in the pool.
+func (p *PostgresDBOptions) setMinConns(minConns int) {
+	p.minConns = minConns
+}
+
+// GetMaxConnIdleTime returns the max idle time for connections.
+func (p *PostgresDBOptions) GetMaxConnIdleTime() time.Duration {
+	return p.maxConnIdleTime
+}
+
+// setMaxConnIdleTime sets the max idle time before a connection is closed.
+func (p *PostgresDBOptions) setMaxConnIdleTime(d time.Duration) {
+	p.maxConnIdleTime = d
+}
+
+// GetMaxConnLifetime returns the max lifetime for connections.
+func (p *PostgresDBOptions) GetMaxConnLifetime() time.Duration {
+	return p.maxConnLifetime
+}
+
+// setMaxConnLifetime sets the max lifetime for a connection.
+func (p *PostgresDBOptions) setMaxConnLifetime(d time.Duration) {
+	p.maxConnLifetime = d
 }
