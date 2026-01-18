@@ -49,8 +49,13 @@ func NewLogger(cfg *LoggerConfig) (*Log, error) {
 		CallerKey:     "caller",
 		MessageKey:    "msg",
 		StacktraceKey: "stacktrace",
-		EncodeLevel:   zapcore.CapitalColorLevelEncoder, // INFO, WARN, ERROR (readable)
-		EncodeTime:    zapcore.ISO8601TimeEncoder,       // 2025-02-22T13:43:42.977+0530
+		EncodeLevel: func() zapcore.LevelEncoder {
+			if cfg.IsProd {
+				return zapcore.CapitalLevelEncoder
+			}
+			return zapcore.CapitalColorLevelEncoder
+		}(), // INFO, WARN, ERROR (readable)
+		EncodeTime: zapcore.ISO8601TimeEncoder, // 2025-02-22T13:43:42.977+0530
 		// EncodeCaller:   zapcore.ShortCallerEncoder,       // nats/nats.go:120
 		EncodeCaller:   helpers.TailCallerEncoder(cfg.EncoderTailLength),
 		EncodeDuration: zapcore.StringDurationEncoder,

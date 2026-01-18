@@ -25,6 +25,8 @@ type PostgresDB[T any] struct {
 	monitorCancel      context.CancelFunc
 	monitorRunning     bool
 	monitorMu          sync.Mutex
+	poolMu             sync.Mutex
+	connected          bool
 }
 
 // NewPostgresFactory creates a new PostgresDB instance with the specified options and query factory.
@@ -42,25 +44,51 @@ func NewPostgresFactory[T any](options *database.PostgresDBOptions, factory data
 // Connect establishes a PostgreSQL connection pool and initializes query providers.
 // It configures connection pooling, performs health checks, and sets up monitoring.
 func (p *PostgresDB[T]) Connect(ctx context.Context) error {
+	return p.initPool(ctx)
+}
+
+// initPool creates the actual connection pool with all configured settings.
+func (p *PostgresDB[T]) initPool(ctx context.Context) error {
+	p.poolMu.Lock()
+	defer p.poolMu.Unlock()
+
+	if p.connected {
+		return nil
+	}
+
 	cfg, err := pgxpool.ParseConfig(p.options.GetDSN())
 	if err != nil {
 		return fmt.Errorf("failed to parse DSN: %w", err)
 	}
 
 	cfg.MaxConns = int32(p.options.GetMaxConns()) // #nosec G115
+	cfg.MinConns = int32(p.options.GetMinConns()) // #nosec G115
+
+	if d := p.options.GetMaxConnIdleTime(); d > 0 {
+		cfg.MaxConnIdleTime = d
+	}
+	if d := p.options.GetMaxConnLifetime(); d > 0 {
+		cfg.MaxConnLifetime = d
+	}
 
 	p.pool, err = pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to connect to PostgreSQL: %w", err)
 	}
 
-	if err := p.Ping(); err != nil {
+	if err := p.pool.Ping(ctx); err != nil {
+		p.pool.Close()
+		return fmt.Errorf("failed to ping PostgreSQL: %w", err)
+	}
+
+	if err := p.checkDatabaseExists(ctx); err != nil {
+		p.pool.Close()
 		return err
 	}
 
 	p.checkAliveInterval = p.options.GetCheckAliveInterval()
+	p.connected = true
 
-	// Use the factory to initialize the Queries struct.
 	if !helpers.IsEmpty(p.options.GetQueryProvider()) {
 		p.applyQueryProvider()
 	}
@@ -112,14 +140,12 @@ func (p *PostgresDB[T]) IsQueryProviderAvailable() bool {
 // Ping tests the PostgreSQL connection and verifies database existence.
 // It performs both connection pool health check and database availability check.
 func (p *PostgresDB[T]) Ping() error {
-	if err := p.pool.Ping(context.Background()); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := p.pool.Ping(ctx); err != nil {
 		return err
 	}
-
-	if err := p.checkDatabaseExists(context.Background()); err != nil {
-		return err
-	}
-	return nil
+	return p.checkDatabaseExists(ctx)
 }
 
 // checkDatabaseExists verifies that the target database exists in the PostgreSQL instance.
