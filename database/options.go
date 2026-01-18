@@ -23,6 +23,7 @@ func NewDBOptions[T DBConfig](opts ...DBOption) T {
 			maxConns:           10,
 			debugMode:          false,
 			checkAliveInterval: constant.DatabaseCheckAliveInterval,
+			healthCheckPeriod:  0,
 		}).(T)
 	case *MySQLDBOptions:
 		defaultConfig = any(&MySQLDBOptions{
@@ -118,14 +119,25 @@ func WithMaxConnLifetime(d time.Duration) DBOption {
 	}
 }
 
+// WithHealthCheckPeriod sets the health check period for connections.
+// Default: 0 (disabled) for serverless databases like Neon.
+func WithHealthCheckPeriod(d time.Duration) DBOption {
+	return func(c DBConfig) {
+		if pg, ok := c.(*PostgresDBOptions); ok {
+			pg.setHealthCheckPeriod(d)
+		}
+	}
+}
+
 // WithNeonDefaults applies recommended settings for Neon PostgreSQL serverless.
-// MinConns=0, MaxConnIdleTime=30s, MaxConnLifetime=1h
+// MinConns=0, MaxConnIdleTime=30s, MaxConnLifetime=1h, HealthCheckPeriod=0
 func WithNeonDefaults() DBOption {
 	return func(c DBConfig) {
 		if pg, ok := c.(*PostgresDBOptions); ok {
 			pg.setMinConns(0)
 			pg.setMaxConnIdleTime(30 * time.Second)
 			pg.setMaxConnLifetime(1 * time.Hour)
+			pg.setHealthCheckPeriod(0)
 		}
 	}
 }

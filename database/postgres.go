@@ -17,6 +17,7 @@ type PostgresDBOptions struct {
 	minConns           int
 	maxConnIdleTime    time.Duration
 	maxConnLifetime    time.Duration
+	healthCheckPeriod  time.Duration
 	debugMode          bool
 	log                *log.Log
 	checkAliveInterval time.Duration
@@ -121,7 +122,17 @@ func (p *PostgresDBOptions) GetMaxConnLifetime() time.Duration {
 	return p.maxConnLifetime
 }
 
+// GetHealthCheckPeriod returns the health check period for connections.
+func (p *PostgresDBOptions) GetHealthCheckPeriod() time.Duration {
+	return p.healthCheckPeriod
+}
+
 // setMaxConnLifetime sets the max lifetime for a connection.
 func (p *PostgresDBOptions) setMaxConnLifetime(d time.Duration) {
 	p.maxConnLifetime = d
+}
+
+// setHealthCheckPeriod sets the health check period for connections.
+func (p *PostgresDBOptions) setHealthCheckPeriod(d time.Duration) {
+	p.healthCheckPeriod = d
 }
