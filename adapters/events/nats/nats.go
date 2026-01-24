@@ -41,9 +41,141 @@ type NATSManager struct {
 
 // subscriptionParams stores the parameters needed to recreate a subscription.
 // This is used for automatic resubscription when connections are lost.
+type subscriptionKind uint8
+
+const (
+	subscriptionKindPush subscriptionKind = iota
+	subscriptionKindPull
+)
+
 type subscriptionParams struct {
-	queue   string
-	handler nats.MsgHandler
+	kind         subscriptionKind
+	queue        string
+	handler      nats.MsgHandler
+	subOpts      []nats.SubOpt
+	pullConsumer string
+}
+
+// SubOptBuilder builds a slice of nats.SubOpt using functional options.
+type SubOptBuilder struct {
+	opts []nats.SubOpt
+}
+
+// NewSubOptBuilder creates a new SubOptBuilder.
+func NewSubOptBuilder() *SubOptBuilder {
+	return &SubOptBuilder{opts: make([]nats.SubOpt, 0)}
+}
+
+// SubOptOption is a functional option for building SubOpts.
+type SubOptOption func(*SubOptBuilder)
+
+// BuildSubOpts creates []nats.SubOpt from functional options.
+func BuildSubOpts(options ...SubOptOption) []nats.SubOpt {
+	b := NewSubOptBuilder()
+	for _, opt := range options {
+		opt(b)
+	}
+	return b.opts
+}
+
+// WithDurable adds nats.Durable option.
+func WithDurable(name string) SubOptOption {
+	return func(b *SubOptBuilder) {
+		b.opts = append(b.opts, nats.Durable(name))
+	}
+}
+
+// WithBindStream adds nats.BindStream option.
+func WithBindStream(stream string) SubOptOption {
+	return func(b *SubOptBuilder) {
+		b.opts = append(b.opts, nats.BindStream(stream))
+	}
+}
+
+// WithBind adds nats.Bind option to bind to an existing consumer.
+func WithBind(stream, consumer string) SubOptOption {
+	return func(b *SubOptBuilder) {
+		b.opts = append(b.opts, nats.Bind(stream, consumer))
+	}
+}
+
+// WithManualAck adds nats.ManualAck option.
+func WithManualAck() SubOptOption {
+	return func(b *SubOptBuilder) {
+		b.opts = append(b.opts, nats.ManualAck())
+	}
+}
+
+// WithAckExplicit adds nats.AckExplicit option.
+func WithAckExplicit() SubOptOption {
+	return func(b *SubOptBuilder) {
+		b.opts = append(b.opts, nats.AckExplicit())
+	}
+}
+
+// WithDeliverNew adds nats.DeliverNew option.
+func WithDeliverNew() SubOptOption {
+	return func(b *SubOptBuilder) {
+		b.opts = append(b.opts, nats.DeliverNew())
+	}
+}
+
+// WithDeliverAll adds nats.DeliverAll option.
+func WithDeliverAll() SubOptOption {
+	return func(b *SubOptBuilder) {
+		b.opts = append(b.opts, nats.DeliverAll())
+	}
+}
+
+// WithDeliverLast adds nats.DeliverLast option.
+func WithDeliverLast() SubOptOption {
+	return func(b *SubOptBuilder) {
+		b.opts = append(b.opts, nats.DeliverLast())
+	}
+}
+
+// WithSubOpt adds a raw nats.SubOpt directly.
+func WithSubOpt(opt nats.SubOpt) SubOptOption {
+	return func(b *SubOptBuilder) {
+		b.opts = append(b.opts, opt)
+	}
+}
+
+// AddSubOpts appends additional subscription options to an existing subscription's params.
+// These options will be used during resubscription.
+func (w *NATSManager) AddSubOpts(subject string, opts ...nats.SubOpt) bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if params, ok := w.subParams[subject]; ok {
+		params.subOpts = append(params.subOpts, opts...)
+		return true
+	}
+	return false
+}
+
+// SetSubOpts replaces the subscription options for an existing subscription's params.
+// These options will be used during resubscription.
+func (w *NATSManager) SetSubOpts(subject string, opts ...nats.SubOpt) bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if params, ok := w.subParams[subject]; ok {
+		params.subOpts = append([]nats.SubOpt(nil), opts...)
+		return true
+	}
+	return false
+}
+
+// GetSubOpts returns a copy of the subscription options for a given subject.
+func (w *NATSManager) GetSubOpts(subject string) []nats.SubOpt {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if params, ok := w.subParams[subject]; ok {
+		return append([]nats.SubOpt(nil), params.subOpts...)
+	}
+	return nil
 }
 
 /*
@@ -251,7 +383,13 @@ func (w *NATSManager) monitorSubscription(subject string, sub *nats.Subscription
 		case <-w.done:
 			return
 		case <-ticker.C:
-			if !sub.IsValid() && w.reconnect {
+			w.mu.Lock()
+			currentSub := w.subjects[subject]
+			w.mu.Unlock()
+			if currentSub == nil {
+				return
+			}
+			if !currentSub.IsValid() && w.reconnect {
 				w.logger.Warn("Subscription invalid, attempting to resubscribe",
 					log.Any("subject", subject))
 				w.resubscribe(subject)
@@ -277,15 +415,23 @@ func (w *NATSManager) resubscribe(subject string) {
 		var err error
 
 		if w.js != nil {
-			sub, err = w.js.QueueSubscribe(
-				subject,
-				params.queue,
-				params.handler,
-				nats.ManualAck(),
-				nats.Durable(params.queue),
-			)
+			if params.kind == subscriptionKindPull {
+				sub, err = w.js.PullSubscribe(subject, params.pullConsumer, params.subOpts...)
+			} else if params.queue != "" {
+				sub, err = w.js.QueueSubscribe(subject, params.queue, params.handler, params.subOpts...)
+			} else {
+				sub, err = w.js.Subscribe(subject, params.handler, params.subOpts...)
+			}
 		} else {
-			sub, err = w.nc.QueueSubscribe(subject, params.queue, params.handler)
+			if params.kind == subscriptionKindPull {
+				w.logger.Error("Failed to resubscribe:", log.Any("error", "pull subscription requires jetstream"))
+				return
+			}
+			if params.queue != "" {
+				sub, err = w.nc.QueueSubscribe(subject, params.queue, params.handler)
+			} else {
+				sub, err = w.nc.Subscribe(subject, params.handler)
+			}
 		}
 		if err != nil {
 			w.logger.Error("Failed to resubscribe:", log.Err(err))

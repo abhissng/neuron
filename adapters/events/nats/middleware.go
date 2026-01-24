@@ -50,7 +50,7 @@ func LogMiddleware(eventType string, logger *log.Log) MiddlewareFunc {
 	return func(next NATSMsgProcessor) NATSMsgProcessor {
 		return func(msg *nats.Msg) blame.Blame {
 			defer func() { helpers.RecoverException(recover()) }()
-			logger.Info(eventType, log.Any(constant.EventReceived, msg))
+			logger.Info(constant.EventReceived+" : "+eventType, log.Any("nats.subject", msg.Subject), log.Any("nats.reply", msg.Reply), log.Any("nats.header", msg.Header), log.Any("nats.data", string(msg.Data)))
 			err := next(msg)
 			if err != nil {
 				if logger == nil {
