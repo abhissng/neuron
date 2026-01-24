@@ -34,6 +34,14 @@ func (w *NATSManager) PullSubscribeBindConsumer(subject, stream, consumer string
 	if w.js == nil {
 		return nil, blame.SubscribeToSubjectError(subject, errors.New("jetstream not enabled"))
 	}
+
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if _, exists := w.subjects[subject]; exists {
+		return nil, blame.AlreadySubscribedToSubjectError(subject)
+	}
+
 	if stream != "" && consumer != "" {
 		_, err := w.js.ConsumerInfo(stream, consumer)
 		if err == nil {
@@ -49,6 +57,12 @@ func (w *NATSManager) PullSubscribeBindConsumer(subject, stream, consumer string
 		w.logger.Error(constant.SubjectSubscribeFailed, log.Any("nats.PullSubscribe", err))
 		return nil, blame.SubscribeToSubjectError(subject, err)
 	}
+
+	w.subjects[subject] = sub
+	storedOpts := append([]nats.SubOpt(nil), opts...)
+	w.subParams[subject] = &subscriptionParams{kind: subscriptionKindPull, queue: "", handler: nil, subOpts: storedOpts, pullConsumer: consumer}
+
+	go w.monitorSubscription(subject, sub)
 	return sub, nil
 }
 
@@ -136,7 +150,7 @@ func (w *NATSManager) subscribeInternal(subject string, handler nats.MsgHandler,
 
 	w.subjects[subject] = sub
 	storedOpts := append([]nats.SubOpt(nil), opts...)
-	w.subParams[subject] = &subscriptionParams{queue: "", handler: finalHandler, subOpts: storedOpts}
+	w.subParams[subject] = &subscriptionParams{kind: subscriptionKindPush, queue: "", handler: finalHandler, subOpts: storedOpts, pullConsumer: ""}
 	w.logger.Info(constant.SubjectSubscribed, log.Any("message", fmt.Sprintf("Subscribed to subject %s", subject)))
 
 	// Start subscription monitoring
@@ -237,7 +251,7 @@ func (w *NATSManager) subscribeQueueInternal(subject, queue string, handler nats
 
 	w.subjects[subject] = sub
 	storedOpts := append([]nats.SubOpt(nil), opts...)
-	w.subParams[subject] = &subscriptionParams{queue: queue, handler: finalHandler, subOpts: storedOpts}
+	w.subParams[subject] = &subscriptionParams{kind: subscriptionKindPush, queue: queue, handler: finalHandler, subOpts: storedOpts, pullConsumer: ""}
 
 	w.logger.Info(constant.SubjectWithQueueSubscribed,
 		log.Any("message", fmt.Sprintf("Subscribed to subject %s with queue %s", subject, queue)))

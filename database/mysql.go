@@ -68,38 +68,38 @@ func (m *MySQLDBOptions) GetStartMonitor() bool {
 // setDSN sets the Data Source Name (DSN) for the MySQL connection.
 // The DSN string should be in the format:
 // user:password@tcp(host:port)/dbname?options
-func (m *MySQLDBOptions) setDSN(dsn string) {
+func (m *MySQLDBOptions) setDSN(dsn string) { //nolint:unused
 	m.dsn = dsn
 }
 
 // setMaxConns sets the maximum number of open connections to the MySQL database.
-func (m *MySQLDBOptions) setMaxConns(maxConns int) {
+func (m *MySQLDBOptions) setMaxConns(maxConns int) { //nolint:unused
 	m.maxConns = maxConns
 }
 
 // setDebugMode enables or disables debug mode for the MySQL client.
 // When enabled, debug messages will be logged.
-func (m *MySQLDBOptions) setDebugMode(debug bool) {
+func (m *MySQLDBOptions) setDebugMode(debug bool) { //nolint:unused
 	m.debugMode = debug
 }
 
 // setQueryProvider sets the name of the provider for retrieving SQL queries.
 // This can be used to switch between different query sources (e.g., raw, sqlc).
-func (m *MySQLDBOptions) setQueryProvider(queryProvider string) {
+func (m *MySQLDBOptions) setQueryProvider(queryProvider string) { //nolint:unused
 	m.queryProvider = queryProvider
 }
 
 // setCheckAliveInterval sets the interval for checking the health of the database connection.
-func (m *MySQLDBOptions) setCheckAliveInterval(interval time.Duration) {
+func (m *MySQLDBOptions) setCheckAliveInterval(interval time.Duration) { //nolint:unused
 	m.checkAliveInterval = interval
 }
 
 // setStartMonitor toggles whether health monitoring should start automatically.
-func (m *MySQLDBOptions) setStartMonitor(start bool) {
+func (m *MySQLDBOptions) setStartMonitor(start bool) { //nolint:unused
 	m.startMonitor = start
 }
 
 // setLogger sets the logger for the MySQL client to use for logging messages.
-func (m *MySQLDBOptions) setLogger(logger *log.Log) {
+func (m *MySQLDBOptions) setLogger(logger *log.Log) { //nolint:unused
 	m.log = logger
 }
