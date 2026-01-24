@@ -44,6 +44,7 @@ type NATSManager struct {
 type subscriptionParams struct {
 	queue   string
 	handler nats.MsgHandler
+	subOpts []nats.SubOpt
 }
 
 /*
@@ -251,7 +252,13 @@ func (w *NATSManager) monitorSubscription(subject string, sub *nats.Subscription
 		case <-w.done:
 			return
 		case <-ticker.C:
-			if !sub.IsValid() && w.reconnect {
+			w.mu.Lock()
+			currentSub := w.subjects[subject]
+			w.mu.Unlock()
+			if currentSub == nil {
+				return
+			}
+			if !currentSub.IsValid() && w.reconnect {
 				w.logger.Warn("Subscription invalid, attempting to resubscribe",
 					log.Any("subject", subject))
 				w.resubscribe(subject)
@@ -277,15 +284,17 @@ func (w *NATSManager) resubscribe(subject string) {
 		var err error
 
 		if w.js != nil {
-			sub, err = w.js.QueueSubscribe(
-				subject,
-				params.queue,
-				params.handler,
-				nats.ManualAck(),
-				nats.Durable(params.queue),
-			)
+			if params.queue != "" {
+				sub, err = w.js.QueueSubscribe(subject, params.queue, params.handler, params.subOpts...)
+			} else {
+				sub, err = w.js.Subscribe(subject, params.handler, params.subOpts...)
+			}
 		} else {
-			sub, err = w.nc.QueueSubscribe(subject, params.queue, params.handler)
+			if params.queue != "" {
+				sub, err = w.nc.QueueSubscribe(subject, params.queue, params.handler)
+			} else {
+				sub, err = w.nc.Subscribe(subject, params.handler)
+			}
 		}
 		if err != nil {
 			w.logger.Error("Failed to resubscribe:", log.Err(err))

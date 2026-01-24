@@ -134,7 +134,11 @@ type DBConfig interface {
 
 // MonitorDB continuously monitors the database connection.
 func MonitorDB[T Database](ctx context.Context, dbInstance T) {
-	ticker := time.NewTicker(dbInstance.FetchCheckAliveInterval())
+	interval := dbInstance.FetchCheckAliveInterval()
+	if interval <= 0 {
+		interval = 30 * time.Minute
+	}
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	logger := dbInstance.GetLogger()

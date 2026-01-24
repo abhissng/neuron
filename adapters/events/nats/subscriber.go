@@ -1,6 +1,7 @@
 package nats
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/abhissng/neuron/adapters/log"
@@ -9,6 +10,47 @@ import (
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/nats-io/nats.go"
 )
+
+func (w *NATSManager) SubscribeBindConsumer(subject, stream, consumer string, handler nats.MsgHandler, opts ...nats.SubOpt) (*nats.Subscription, blame.Blame) {
+	defer helpers.RecoverException(recover())
+	if w.js == nil {
+		return nil, blame.SubscribeToSubjectError(subject, errors.New("jetstream not enabled"))
+	}
+	if stream != "" && consumer != "" {
+		_, err := w.js.ConsumerInfo(stream, consumer)
+		if err == nil {
+			opts = append(opts, nats.Bind(stream, consumer))
+		} else if errors.Is(err, nats.ErrConsumerNotFound) {
+			opts = append(opts, nats.Durable(consumer), nats.BindStream(stream))
+		} else {
+			return nil, blame.SubscribeToSubjectError(subject, err)
+		}
+	}
+	return w.Subscribe(subject, handler, opts...)
+}
+
+func (w *NATSManager) PullSubscribeBindConsumer(subject, stream, consumer string, opts ...nats.SubOpt) (*nats.Subscription, blame.Blame) {
+	defer helpers.RecoverException(recover())
+	if w.js == nil {
+		return nil, blame.SubscribeToSubjectError(subject, errors.New("jetstream not enabled"))
+	}
+	if stream != "" && consumer != "" {
+		_, err := w.js.ConsumerInfo(stream, consumer)
+		if err == nil {
+			opts = append(opts, nats.Bind(stream, consumer))
+		} else if errors.Is(err, nats.ErrConsumerNotFound) {
+			opts = append(opts, nats.BindStream(stream))
+		} else {
+			return nil, blame.SubscribeToSubjectError(subject, err)
+		}
+	}
+	sub, err := w.js.PullSubscribe(subject, consumer, opts...)
+	if err != nil {
+		w.logger.Error(constant.SubjectSubscribeFailed, log.Any("nats.PullSubscribe", err))
+		return nil, blame.SubscribeToSubjectError(subject, err)
+	}
+	return sub, nil
+}
 
 // Subscribe subscribes to a subject and processes messages using the provided handler.
 func (w *NATSManager) Subscribe(subject string, handler nats.MsgHandler, opts ...nats.SubOpt) (*nats.Subscription, blame.Blame) {
@@ -93,6 +135,8 @@ func (w *NATSManager) subscribeInternal(subject string, handler nats.MsgHandler,
 	}
 
 	w.subjects[subject] = sub
+	storedOpts := append([]nats.SubOpt(nil), opts...)
+	w.subParams[subject] = &subscriptionParams{queue: "", handler: finalHandler, subOpts: storedOpts}
 	w.logger.Info(constant.SubjectSubscribed, log.Any("message", fmt.Sprintf("Subscribed to subject %s", subject)))
 
 	// Start subscription monitoring
@@ -165,13 +209,7 @@ func (w *NATSManager) subscribeQueueInternal(subject, queue string, handler nats
 	if w.js != nil {
 		// JetStream subscription with manual ACK and durable queue
 		opts = append(opts, nats.ManualAck())
-		opts = append(opts, nats.Durable(queue)) // Optional: Persistent consumer
-		opts = append(opts, nats.DeliverNew())
-
-		// IMPORTANT: Add these for proper acknowledgment
-		opts = append(opts, nats.AckExplicit())
-		// opts = append(opts, nats.MaxDeliver(10)) // Max redelivery attempts
-		// opts = append(opts, nats.AckWait(30*time.Second))
+		opts = append(opts, nats.Durable(queue))
 
 		sub, err = w.js.QueueSubscribe(
 			subject,
@@ -198,10 +236,8 @@ func (w *NATSManager) subscribeQueueInternal(subject, queue string, handler nats
 	}
 
 	w.subjects[subject] = sub
-	w.subParams[subject] = &subscriptionParams{
-		queue,
-		handler,
-	}
+	storedOpts := append([]nats.SubOpt(nil), opts...)
+	w.subParams[subject] = &subscriptionParams{queue: queue, handler: finalHandler, subOpts: storedOpts}
 
 	w.logger.Info(constant.SubjectWithQueueSubscribed,
 		log.Any("message", fmt.Sprintf("Subscribed to subject %s with queue %s", subject, queue)))
