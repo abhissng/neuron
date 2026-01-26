@@ -50,7 +50,7 @@ func WithJetStream(cfgs JetStreamOptions, opts ...nats.JSOpt) Option {
 			// Create stream if it doesn't exist
 			_, err = js.AddStream(cfg, opts...)
 			if err != nil && !errors.Is(err, nats.ErrStreamNameAlreadyInUse) {
-				w.logger.Error("Failed to create stream", log.Any("error", err))
+				w.logger.Warn("Failed to create stream", log.Any("error", err))
 				continue
 			}
 			w.logger.Info("Stream created or exists", log.Any("stream", cfg.Name), log.Any("subjects", cfg.Subjects))

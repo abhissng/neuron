@@ -97,57 +97,58 @@ func (c *fastHTTPClient) Do(config *HttpClientManager, body []byte, contentType 
 // It validates URLs, constructs query parameters, handles TLS, and decodes responses.
 func DoRequest[T any](payload any, config *HttpClientManager) result.Result[T] {
 	// If you see this message check on all places where logging can be added for proper checks
-	config.Log.Info(constant.TransactionMessage, log.Any("url", config.URL))
+	snap := config.snapshot()
+	snap.Log.Info(constant.TransactionMessage, log.Any("url", snap.URL))
 	defer config.Clear()
 
-	err := helpers.ValidateURL(config.URL)
+	err := helpers.ValidateURL(snap.URL)
 	if err != nil {
-		config.Log.Error(constant.TransactionMessage, log.Any("helpers.ValidateURL", err))
-		return result.NewFailure[T](blame.URLValidationFailed(config.URL, err))
+		snap.Log.Error(constant.TransactionMessage, log.Any("helpers.ValidateURL", err))
+		return result.NewFailure[T](blame.URLValidationFailed(snap.URL, err))
 	}
 
-	config.URL, err = helpers.ConstructURLWithParams(config.URL, config.QueryParams)
+	snap.URL, err = helpers.ConstructURLWithParams(snap.URL, snap.QueryParams)
 	if err != nil {
-		config.Log.Error(constant.TransactionMessage, log.Any("helpers.ConstructURLWithParams", err))
-		return result.NewFailure[T](blame.URLConstructionFailed(config.URL, config.QueryParams, err))
+		snap.Log.Error(constant.TransactionMessage, log.Any("helpers.ConstructURLWithParams", err))
+		return result.NewFailure[T](blame.URLConstructionFailed(snap.URL, snap.QueryParams, err))
 	}
 
 	// Create request body (returns []byte now)
-	bodyBytes, contentType, err := config.createRequestBody(payload)
+	bodyBytes, contentType, err := snap.createRequestBody(payload)
 	if err != nil {
-		config.Log.Error(constant.TransactionMessage, log.Any("config.createRequestBody", err))
+		snap.Log.Error(constant.TransactionMessage, log.Any("config.createRequestBody", err))
 		return result.NewFailure[T](blame.CreateRequestBodyFailed(err))
 	}
 
 	// Select client implementation
 	var client HTTPClient
-	if config.UseFastHTTP {
+	if snap.UseFastHTTP {
 		client = &fastHTTPClient{}
 	} else {
 		client = &stdHTTPClient{}
 	}
 
 	// Log request details before execution
-	config.Log.Info(constant.TransactionMessage,
-		log.String("method", config.Method),
-		log.String("url", config.URL),
-		log.Any("headers", config.Headers),
-		log.Any("query_params", config.QueryParams),
-		log.Duration("timeout", config.Timeout),
+	snap.Log.Info(constant.TransactionMessage,
+		log.String("method", snap.Method),
+		log.String("url", snap.URL),
+		log.Any("headers", snap.Headers),
+		log.Any("query_params", snap.QueryParams),
+		log.Duration("timeout", snap.Timeout),
 		log.Any("body", string(bodyBytes)),
 	)
 
 	// Execute request
-	responseBody, err := client.Do(config, bodyBytes, contentType)
+	responseBody, err := client.Do(snap, bodyBytes, contentType)
 	if err != nil {
-		config.Log.Error(constant.TransactionMessage, log.Any("client.Do", err))
+		snap.Log.Error(constant.TransactionMessage, log.Any("client.Do", err))
 		return result.NewFailure[T](blame.CreateHTTPClientFailed(err))
 	}
 
 	// Decode response
 	decodedResp, err := decodeResponse[T](responseBody, contentType)
 	if err != nil {
-		config.Log.Error(constant.TransactionMessage, log.Any("decodeResponse", err))
+		snap.Log.Error(constant.TransactionMessage, log.Any("decodeResponse", err))
 		return result.NewFailure[T](blame.DecodeResponseFailed(err))
 	}
 
