@@ -167,6 +167,19 @@ func (w *NATSManager) SetSubOpts(subject string, opts ...nats.SubOpt) bool {
 	return false
 }
 
+// ResetSubOpts clears all subscription options for an existing subscription's params.
+// This resets to an empty slice; subsequent resubscription will use no options.
+func (w *NATSManager) ResetSubOpts(subject string) bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if params, ok := w.subParams[subject]; ok {
+		params.subOpts = make([]nats.SubOpt, 0)
+		return true
+	}
+	return false
+}
+
 // GetSubOpts returns a copy of the subscription options for a given subject.
 func (w *NATSManager) GetSubOpts(subject string) []nats.SubOpt {
 	w.mu.Lock()
