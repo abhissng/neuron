@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"net"
 	"net/http"
@@ -1032,4 +1033,12 @@ func MatchesAny(s string, patterns ...string) bool {
 		}
 	}
 	return false
+}
+
+// CloneMap creates a shallow copy of a map.
+func CloneMap[K comparable, V any](src map[K]V) map[K]V {
+	if src == nil {
+		return map[K]V{}
+	}
+	return maps.Clone(src)
 }

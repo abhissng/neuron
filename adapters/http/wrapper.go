@@ -98,7 +98,7 @@ func NewHttpClientManager(requestURL string, opts ...RequestOption) *HttpClientM
 func (c *HttpClientManager) AddHeaders(headers map[string]string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.Headers = headers
+	c.Headers = helpers.CloneMap(headers)
 }
 
 func (c *HttpClientManager) ResetHeaders() {
@@ -110,7 +110,7 @@ func (c *HttpClientManager) ResetHeaders() {
 func (c *HttpClientManager) AddQueryParams(params map[string]any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.QueryParams = params
+	c.QueryParams = helpers.CloneMap(params)
 }
 
 func (c *HttpClientManager) ResetQueryParams() {
@@ -122,7 +122,7 @@ func (c *HttpClientManager) ResetQueryParams() {
 func (c *HttpClientManager) AddFiles(files map[string]string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.Files = files
+	c.Files = helpers.CloneMap(files)
 }
 
 func (c *HttpClientManager) ResetFiles() {
@@ -134,7 +134,7 @@ func (c *HttpClientManager) ResetFiles() {
 func (c *HttpClientManager) AddFormValues(values map[string]string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.FormValues = values
+	c.FormValues = helpers.CloneMap(values)
 }
 
 func (c *HttpClientManager) ResetFormValues() {
