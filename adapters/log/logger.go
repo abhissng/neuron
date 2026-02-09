@@ -15,8 +15,9 @@ import (
 // Log struct holds the zap Logger instance.
 type Log struct {
 	*zap.Logger
-	mu       sync.Mutex   // Mutex for thread-safe logging
-	closeLog func() error // Function to gracefully shut down the logger
+	mu        sync.Mutex   // Mutex for thread-safe logging
+	closeLog  func() error // Function to gracefully shut down the logger
+	sanitizer *helpers.Sanitizer
 }
 
 // It creates basic logger for utilities function and by default it will carry default confinguration
@@ -31,6 +32,7 @@ func NewBasicLogger(isProd, isOpenSearchDisabled bool) *Log {
 }
 
 // NewLogger creates a new Log instance with the specified log level and options.
+// If cfg.Sanitizer is set, use l.Any(key, value) when logging to mask sensitive fields.
 func NewLogger(cfg *LoggerConfig) (*Log, error) {
 
 	// ✅ 1. Set the log level
@@ -105,7 +107,7 @@ func NewLogger(cfg *LoggerConfig) (*Log, error) {
 	// ✅ 10. Build the logger with additional options
 	l := zap.New(finalCore, options...)
 
-	return &Log{Logger: l, closeLog: closeFunc}, nil
+	return &Log{Logger: l, closeLog: closeFunc, sanitizer: cfg.Sanitizer}, nil
 }
 
 // GetEncoderPool returns a sync.Pool of zapcore.Encoder instances.
@@ -177,7 +179,31 @@ func (l *Log) Fatal(msg string, fields ...zap.Field) {
 
 // With creates a child Log with the specified fields.
 func (l *Log) With(fields ...zap.Field) *Log {
-	return &Log{Logger: l.Logger.With(fields...)}
+	return &Log{Logger: l.Logger.With(fields...), sanitizer: l.sanitizer}
+}
+
+// Any returns a zap field; if this logger has a sanitizer, value is sanitized (blocked keys masked) before logging.
+// Use this for request/response bodies, headers, or any struct/map that may contain secrets.
+func (l *Log) Any(key string, value any) zap.Field {
+	if l.sanitizer != nil {
+		value = l.sanitizer.Sanitize(value)
+	}
+	return zap.Any(key, value)
+}
+
+// Sanitize returns a zap field with the value sanitized when the logger has a sanitizer; it simply calls l.Any(key, value).
+// Use for audit logging when you want the name to express that the field is sanitized.
+func (l *Log) Sanitize(key string, value any) zap.Field {
+	return l.Any(key, value)
+}
+
+// SanitizeValue returns value with sensitive fields masked if this logger has a sanitizer; otherwise returns value unchanged.
+// Use when building fields manually, e.g. log.Any("body", logger.SanitizeValue(body)).
+func (l *Log) SanitizeValue(value any) any {
+	if l.sanitizer != nil {
+		return l.sanitizer.Sanitize(value)
+	}
+	return value
 }
 
 func (l *Log) Printf(level zapcore.Level, msg string, v ...interface{}) {

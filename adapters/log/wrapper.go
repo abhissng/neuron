@@ -190,6 +190,9 @@ type LoggerConfig struct {
 
 	// EncoderTailLength overrides the default encoder tail length
 	EncoderTailLength int
+
+	// Sanitizer masks sensitive fields when using logger.Any(); nil means no sanitization
+	Sanitizer *helpers.Sanitizer
 }
 
 // LoggerOption defines a function that modifies LoggerConfig
@@ -272,5 +275,13 @@ func WithEncoderTailLength(length int) LoggerOption {
 			}
 			c.EncoderTailLength = length
 		}
+	}
+}
+
+// WithSanitizer sets the sanitizer used by logger.Any() to mask sensitive fields (e.g. password, token) for audit logging.
+// Example: WithSanitizer(helpers.NewSanitizer(helpers.WithBlockedKeys("password", "secret", "api_key"))).
+func WithSanitizer(sanitizer *helpers.Sanitizer) LoggerOption {
+	return func(c *LoggerConfig) {
+		c.Sanitizer = sanitizer
 	}
 }

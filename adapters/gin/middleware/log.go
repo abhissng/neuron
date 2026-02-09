@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"bytes"
-	"io"
+	"encoding/json"
 	"time"
 
 	"github.com/abhissng/neuron/adapters/log"
@@ -24,24 +24,27 @@ func GinRequestLogger(logger *log.Log) gin.HandlerFunc {
 		}
 		startTime := time.Now()
 
-		// Log Request Details
-		var requestBody string
-		if c.Request.Body != nil {
-			bodyBytes, _ := io.ReadAll(c.Request.Body)
-			requestBody = string(bodyBytes)
-			// Restore the io.ReadCloser to its original state
-			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		// Log Request Details (body read safely and restored for handlers; sensitive keys masked when logger has sanitizer)
+		bodyBytes, _ := helpers.ReadBodySafe(c.Request)
+		var bodyForLog any
+		if len(bodyBytes) > 0 {
+			var m map[string]any
+			if err := json.Unmarshal(bodyBytes, &m); err == nil {
+				bodyForLog = m
+			} else {
+				bodyForLog = string(bodyBytes)
+			}
 		}
 
 		logger.Info("Incoming Request",
 			log.String("method", c.Request.Method),
 			log.String("url", c.Request.RequestURI),
 			log.String("client_ip", c.ClientIP()),
-			log.String("body", requestBody),
+			logger.Any("body", bodyForLog),
 			log.String("request_id", c.GetString(constant.RequestID)),
 			log.String(constant.CorrelationIDHeader, c.GetString(constant.CorrelationID)),
 			log.Any("user_agent", c.Request.UserAgent()),
-			log.Any("headers", c.Request.Header),
+			logger.Any("headers", c.Request.Header),
 		)
 
 		// Capture Response Body (if needed)

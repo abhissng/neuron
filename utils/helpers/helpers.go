@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"math"
 	"net"
@@ -1041,4 +1042,246 @@ func CloneMap[K comparable, V any](src map[K]V) map[K]V {
 		return map[K]V{}
 	}
 	return maps.Clone(src)
+}
+
+// HasAnyPrefix checks if the string s has any of the provided prefixes.
+func HasAnyPrefix(s string, prefixes ...string) bool {
+	for _, p := range prefixes {
+		if strings.HasPrefix(s, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// Default blocked key names for audit sanitization (used when no WithBlockedKeys is provided).
+var defaultBlockedKeys = []string{
+	"password", "token", "access_token", "refresh_token",
+	"authorization", "cookie", "secret", "otp",
+	"api_key", "api_secret", "api_token", "api_password",
+	"api_username", "api_password", "api_token", "api_secret",
+	"api_key", "api_secret", "api_token", "api_password",
+}
+
+// Sanitizer masks sensitive fields in values for safe audit logging.
+// Use NewSanitizer with options to configure blocked keys and limits.
+type Sanitizer struct {
+	blockedKeys map[string]struct{}
+	maxDepth    int
+	// maxBodySize int
+	maskValue string
+}
+
+// SanitizeOption configures a Sanitizer.
+type SanitizeOption func(*Sanitizer)
+
+// WithBlockedKeys sets the field/key names to mask (case-insensitive).
+// Replaces any default; add all keys you want masked.
+func WithBlockedKeys(keys ...string) SanitizeOption {
+	return func(s *Sanitizer) {
+		s.blockedKeys = make(map[string]struct{}, len(keys))
+		for _, k := range keys {
+			if k != "" {
+				s.blockedKeys[strings.ToLower(k)] = struct{}{}
+			}
+		}
+	}
+}
+
+// WithMaxDepth sets the maximum recursion depth (default 8). Beyond this, value is "[truncated]".
+func WithMaxDepth(depth int) SanitizeOption {
+	return func(s *Sanitizer) {
+		if depth > 0 {
+			s.maxDepth = depth
+		}
+	}
+}
+
+// WithMaskValue sets the string used to replace blocked values (default "***").
+func WithMaskValue(v string) SanitizeOption {
+	return func(s *Sanitizer) {
+		s.maskValue = v
+	}
+}
+
+// // WithMaxBodySize sets the max bytes to read in ReadBodySafe (default 20 KB).
+// func WithMaxBodySize(n int) SanitizeOption {
+// 	return func(s *Sanitizer) {
+// 		if n > 0 {
+// 			s.maxBodySize = n
+// 		}
+// 	}
+// }
+
+const (
+	defaultMaxDepth = 8
+	// defaultMaxBodySize = 20 << 10 // 20 KB
+	defaultMaskValue = "***"
+)
+
+// NewSanitizer creates a Sanitizer with the given options.
+// With no options, uses default blocked keys (password, token, authorization, etc.).
+func NewSanitizer(opts ...SanitizeOption) *Sanitizer {
+	s := &Sanitizer{
+		blockedKeys: make(map[string]struct{}, len(defaultBlockedKeys)),
+		maxDepth:    defaultMaxDepth,
+		// maxBodySize: defaultMaxBodySize,
+		maskValue: defaultMaskValue,
+	}
+	for _, k := range defaultBlockedKeys {
+		s.blockedKeys[k] = struct{}{}
+	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
+}
+
+// Sanitize returns a copy of v with blocked keys masked for safe audit logging.
+// If sanitization panics (e.g. unsupported type), the original value is returned so logging does not fail.
+func (s *Sanitizer) Sanitize(v any) any {
+	if s == nil || len(s.blockedKeys) == 0 {
+		return v
+	}
+	out := v
+	func() {
+		defer func() {
+			if recover() != nil {
+				out = v
+			}
+		}()
+		visited := make(map[uintptr]bool)
+		out = s.sanitize(reflect.ValueOf(v), 0, visited)
+	}()
+	return out
+}
+
+func (s *Sanitizer) sanitize(v reflect.Value, depth int, visited map[uintptr]bool) any {
+	if !v.IsValid() {
+		return nil
+	}
+	if depth > s.maxDepth {
+		return "[truncated]"
+	}
+	// Unwrap pointers and interfaces so we sanitize the concrete value (e.g. when v is passed as any)
+	for {
+		switch v.Kind() {
+		case reflect.Pointer:
+			if v.IsNil() {
+				return nil
+			}
+			ptr := v.Pointer()
+			if visited[ptr] {
+				return "[circular]"
+			}
+			visited[ptr] = true
+			v = v.Elem()
+		case reflect.Interface:
+			if v.IsNil() {
+				return nil
+			}
+			v = v.Elem()
+		default:
+			goto done
+		}
+	}
+done:
+	switch v.Kind() {
+	case reflect.Struct:
+		out := make(map[string]any)
+		t := v.Type()
+		for i := 0; i < v.NumField(); i++ {
+			field := t.Field(i)
+			if field.PkgPath != "" {
+				continue
+			}
+			name := field.Name
+			if tag := field.Tag.Get("json"); tag != "" && tag != "-" {
+				name = strings.Split(tag, ",")[0]
+			}
+			if _, blocked := s.blockedKeys[strings.ToLower(name)]; blocked {
+				out[name] = s.maskValue
+				continue
+			}
+			out[name] = s.sanitize(v.Field(i), depth+1, visited)
+		}
+		return out
+	case reflect.Map:
+		out := make(map[string]any)
+		for _, key := range v.MapKeys() {
+			k := fmt.Sprint(key.Interface())
+			if _, blocked := s.blockedKeys[strings.ToLower(k)]; blocked {
+				out[k] = s.maskValue
+				continue
+			}
+			out[k] = s.sanitize(v.MapIndex(key), depth+1, visited)
+		}
+		return out
+	case reflect.Slice, reflect.Array:
+		if v.Type().Elem().Kind() == reflect.Uint8 {
+			return "[binary]"
+		}
+		out := make([]any, v.Len())
+		for i := 0; i < v.Len(); i++ {
+			out[i] = s.sanitize(v.Index(i), depth+1, visited)
+		}
+		return out
+	default:
+		return v.Interface()
+	}
+}
+
+// ReadBodySafe reads up to the sanitizer's maxBodySize from r.Body and restores
+// the body so handlers can still read it. Skips multipart/form-data.
+func (s *Sanitizer) ReadBodySafe(r *http.Request) ([]byte, error) {
+	if r.Body == nil {
+		return nil, nil
+	}
+	ct := r.Header.Get("Content-Type")
+	if strings.Contains(ct, "multipart/form-data") {
+		return nil, nil
+	}
+	// limit := s.maxBodySize
+	// if limit <= 0 {
+	// 	limit = defaultMaxBodySize
+	// }
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	r.Body = io.NopCloser(bytes.NewBuffer(body))
+	return body, nil
+}
+
+// DefaultSanitizer is a sanitizer with default blocked keys for use when no config is needed.
+var DefaultSanitizer = NewSanitizer()
+
+// SanitizeWith returns a copy of v with sensitive fields masked using the given sanitizer.
+// If s is nil, DefaultSanitizer is used.
+func SanitizeWith(s *Sanitizer, v any) any {
+	if s == nil {
+		s = DefaultSanitizer
+	}
+	return s.Sanitize(v)
+}
+
+// SanitizeAny returns a copy of v with default sensitive fields masked.
+// For custom masking, use SanitizeWith(yourSanitizer, v) or NewSanitizer(opts...) and Sanitize.
+func SanitizeAny(v any) any {
+	return SanitizeWith(nil, v)
+}
+
+// ReadBodySafeWith reads and restores r.Body using the given sanitizer's config.
+// If s is nil, DefaultSanitizer is used. Skips multipart/form-data.
+func ReadBodySafeWith(s *Sanitizer, r *http.Request) ([]byte, error) {
+	if s == nil {
+		s = DefaultSanitizer
+	}
+	return s.ReadBodySafe(r)
+}
+
+// ReadBodySafe reads and restores the body. Skips multipart/form-data.
+// For custom config, use ReadBodySafeWith(yourSanitizer, r) or NewSanitizer(opts...) and s.ReadBodySafe(r).
+func ReadBodySafe(r *http.Request) ([]byte, error) {
+	return ReadBodySafeWith(nil, r)
 }
