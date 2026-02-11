@@ -21,6 +21,14 @@ func ToPgTypeInt4(value int32) pgtype.Int4 {
 	}
 }
 
+// PgTypeInt4ToInt32 converts pgtype.Int4 to int32. Returns 0 when Valid is false.
+func PgTypeInt4ToInt32(p pgtype.Int4) int32 {
+	if !p.Valid {
+		return 0
+	}
+	return p.Int32
+}
+
 // ToPgTypeInt2 converts an int value to pgtype.Int2 (PostgreSQL INTEGER).
 func ToPgTypeInt2(value int16) pgtype.Int2 {
 	return pgtype.Int2{
@@ -28,11 +36,27 @@ func ToPgTypeInt2(value int16) pgtype.Int2 {
 		Valid: true}
 }
 
+// PgTypeInt2ToInt16 converts pgtype.Int2 to int16. Returns 0 when Valid is false.
+func PgTypeInt2ToInt16(p pgtype.Int2) int16 {
+	if !p.Valid {
+		return 0
+	}
+	return p.Int16
+}
+
 // ToPgTypeInt8 converts an int value to pgtype.Int2 (PostgreSQL INTEGER).
 func ToPgTypeInt8(value int64) pgtype.Int8 {
 	return pgtype.Int8{
 		Int64: value,
 		Valid: true}
+}
+
+// PgTypeInt8ToInt64 converts pgtype.Int8 to int64. Returns 0 when Valid is false.
+func PgTypeInt8ToInt64(p pgtype.Int8) int64 {
+	if !p.Valid {
+		return 0
+	}
+	return p.Int64
 }
 
 // ToPgTypeText converts the provided string into a pgtype.Text for PostgreSQL.
@@ -49,6 +73,14 @@ func ToPgTypeText(value string) pgtype.Text {
 	}
 }
 
+// PgTypeTextToString converts pgtype.Text to string. Returns "" when Valid is false.
+func PgTypeTextToString(p pgtype.Text) string {
+	if !p.Valid {
+		return ""
+	}
+	return p.String
+}
+
 // ToPgTypeBool converts a bool to pgtype.Bool.
 func ToPgTypeBool(value bool) pgtype.Bool {
 	return pgtype.Bool{
@@ -57,12 +89,28 @@ func ToPgTypeBool(value bool) pgtype.Bool {
 	}
 }
 
+// PgTypeBoolToBool converts pgtype.Bool to bool. Returns false when Valid is false.
+func PgTypeBoolToBool(p pgtype.Bool) bool {
+	if !p.Valid {
+		return false
+	}
+	return p.Bool
+}
+
 // ToPgTypeFloat8 converts a float64 to pgtype.Float8.
 func ToPgTypeFloat8(value float64) pgtype.Float8 {
 	return pgtype.Float8{
 		Float64: value,
 		Valid:   true,
 	}
+}
+
+// PgTypeFloat8ToFloat64 converts pgtype.Float8 to float64. Returns 0 when Valid is false.
+func PgTypeFloat8ToFloat64(p pgtype.Float8) float64 {
+	if !p.Valid {
+		return 0
+	}
+	return p.Float64
 }
 
 // ToPgTypeTimestamptz converts a time.Time to a pgtype.Timestamptz, marking the result invalid if the input is the zero time.
@@ -78,6 +126,14 @@ func ToPgTypeTimestamptz(value time.Time) pgtype.Timestamptz {
 	}
 }
 
+// PgTypeTimestamptzToTime converts pgtype.Timestamptz to time.Time. Returns zero time when Valid is false.
+func PgTypeTimestamptzToTime(p pgtype.Timestamptz) time.Time {
+	if !p.Valid {
+		return time.Time{}
+	}
+	return p.Time
+}
+
 // ToPgTypeTimestamp converts the provided time.Time into a pgtype.Timestamp and marks the result invalid when the input is the zero time value.
 func ToPgTypeTimestamp(value time.Time) pgtype.Timestamp {
 	if value.IsZero() || value.Equal(time.Time{}) {
@@ -91,12 +147,20 @@ func ToPgTypeTimestamp(value time.Time) pgtype.Timestamp {
 	}
 }
 
-// ToUUID converts a pgtype.UUID to uuid.UUID.
-func ToUUID(p pgtype.UUID) (uuid.UUID, error) {
+// PgTypeTimestampToTime converts pgtype.Timestamp to time.Time. Returns (zero time, false) when Valid is false.
+func PgTypeTimestampToTime(p pgtype.Timestamp) time.Time {
 	if !p.Valid {
-		return uuid.Nil, fmt.Errorf("uuid is null")
+		return time.Time{}
 	}
-	return uuid.UUID(p.Bytes), nil
+	return p.Time
+}
+
+// ToUUID converts a pgtype.UUID to uuid.UUID.
+func ToUUID(p pgtype.UUID) uuid.UUID {
+	if !p.Valid {
+		return uuid.Nil
+	}
+	return uuid.UUID(p.Bytes)
 }
 
 // ToPgTypeUUID converts a uuid.UUID to a pgtype.UUID, treating uuid.Nil as a NULL value.
@@ -192,6 +256,18 @@ func FloatToPgClean(val float64, places int) pgtype.Numeric {
 	return FloatToPgNumeric(val, SmartTrim(), Prec(places))
 }
 
+// PgTypeNumericToFloat converts pgtype.Numeric to float64. Returns 0 when Valid is false, or 0 when AssignTo fails.
+func PgTypeNumericToFloat(p pgtype.Numeric) float64 {
+	if !p.Valid {
+		return 0
+	}
+
+	if f, err := p.Float64Value(); err == nil {
+		return f.Float64
+	}
+	return 0.0
+}
+
 // adjustPrecision rounds to a given decimal count
 func adjustPrecision(f float64, decimals int) float64 {
 	scale := math.Pow10(decimals)
@@ -240,6 +316,20 @@ func ParseToPgTypeInterval(input string) pgtype.Interval {
 	return iv
 }
 
+// PgTypeIntervalToDuration converts pgtype.Interval to time.Duration using Microseconds (Days and Months are not represented in time.Duration).
+// Returns 0 when Valid is false.
+func PgTypeIntervalToDuration(p pgtype.Interval) time.Duration {
+	if !p.Valid {
+		return 0
+	}
+	// time.Duration is in nanoseconds; Interval.Microseconds is in microseconds
+	d := time.Duration(p.Microseconds) * time.Microsecond
+	d += time.Duration(p.Days) * 24 * time.Hour
+	// Approximate: 1 month ≈ 30 days (no exact mapping to time.Duration)
+	d += time.Duration(p.Months) * 30 * 24 * time.Hour
+	return d
+}
+
 // ToPgTypeDate converts t to a pgtype.Date; if t is the zero time the returned Date has Valid set to false.
 func ToPgTypeDate(t time.Time) pgtype.Date {
 	if t.IsZero() || t.Equal(time.Time{}) {
@@ -251,6 +341,14 @@ func ToPgTypeDate(t time.Time) pgtype.Date {
 		Time:  t,
 		Valid: true,
 	}
+}
+
+// PgTypeDateToTime converts pgtype.Date to time.Time. Returns zero time when Valid is false.
+func PgTypeDateToTime(p pgtype.Date) time.Time {
+	if !p.Valid {
+		return time.Time{}
+	}
+	return p.Time
 }
 
 // ToPgTime converts t to a pgtype.Time representing the number of microseconds
@@ -272,6 +370,17 @@ func ToPgTime(t time.Time) pgtype.Time {
 			t.Nanosecond()/1000),
 		Valid: true,
 	}
+}
+
+// PgTypeTimeToTime converts pgtype.Time to time.Time (time-of-day since midnight in UTC).
+// Returns zero time when Valid is false.
+func PgTypeTimeToTime(p pgtype.Time) time.Time {
+	if !p.Valid {
+		return time.Time{}
+	}
+	sec := p.Microseconds / 1_000_000
+	nsec := (p.Microseconds % 1_000_000) * 1000
+	return time.Date(0, 1, 1, int(sec/3600), int((sec%3600)/60), int(sec%60), int(nsec), time.UTC)
 }
 
 // ToPgType converts a Go value into a specific pgtype, constrained by PgType.
