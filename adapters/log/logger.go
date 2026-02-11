@@ -182,9 +182,9 @@ func (l *Log) With(fields ...zap.Field) *Log {
 	return &Log{Logger: l.Logger.With(fields...), sanitizer: l.sanitizer}
 }
 
-// Any returns a zap field; if this logger has a sanitizer, value is sanitized (blocked keys masked) before logging.
+// SanitizeAny returns a zap field; if this logger has a sanitizer, value is sanitized (blocked keys masked) before logging.
 // Use this for request/response bodies, headers, or any struct/map that may contain secrets.
-func (l *Log) Any(key string, value any) zap.Field {
+func (l *Log) SanitizeAny(key string, value any) zap.Field {
 	if l.sanitizer != nil {
 		value = l.sanitizer.Sanitize(value)
 	}
@@ -194,7 +194,7 @@ func (l *Log) Any(key string, value any) zap.Field {
 // Sanitize returns a zap field with the value sanitized when the logger has a sanitizer; it simply calls l.Any(key, value).
 // Use for audit logging when you want the name to express that the field is sanitized.
 func (l *Log) Sanitize(key string, value any) zap.Field {
-	return l.Any(key, value)
+	return l.SanitizeAny(key, value)
 }
 
 // SanitizeValue returns value with sensitive fields masked if this logger has a sanitizer; otherwise returns value unchanged.

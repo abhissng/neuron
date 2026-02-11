@@ -40,11 +40,11 @@ func GinRequestLogger(logger *log.Log) gin.HandlerFunc {
 			log.String("method", c.Request.Method),
 			log.String("url", c.Request.RequestURI),
 			log.String("client_ip", c.ClientIP()),
-			logger.Any("body", bodyForLog),
+			logger.SanitizeAny("body", bodyForLog),
 			log.String("request_id", c.GetString(constant.RequestID)),
 			log.String(constant.CorrelationIDHeader, c.GetString(constant.CorrelationID)),
 			log.Any("user_agent", c.Request.UserAgent()),
-			logger.Any("headers", c.Request.Header),
+			logger.SanitizeAny("headers", c.Request.Header),
 		)
 
 		// Capture Response Body (if needed)

@@ -27,7 +27,7 @@ require (
 	github.com/nyaruka/phonenumbers v1.6.9
 	github.com/o1egl/paseto v1.0.0
 	github.com/opensearch-project/opensearch-go/v4 v4.6.0
-	github.com/oracle/oci-go-sdk/v65 v65.108.0
+	github.com/oracle/oci-go-sdk/v65 v65.108.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/redis/go-redis/v9 v9.17.3
 	github.com/sony/gobreaker v1.0.0
@@ -145,7 +145,7 @@ require (
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
-	google.golang.org/api v0.265.0 // indirect
+	google.golang.org/api v0.266.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260209200024-4cfbd4190f57 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

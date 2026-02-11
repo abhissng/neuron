@@ -126,7 +126,7 @@ func ToPgTypeTimestamptz(value time.Time) pgtype.Timestamptz {
 	}
 }
 
-// PgTypeTimestamptzToTime converts pgtype.Timestamptz to time.Time. Returns (zero time, false) when Valid is false.
+// PgTypeTimestamptzToTime converts pgtype.Timestamptz to time.Time. Returns zero time when Valid is false.
 func PgTypeTimestamptzToTime(p pgtype.Timestamptz) time.Time {
 	if !p.Valid {
 		return time.Time{}
@@ -256,7 +256,7 @@ func FloatToPgClean(val float64, places int) pgtype.Numeric {
 	return FloatToPgNumeric(val, SmartTrim(), Prec(places))
 }
 
-// PgTypeNumericToFloat converts pgtype.Numeric to float64. Returns (0, false) when Valid is false, or (0, error) when AssignTo fails.
+// PgTypeNumericToFloat converts pgtype.Numeric to float64. Returns (0, false) when Valid is false, or 0 when AssignTo fails.
 func PgTypeNumericToFloat(p pgtype.Numeric) float64 {
 	if !p.Valid {
 		return 0
@@ -325,6 +325,8 @@ func PgTypeIntervalToDuration(p pgtype.Interval) time.Duration {
 	// time.Duration is in nanoseconds; Interval.Microseconds is in microseconds
 	d := time.Duration(p.Microseconds) * time.Microsecond
 	d += time.Duration(p.Days) * 24 * time.Hour
+	// Approximate: 1 month ≈ 30 days (no exact mapping to time.Duration)
+	d += time.Duration(p.Months) * 30 * 24 * time.Hour
 	return d
 }
 

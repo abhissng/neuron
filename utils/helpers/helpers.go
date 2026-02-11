@@ -1060,7 +1060,6 @@ var defaultBlockedKeys = []string{
 	"authorization", "cookie", "secret", "otp",
 	"api_key", "api_secret", "api_token", "api_password",
 	"api_username", "api_password", "api_token", "api_secret",
-	"api_key", "api_secret", "api_token", "api_password",
 }
 
 // Sanitizer masks sensitive fields in values for safe audit logging.
@@ -1068,8 +1067,7 @@ var defaultBlockedKeys = []string{
 type Sanitizer struct {
 	blockedKeys map[string]struct{}
 	maxDepth    int
-	// maxBodySize int
-	maskValue string
+	maskValue   string
 }
 
 // SanitizeOption configures a Sanitizer.
@@ -1104,19 +1102,10 @@ func WithMaskValue(v string) SanitizeOption {
 	}
 }
 
-// // WithMaxBodySize sets the max bytes to read in ReadBodySafe (default 20 KB).
-// func WithMaxBodySize(n int) SanitizeOption {
-// 	return func(s *Sanitizer) {
-// 		if n > 0 {
-// 			s.maxBodySize = n
-// 		}
-// 	}
-// }
-
 const (
 	defaultMaxDepth = 8
 	// defaultMaxBodySize = 20 << 10 // 20 KB
-	defaultMaskValue = "***"
+	defaultMaskValue = "****"
 )
 
 // NewSanitizer creates a Sanitizer with the given options.
@@ -1125,8 +1114,7 @@ func NewSanitizer(opts ...SanitizeOption) *Sanitizer {
 	s := &Sanitizer{
 		blockedKeys: make(map[string]struct{}, len(defaultBlockedKeys)),
 		maxDepth:    defaultMaxDepth,
-		// maxBodySize: defaultMaxBodySize,
-		maskValue: defaultMaskValue,
+		maskValue:   defaultMaskValue,
 	}
 	for _, k := range defaultBlockedKeys {
 		s.blockedKeys[k] = struct{}{}
@@ -1207,6 +1195,14 @@ done:
 		}
 		return out
 	case reflect.Map:
+		if v.IsNil() {
+			return nil
+		}
+		ptr := v.Pointer()
+		if visited[ptr] {
+			return "[circular]"
+		}
+		visited[ptr] = true
 		out := make(map[string]any)
 		for _, key := range v.MapKeys() {
 			k := fmt.Sprint(key.Interface())
@@ -1218,9 +1214,17 @@ done:
 		}
 		return out
 	case reflect.Slice, reflect.Array:
+		if v.Kind() == reflect.Slice && v.IsNil() {
+			return nil
+		}
 		if v.Type().Elem().Kind() == reflect.Uint8 {
 			return "[binary]"
 		}
+		ptr := v.Pointer()
+		if visited[ptr] {
+			return "[circular]"
+		}
+		visited[ptr] = true
 		out := make([]any, v.Len())
 		for i := 0; i < v.Len(); i++ {
 			out[i] = s.sanitize(v.Index(i), depth+1, visited)
@@ -1241,10 +1245,6 @@ func (s *Sanitizer) ReadBodySafe(r *http.Request) ([]byte, error) {
 	if strings.Contains(ct, "multipart/form-data") {
 		return nil, nil
 	}
-	// limit := s.maxBodySize
-	// if limit <= 0 {
-	// 	limit = defaultMaxBodySize
-	// }
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
