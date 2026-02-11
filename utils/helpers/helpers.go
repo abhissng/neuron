@@ -1059,7 +1059,7 @@ var defaultBlockedKeys = []string{
 	"password", "token", "access_token", "refresh_token",
 	"authorization", "cookie", "secret", "otp",
 	"api_key", "api_secret", "api_token", "api_password",
-	"api_username", "api_password", "api_token", "api_secret",
+	"api_username",
 }
 
 // Sanitizer masks sensitive fields in values for safe audit logging.
