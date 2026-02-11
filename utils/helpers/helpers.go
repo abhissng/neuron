@@ -1098,6 +1098,9 @@ func WithMaxDepth(depth int) SanitizeOption {
 // WithMaskValue sets the string used to replace blocked values (default "***").
 func WithMaskValue(v string) SanitizeOption {
 	return func(s *Sanitizer) {
+		if v == "" {
+			v = strings.Repeat("*", len(defaultMaskValue))
+		}
 		s.maskValue = v
 	}
 }
@@ -1220,11 +1223,13 @@ done:
 		if v.Type().Elem().Kind() == reflect.Uint8 {
 			return "[binary]"
 		}
-		ptr := v.Pointer()
-		if visited[ptr] {
-			return "[circular]"
+		if v.Kind() == reflect.Slice {
+			ptr := v.Pointer()
+			if visited[ptr] {
+				return "[circular]"
+			}
+			visited[ptr] = true
 		}
-		visited[ptr] = true
 		out := make([]any, v.Len())
 		for i := 0; i < v.Len(); i++ {
 			out[i] = s.sanitize(v.Index(i), depth+1, visited)

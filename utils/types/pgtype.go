@@ -256,7 +256,7 @@ func FloatToPgClean(val float64, places int) pgtype.Numeric {
 	return FloatToPgNumeric(val, SmartTrim(), Prec(places))
 }
 
-// PgTypeNumericToFloat converts pgtype.Numeric to float64. Returns (0, false) when Valid is false, or 0 when AssignTo fails.
+// PgTypeNumericToFloat converts pgtype.Numeric to float64. Returns 0 when Valid is false, or 0 when AssignTo fails.
 func PgTypeNumericToFloat(p pgtype.Numeric) float64 {
 	if !p.Valid {
 		return 0
