@@ -19,8 +19,9 @@ func ErrNotFound(key string) error {
 
 // Config holds the configuration for the Redis wrapper.
 type Config struct {
-	Addr       string        // e.g., "localhost:6379"
-	Password   string        // Leave empty if no password
+	Addr string // e.g., "localhost:6379"
+	//#nosec G101
+	Password   string        // #nosec G101 Leave empty if no password
 	DB         int           // Default is 0
 	DefaultTTL time.Duration // Default TTL for cache operations (0 means no TTL)
 }

@@ -76,3 +76,12 @@ func GenerateTokenID() (string, error) {
 	}
 	return hex.EncodeToString(bytes), nil
 }
+
+// GenerateRandomStringNumber generates a random string number of `n` length
+func GenerateRandomStringNumber(n int) string {
+	str, err := GenerateRandomNumber(n)
+	if err != nil {
+		return ""
+	}
+	return str
+}

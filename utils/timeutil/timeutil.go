@@ -264,3 +264,23 @@ func ParseHMS(value string) (HMS, error) {
 		Second: second,
 	}, nil
 }
+
+// NowUnix returns the current time in Unix seconds (Razorpay standard)
+func NowUnix() int64 {
+	return time.Now().Unix()
+}
+
+// FutureUnixDays returns a Unix timestamp for X days in the future.
+// Useful for setting a trial period or a future `start_at` date.
+// days must be positive; returns an error if days <= 0.
+func FutureUnixDays(days int) (int64, error) {
+	if days <= 0 {
+		return 0, fmt.Errorf("days must be > 0")
+	}
+	return time.Now().AddDate(0, 0, days).Unix(), nil
+}
+
+// ParseUnixEpochSeconds converts a Unix epoch seconds (like 1581013800) to a TimeWrapper in UTC.
+func ParseUnixEpochSeconds(unixSeconds int64) *TimeWrapper {
+	return &TimeWrapper{time.Unix(unixSeconds, 0).UTC()}
+}

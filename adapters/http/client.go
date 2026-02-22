@@ -39,6 +39,7 @@ func (c *stdHTTPClient) Do(config *HttpClientManager, body []byte, contentType t
 	}
 
 	client := config.createHTTPClient()
+	//#nosec G704
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -132,10 +133,10 @@ func DoRequest[T any](payload any, config *HttpClientManager) result.Result[T] {
 	snap.Log.Info(constant.TransactionMessage,
 		log.String("method", snap.Method),
 		log.String("url", snap.URL),
-		log.Any("headers", snap.Headers),
-		log.Any("query_params", snap.QueryParams),
+		snap.Log.SanitizeAny("headers", snap.Headers),
+		snap.Log.SanitizeAny("query_params", snap.QueryParams),
 		log.Duration("timeout", snap.Timeout),
-		log.Any("body", string(bodyBytes)),
+		snap.Log.SanitizeAny("body", string(bodyBytes)),
 	)
 
 	// Execute request

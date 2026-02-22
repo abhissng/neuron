@@ -42,10 +42,10 @@ func (c *ClamAVScanner) Scan(r io.Reader) (bool, error) {
 		n, err := r.Read(buf)
 		if n > 0 {
 			size := []byte{
-				byte(n >> 24),
-				byte(n >> 16),
-				byte(n >> 8),
-				byte(n),
+				byte(n >> 24), //#nosec
+				byte(n >> 16), //#nosec
+				byte(n >> 8),  //#nosec
+				byte(n),       //#nosec
 			}
 			if _, err := conn.Write(size); err != nil {
 				return false, err

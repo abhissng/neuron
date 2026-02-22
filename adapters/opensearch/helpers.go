@@ -26,7 +26,7 @@ type TLSOptions struct {
 	// ClientCert is the client certificate for mutual TLS
 	ClientCert []byte
 	// ClientKey is the client private key for mutual TLS
-	ClientKey []byte
+	ClientKey []byte //#nosec
 	// InsecureSkipVerify controls whether to skip server certificate verification
 	InsecureSkipVerify bool
 }

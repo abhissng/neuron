@@ -15,9 +15,10 @@ import (
 // Log struct holds the zap Logger instance.
 type Log struct {
 	*zap.Logger
-	mu        sync.Mutex   // Mutex for thread-safe logging
-	closeLog  func() error // Function to gracefully shut down the logger
-	sanitizer *helpers.Sanitizer
+	mu           sync.Mutex   // Mutex for thread-safe logging
+	closeLog     func() error // Function to gracefully shut down the logger
+	sanitizer    *helpers.Sanitizer
+	syncCloseOnce sync.Once   // Ensures closeLog is only invoked once when Sync is called multiple times during shutdown
 }
 
 // It creates basic logger for utilities function and by default it will carry default confinguration
@@ -223,14 +224,17 @@ func (l *Log) Printf(level zapcore.Level, msg string, v ...interface{}) {
 }
 
 // Sync flushes any buffered log entries. Applications should take care to call
-// Sync before exiting.
+// Sync before exiting. Safe to call multiple times; the underlying async writer is closed only once.
 func (l *Log) Sync() error {
 	err := l.Logger.Sync()
 
-	// Then, gracefully close our custom async writer if it exists
+	// Then, gracefully close our custom async writer at most once (e.g. context + DB monitor both call Sync during shutdown)
 	if l.closeLog != nil {
-		if closeErr := l.closeLog(); closeErr != nil {
-			// Combine errors if both operations fail
+		var closeErr error
+		l.syncCloseOnce.Do(func() {
+			closeErr = l.closeLog()
+		})
+		if closeErr != nil {
 			if err != nil {
 				return fmt.Errorf("zap sync error: %w; async close error: %v", err, closeErr)
 			}

@@ -12,7 +12,7 @@ type ClientOptions struct {
 	Host      string
 	Port      int
 	Username  string
-	Password  string
+	Password  string //#nosec
 	TLSConfig *tls.Config
 	log       *log.Log
 }

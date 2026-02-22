@@ -136,10 +136,10 @@ func (c *SESClient) sendRawEmail(data *EmailData, subject, html, text string) er
 	// Write headers to buffer
 	for key, values := range headers {
 		for _, value := range values {
-			buf.WriteString(fmt.Sprintf("%s: %s\r\n", key, value))
+			_, _ = fmt.Fprintf(&buf, "%s: %s\r\n", key, value)
 		}
 	}
-	buf.WriteString("\r\n")
+	_, _ = buf.WriteString("\r\n")
 
 	// Add text body part
 	if text != "" {
