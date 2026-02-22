@@ -77,11 +77,11 @@ func GenerateTokenID() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-// GenerateRandomString generates a random string of `n` length
-func GenerateRandomString(n int) string {
+// GenerateRandomStringNumber generates a random string number of `n` length
+func GenerateRandomStringNumber(n int) string {
 	str, err := GenerateRandomNumber(n)
 	if err != nil {
 		return ""
 	}
-	return strings.ToLower(str)
+	return str
 }
