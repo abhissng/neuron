@@ -10,6 +10,7 @@ import (
 	"github.com/abhissng/neuron/adapters/http"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/adapters/mongo"
+	"github.com/abhissng/neuron/adapters/payment"
 	"github.com/abhissng/neuron/adapters/oci"
 	"github.com/abhissng/neuron/adapters/paseto"
 	"github.com/abhissng/neuron/adapters/redis"
@@ -46,6 +47,7 @@ type AppContext struct {
 	*session.SessionManager
 	*store.StoreManager
 	cloud.CloudManager
+	*payment.Manager
 
 	serviceId      string
 	isDebugEnabled bool
@@ -228,4 +230,17 @@ func WithCloudManager(manager cloud.CloudManager) AppContextOption {
 	return func(ctx *AppContext) {
 		ctx.CloudManager = manager
 	}
+}
+
+// WithPaymentManager sets the payment manager for the AppContext.
+// Use it to register providers (e.g. razorpay) and access them from context.
+func WithPaymentManager(manager *payment.Manager) AppContextOption {
+	return func(ctx *AppContext) {
+		ctx.Manager = manager
+	}
+}
+
+// GetPaymentManager retrieves the PaymentManager from the AppContext.
+func (ctx *AppContext) GetPaymentManager() *payment.Manager {
+	return ctx.Manager
 }

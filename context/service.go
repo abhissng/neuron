@@ -129,33 +129,56 @@ func (ctx *ServiceContext) SlogDebug(message string, withFields ...types.Field) 
 
 // SlogEvent returns a slice of types.Field with message and correlation fields and additional fields.
 func (ctx *ServiceContext) SlogEvent(msg *nats.Msg, withFields ...types.Field) []types.Field {
+	if msg == nil {
+		return withFields
+	}
 	return natsInternal.Slog(msg, withFields...)
 }
 
 // SlogEventInfo logs a message at the InfoLevel with NATS event metadata.
 func (ctx *ServiceContext) SlogEventInfo(logMessage string, natsMsg *nats.Msg, withFields ...types.Field) {
-	fields := ctx.SlogEvent(natsMsg, withFields...)
+	var fields []types.Field
+	if natsMsg == nil {
+		fields = ctx.SlogFields(withFields...)
+	} else {
+		fields = ctx.SlogEvent(natsMsg, withFields...)
+	}
 	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Info(logMessage, fields...)
 }
 
 // SlogEventWarn logs a message at the WarnLevel with NATS event metadata.
 func (ctx *ServiceContext) SlogEventWarn(logMessage string, natsMsg *nats.Msg, withFields ...types.Field) {
-	fields := ctx.SlogEvent(natsMsg, withFields...)
+	var fields []types.Field
+	if natsMsg == nil {
+		fields = ctx.SlogFields(withFields...)
+	} else {
+		fields = ctx.SlogEvent(natsMsg, withFields...)
+	}
 	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Warn(logMessage, fields...)
 }
 
 // SlogEventError logs a message at the ErrorLevel with NATS event metadata.
 func (ctx *ServiceContext) SlogEventError(logMessage string, natsMsg *nats.Msg, withFields ...types.Field) {
-	fields := ctx.SlogEvent(natsMsg, withFields...)
+	var fields []types.Field
+	if natsMsg == nil {
+		fields = ctx.SlogFields(withFields...)
+	} else {
+		fields = ctx.SlogEvent(natsMsg, withFields...)
+	}
 	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Error(logMessage, fields...)
 }
 
 // SlogEventDebug logs a message at the DebugLevel with NATS event metadata.
 func (ctx *ServiceContext) SlogEventDebug(logMessage string, natsMsg *nats.Msg, withFields ...types.Field) {
-	fields := ctx.SlogEvent(natsMsg, withFields...)
+	var fields []types.Field
+	if natsMsg == nil {
+		fields = ctx.SlogFields(withFields...)
+	} else {
+		fields = ctx.SlogEvent(natsMsg, withFields...)
+	}
 	logger := ctx.WithOptions(zap.AddCaller())
 	logger.Debug(logMessage, fields...)
 }

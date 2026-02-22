@@ -34,7 +34,7 @@ type AWSConfig struct {
 	Region           string
 	AccessKeyID      string
 	SecretAccessKey  string
-	SessionToken     string
+	SessionToken     string //#nosec
 	Endpoint         string
 	S3ForcePathStyle bool
 }

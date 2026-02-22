@@ -3,6 +3,9 @@ package structures
 import (
 	"fmt"
 	"time"
+
+	"github.com/abhissng/neuron/utils/types"
+	"github.com/google/uuid"
 )
 
 // MetaData represents the metadata of a service
@@ -127,4 +130,82 @@ type PhoneNumberInfo struct {
 	CountryName    string // The full country name (e.g., "India", "United States of America")
 	IsValid        bool   // Whether the library considers this a valid number
 	NationalNumber uint64 // The number without the country code
+}
+
+type EssentialHeaders struct {
+	OrgId        types.OrgID  `json:"org_id"`
+	UserId       types.UserID `json:"user_id"`
+	LocationId   uuid.UUID    `json:"location_id"`
+	UserRole     string       `json:"user_role"`
+	FeatureFlags string       `json:"feature_flags"`
+}
+
+// NewEssentialHeaders creates and returns an empty EssentialHeaders value.
+func NewEssentialHeaders() *EssentialHeaders {
+	return &EssentialHeaders{}
+}
+
+// config for behaviour
+type EssentialHeadersConfig struct {
+	RequireFeatureFlags bool
+	RequireLocationID   bool
+}
+
+func NewEssentialHeadersConfig() *EssentialHeadersConfig {
+	return &EssentialHeadersConfig{
+		RequireFeatureFlags: false,
+		RequireLocationID:   false,
+	}
+}
+
+// Option type
+type EssentialHeadersOption func(*EssentialHeadersConfig)
+
+// require X-Feature-Flags header
+func WithFeatureFlagRequired() EssentialHeadersOption {
+	return func(c *EssentialHeadersConfig) {
+		c.RequireFeatureFlags = true
+	}
+}
+
+// require X-Location-Id header
+func WithLocationIdRequired() EssentialHeadersOption {
+	return func(c *EssentialHeadersConfig) {
+		c.RequireLocationID = true
+	}
+}
+
+type RequestAuthValues struct {
+	Token         string
+	CorrelationID types.CorrelationID
+	XSubject      string
+}
+
+type RequestAuthConfig struct {
+	RequireToken         bool
+	RequireCorrelationID bool
+	RequireXSubject      bool
+}
+
+type RequestAuthOption func(*RequestAuthConfig)
+
+// WithRequireToken marks the auth token as required when fetching request auth values.
+func WithRequireToken() RequestAuthOption {
+	return func(cfg *RequestAuthConfig) {
+		cfg.RequireToken = true
+	}
+}
+
+// WithRequireCorrelationID marks the correlation ID header as required when fetching request auth values.
+func WithRequireCorrelationID() RequestAuthOption {
+	return func(cfg *RequestAuthConfig) {
+		cfg.RequireCorrelationID = true
+	}
+}
+
+// WithRequireXSubject marks the X-Subject header as required when fetching request auth values.
+func WithRequireXSubject() RequestAuthOption {
+	return func(cfg *RequestAuthConfig) {
+		cfg.RequireXSubject = true
+	}
 }

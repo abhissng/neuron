@@ -23,6 +23,7 @@ type OpenSearchWriter struct {
 	batchSize    int           // Number of logs to buffer before sending
 	flushTimeout time.Duration // How often to flush logs
 	wg           sync.WaitGroup
+	closeOnce    sync.Once     // Ensures close() only runs once
 }
 
 // Write is now non-blocking. It sends the log to a channel.
@@ -122,12 +123,17 @@ func (w *OpenSearchWriter) flush(batch [][]byte) {
 	}
 }
 
-// close handles the graceful shutdown.
+// close handles the graceful shutdown. Safe to call multiple times.
 func (w *OpenSearchWriter) close() error {
-	// Signal the worker to stop
-	close(w.doneChannel)
-	// Wait for the worker to finish flushing
-	w.wg.Wait()
+	w.closeOnce.Do(func() {
+		helpers.Println(constant.INFO, "Closing OpenSearch writer")
+		if w.doneChannel != nil {
+			close(w.doneChannel)
+			w.doneChannel = nil
+		}
+		// Wait for the worker to finish flushing
+		w.wg.Wait()
+	})
 	return nil
 }
 

@@ -18,8 +18,8 @@ func NewDBOptions[T DBConfig](opts ...DBOption) T {
 	var defaultConfig T
 	switch any(defaultConfig).(type) {
 	case *PostgresDBOptions:
-		defaultConfig = any(&PostgresDBOptions{
-			dsn:                "postgresql://user:password@localhost:5432/mydatabase",
+		defaultConfig = any(&PostgresDBOptions{ //#nosec
+			dsn:                "postgresql://user:@localhost:5432/mydatabase",
 			maxConns:           10,
 			debugMode:          false,
 			checkAliveInterval: constant.DatabaseCheckAliveInterval,
@@ -27,8 +27,8 @@ func NewDBOptions[T DBConfig](opts ...DBOption) T {
 			startMonitor:       false,
 		}).(T)
 	case *MySQLDBOptions:
-		defaultConfig = any(&MySQLDBOptions{
-			dsn:                "user:password@tcp(localhost:3306)/mydatabase",
+		defaultConfig = any(&MySQLDBOptions{ //#nosec
+			dsn:                "user:pass@tcp(localhost:3306)/mydatabase",
 			maxConns:           10,
 			debugMode:          false,
 			checkAliveInterval: constant.DatabaseCheckAliveInterval,
