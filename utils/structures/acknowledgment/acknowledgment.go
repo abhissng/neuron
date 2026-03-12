@@ -29,37 +29,36 @@ func NewNilAPIResponse[T any]() APIResponse[T] {
 	return APIResponse[T]{}
 }
 
-// ToValue converts the APIResponse to a value.
-func (resp *APIResponse[T]) ToValue() T {
+// ToValue converts the APIResponse to a value and returns a boolean indicating if the conversion was successful.
+func (resp *APIResponse[T]) ToValue() (T, bool) {
 	if resp == nil {
 		var zero T
-		return zero
+		return zero, false
 	}
-	return resp.Result
+	return resp.Result, true
 }
 
 // CastToResult casts the APIResponse to a value.
-func CastToResult[R any](resp *APIResponse[any]) (R, bool) {
+func CastToResult[R any](resp *APIResponse[any]) (result R, ok bool) {
 	if resp == nil {
-		var zero R
-		return zero, false
+		return
 	}
-
 	if resp.Result == nil {
-		var zero R
-		return zero, false
+		return
 	}
 
-	result, ok := resp.Result.(R)
+	result, ok = resp.Result.(R)
 	if !ok {
-		var zero R
-		return zero, false
+		return
 	}
 	return result, true
 }
 
 // WithError sets the error in the APIResponse.
 func (resp *APIResponse[T]) WithError(err error) *APIResponse[T] {
+	if resp == nil {
+		return nil
+	}
 	if err == nil {
 		resp.Error = nil
 		return resp
