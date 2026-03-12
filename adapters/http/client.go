@@ -3,6 +3,8 @@ package http
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -99,7 +101,7 @@ func (c *fastHTTPClient) Do(config *HttpClientManager, body []byte, contentType 
 func DoRequest[T any](payload any, config *HttpClientManager) result.Result[T] {
 	// If you see this message check on all places where logging can be added for proper checks
 	snap := config.snapshot()
-	snap.Log.Info(constant.TransactionMessage, log.Any("url", snap.URL))
+	snap.Log.Info(constant.TransactionStarted, log.Any("url", snap.URL))
 	defer config.Clear()
 
 	err := helpers.ValidateURL(snap.URL)
@@ -145,6 +147,13 @@ func DoRequest[T any](payload any, config *HttpClientManager) result.Result[T] {
 		snap.Log.Error(constant.TransactionMessage, log.Any("client.Do", err))
 		return result.NewFailure[T](blame.CreateHTTPClientFailed(err))
 	}
+	snap.Log.Debug(constant.TransactionSuccess, log.String("responseBody", string(responseBody)))
+
+	// If response body has success:false and result.causes[0], return failure with that error (no decode into T).
+	if err := apiResponseFailureErrorFromBody(responseBody); err != nil {
+		snap.Log.Error(constant.TransactionFailed, log.Any("apiResponseFailure", err))
+		return result.NewFailure[T](blame.ResponseResultError(err))
+	}
 
 	// Decode response
 	decodedResp, err := decodeResponse[T](responseBody, contentType)
@@ -174,6 +183,24 @@ func (config *HttpClientManager) createHTTPClient() *http.Client {
 	}
 
 	return client
+}
+
+// apiResponseFailureErrorFromBody parses the response body and, if it has success:false and result.causes[0],
+// returns the error at causes[0]; otherwise returns nil.
+func apiResponseFailureErrorFromBody(responseBody []byte) error {
+	var envelope struct {
+		Success bool `json:"success"`
+		Result  struct {
+			Causes []string `json:"causes"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(responseBody, &envelope); err != nil {
+		return nil
+	}
+	if envelope.Success || len(envelope.Result.Causes) == 0 {
+		return nil
+	}
+	return errors.New(envelope.Result.Causes[0])
 }
 
 // decodeResponse decodes HTTP response body based on content type.

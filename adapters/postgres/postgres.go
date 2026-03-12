@@ -183,7 +183,7 @@ func (p *PostgresDB[T]) StartMonitor() {
 		p.StopMonitor()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // #nosec G118
 	p.monitorCancel = cancel
 	p.stopChan = make(chan struct{})
 

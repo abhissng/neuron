@@ -59,16 +59,18 @@ func WrapServiceWithNATSHandler[T any](ctx *context.ServiceContext, handler Serv
 		}
 
 		res := responseResult.ToValue()
-		response = *res
+		if res != nil {
+			response = *res
+		}
 	}
 }
 
 // WrapServiceWithNatsProcessor wraps a handler logic with a natsInternal.NATSMsgProcessor
 func WrapServiceWithNatsProcessor[T any](ctx *context.ServiceContext, handler ServiceHandler[T]) natsInternal.NATSMsgProcessor {
-	defer helpers.RecoverException(recover())
+	defer func() { helpers.RecoverException(recover()) }()
 	wrappedHandler := WrapServiceWithNATSHandler(ctx, handler)
 	return natsInternal.NATSMsgProcessor(func(msg *nats.Msg) blame.Blame {
-		defer helpers.RecoverException(recover())
+		defer func() { helpers.RecoverException(recover()) }()
 		wrappedHandler(msg)
 		return nil
 	})

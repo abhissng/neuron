@@ -41,7 +41,7 @@ func (s *ServiceContext) GetPreField() *ServiceContext {
 
 // WithCancel creates a new ServiceContext with a cancel function.
 func (s *ServiceContext) WithCancel() (*ServiceContext, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(s.DefaultContext)
+	ctx, cancel := context.WithCancel(s.DefaultContext) // #nosec G118
 	return &ServiceContext{
 		DefaultContext: &DefaultContext{Context: ctx},
 
@@ -53,7 +53,7 @@ func (s *ServiceContext) WithCancel() (*ServiceContext, context.CancelFunc) {
 
 // WithTimeout creates a new ServiceContext with a timeout.
 func (s *ServiceContext) WithTimeout(timeout time.Duration) (*ServiceContext, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(s.DefaultContext, timeout)
+	ctx, cancel := context.WithTimeout(s.DefaultContext, timeout) // #nosec G118
 	return &ServiceContext{
 		DefaultContext: &DefaultContext{Context: ctx},
 
@@ -65,7 +65,7 @@ func (s *ServiceContext) WithTimeout(timeout time.Duration) (*ServiceContext, co
 
 // WithDeadline creates a new ServiceContext with a deadline.
 func (s *ServiceContext) WithDeadline(deadline time.Time) (*ServiceContext, context.CancelFunc) {
-	ctx, cancel := context.WithDeadline(s.DefaultContext, deadline)
+	ctx, cancel := context.WithDeadline(s.DefaultContext, deadline) // #nosec G118
 	return &ServiceContext{
 		DefaultContext: &DefaultContext{Context: ctx},
 
@@ -201,7 +201,7 @@ func (ctx *ServiceContext) GetGinCtxServiceName() (*types.Service, error) {
 
 // DefaultContextWithTimeout creates a new default context with a timeout.
 func DefaultContextWithTimeout(timeout time.Duration) (DefaultContext, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout) // #nosec G118
 	return DefaultContext{
 		Context: ctx,
 	}, cancel

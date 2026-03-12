@@ -658,6 +658,24 @@ func ErrorHeadeFromNatsMsg(msg *nats.Msg) string {
 	return msg.Header.Get(constant.ErrorHeader)
 }
 
+// GetNatsMsgHeader extracts a header value from a NATS message and attempts to cast it to the specified type.
+// It returns the value and a boolean indicating if the cast was successful.
+func GetNatsMsgHeader[T any](msg *nats.Msg, header string) (T, bool) {
+	if msg.Header.Get(header) != "" {
+		value, ok := types.CastTo[T](msg.Header.Get(header))
+		if ok {
+			return value, true
+		}
+	}
+	return ZeroValue[T](), false
+}
+
+// ZeroValue returns a zero value of the specified type.
+func ZeroValue[T any]() T {
+	var zero T
+	return zero
+}
+
 // GetIssuerFromConfig retrieves the JWT issuer from configuration.
 // It returns the issuer identifier used for token validation.
 func GetIssuerFromConfig() string {
@@ -1093,8 +1111,8 @@ func MapTo[T any](input any) (T, error) {
 	return out, nil
 }
 
-// RoundToIntamount rounds a float64 amount to the nearest integer.
+// RoundToIntAmount rounds a float64 amount to the nearest integer.
 // For example, 69900 translates to 699.
-func RoundToIntamount(amount float64) int64 {
+func RoundToIntAmount(amount float64) int64 {
 	return int64(math.Round(amount * 100))
 }

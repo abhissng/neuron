@@ -65,9 +65,9 @@ func fetchUUIDFromNatsHeader(msg *nats.Msg, key string) result.Result[uuid.UUID]
 	return result.NewSuccess(&parsed)
 }
 
-// GetEssentialHeadersValuesFromNatsMsg extracts essential header values from the NATS message using the same semantics as GetEssentialHeadersValues.
+// GetEssentialHeadersValuesFrom extracts essential header values from the NATS message using the same semantics as GetEssentialHeadersValues.
 // If logger is non-nil, errors are logged via logger.Error; otherwise helpers.Println with constant.ERROR is used.
-func GetEssentialHeadersValuesFromNatsMsg(msg *nats.Msg, logger *log.Log, options ...structures.EssentialHeadersOption) (*structures.EssentialHeaders, blame.Blame) {
+func GetEssentialHeadersValuesFrom(msg *nats.Msg, logger *log.Log, options ...structures.EssentialHeadersOption) (*structures.EssentialHeaders, blame.Blame) {
 	defer func() { helpers.RecoverException(recover()) }()
 	if logger == nil {
 		return nil, blame.GeneralKnownError(errors.New("logger is nil"))
@@ -171,7 +171,7 @@ func FetchPasetoBearerTokenFromNatsMsg(msg *nats.Msg) result.Result[string] {
 	}
 	token := helpers.ExtractBearerToken(authVal)
 	if helpers.IsEmpty(token) {
-		return result.NewFailure[string](blame.MalformedAuthToken(errors.New("authorization header is not present")))
+		return result.NewFailure[string](blame.MalformedAuthToken(errors.New("bearer token could not be extracted from the authorization header")))
 	}
 	return result.NewSuccess(&token)
 }

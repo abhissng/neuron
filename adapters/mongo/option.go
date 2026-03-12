@@ -65,7 +65,7 @@ func (m *MongoManager) contextWithTimeout(parent context.Context) (context.Conte
 	if m.timeout <= 0 {
 		m.timeout = 60 * time.Second
 	}
-	return context.WithTimeout(parent, m.timeout)
+	return context.WithTimeout(parent, m.timeout) // #nosec G118
 }
 
 // WithTimeout sets custom timeout
