@@ -81,6 +81,9 @@ func (ctx *ServiceContext) GetGinContextCorrelationID() types.CorrelationID {
 // SlogFields returns a slice of types.Field with request and correlation fields and additional fields.
 func (ctx *ServiceContext) SlogFields(withFields ...types.Field) []types.Field {
 	// Start with the request and correlation fields
+	if ctx.Context == nil {
+		return withFields
+	}
 	fields := make([]types.Field, 0, 2+len(withFields))
 	fields = append(fields, ctx.FetchGinRequestSlogFields()...)
 

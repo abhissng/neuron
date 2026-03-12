@@ -55,8 +55,10 @@ func findMatchingFiles(root string, patterns []string) ([]string, error) {
 		filename := filepath.Base(path)
 		for _, re := range compiledPatterns {
 			if re.MatchString(filename) {
-				// Add both the original path and the filename with spaces replaced by underscores
-				matches = append(matches, path, strings.ReplaceAll(filename, " ", "_"))
+				if strings.Contains(path, " ") {
+					filename = strings.ReplaceAll(filename, " ", "_")
+				}
+				matches = append(matches, filepath.Join(filepath.Dir(path), filename))
 				break
 			}
 		}
@@ -115,7 +117,7 @@ func readFilesConcurrently(paths []string) <-chan FileContent {
 }
 
 // GetFilesContent locates files under rootDir that match any of the provided patterns and returns a channel streaming their contents.
-// 
+//
 // It returns a receive-only channel that yields a FileContent for each matched file (the Path, Content, and any Error encountered while reading).
 // An error is returned if pattern compilation or file discovery fails, or if no files match the supplied patterns.
 func GetFilesContent(rootDir string, patterns []string) (<-chan FileContent, error) {

@@ -4,48 +4,37 @@ import "errors"
 
 // Subscription represents a Razorpay subscription entity.
 type Subscription struct {
-	ID                  string         `json:"id,omitempty"`
-	Entity              string         `json:"entity,omitempty"`
-	PlanID              string         `json:"plan_id,omitempty"`
-	CustomerID          string         `json:"customer_id,omitempty"`
-	Status              string         `json:"status,omitempty"`
-	CurrentStart        int64          `json:"current_start,omitempty"`
-	CurrentEnd          int64          `json:"current_end,omitempty"`
-	EndedAt             *int64         `json:"ended_at,omitempty"`
-	Quantity            int            `json:"quantity,omitempty"`
-	ChargeAt            int64          `json:"charge_at,omitempty"`
-	StartAt             int64          `json:"start_at,omitempty"`
-	EndAt               int64          `json:"end_at,omitempty"`
-	AuthAttempts        int            `json:"auth_attempts,omitempty"`
-	TotalCount          int            `json:"total_count,omitempty"`
-	PaidCount           int            `json:"paid_count,omitempty"`
-	CustomerNotify      bool           `json:"customer_notify,omitempty"`
-	CreatedAt           int64          `json:"created_at,omitempty"`
-	ExpireBy            int64          `json:"expire_by,omitempty"`
-	ShortURL            string         `json:"short_url,omitempty"`
-	ScheduleChangeAt    string         `json:"schedule_change_at,omitempty"`
-	HasScheduledChanges bool           `json:"has_scheduled_changes,omitempty"`
-	ChangeScheduledAt   *int64         `json:"change_scheduled_at,omitempty"`
-	RemainingCount      int            `json:"remaining_count,omitempty"`
-	OfferID             string         `json:"offer_id,omitempty"`
-	Source              string         `json:"source,omitempty"`
-	Notes               map[string]any `json:"notes,omitempty"`
+	ID                  string   `json:"id,omitempty"`
+	Entity              string   `json:"entity,omitempty"`
+	PlanID              string   `json:"plan_id,omitempty"`
+	CustomerID          string   `json:"customer_id,omitempty"`
+	Status              string   `json:"status,omitempty"`
+	CurrentStart        int64    `json:"current_start,omitempty"`
+	CurrentEnd          int64    `json:"current_end,omitempty"`
+	EndedAt             *int64   `json:"ended_at,omitempty"`
+	Quantity            int      `json:"quantity,omitempty"`
+	ChargeAt            int64    `json:"charge_at,omitempty"`
+	StartAt             int64    `json:"start_at,omitempty"`
+	EndAt               int64    `json:"end_at,omitempty"`
+	AuthAttempts        int      `json:"auth_attempts,omitempty"`
+	TotalCount          int      `json:"total_count,omitempty"`
+	PaidCount           int      `json:"paid_count,omitempty"`
+	CustomerNotify      bool     `json:"customer_notify,omitempty"`
+	CreatedAt           int64    `json:"created_at,omitempty"`
+	ExpireBy            int64    `json:"expire_by,omitempty"`
+	ShortURL            string   `json:"short_url,omitempty"`
+	ScheduleChangeAt    string   `json:"schedule_change_at,omitempty"`
+	HasScheduledChanges bool     `json:"has_scheduled_changes,omitempty"`
+	ChangeScheduledAt   *int64   `json:"change_scheduled_at,omitempty"`
+	RemainingCount      int      `json:"remaining_count,omitempty"`
+	OfferID             string   `json:"offer_id,omitempty"`
+	Source              string   `json:"source,omitempty"`
+	Notes               []string `json:"notes,omitempty"`
 }
 
 func NewSubscription() *Subscription {
 	return &Subscription{
-		Notes: make(map[string]any),
-	}
-}
-
-func (s *Subscription) AddNote(key string, value any) {
-	if s.Notes == nil {
-		s.Notes = make(map[string]any)
-	}
-	if value == nil {
-		delete(s.Notes, key)
-	} else {
-		s.Notes[key] = value
+		Notes: make([]string, 0),
 	}
 }
 
@@ -88,8 +77,8 @@ func (s *SubscriptionRequest) AddAddOn(addOn *PlanItem) {
 type Plan struct {
 	ID        string         `json:"id,omitempty"`
 	Entity    string         `json:"entity,omitempty"`
-	Interval  int            `json:"interval,omitempty"`
-	Period    string         `json:"period,omitempty"`
+	Interval  int            `json:"interval,omitempty" valid:"required,range(1|1000000)"`
+	Period    string         `json:"period,omitempty" valid:"required,in(daily|weekly|monthly|quarterly|yearly)"`
 	Item      *PlanItem      `json:"item,omitempty"`
 	CreatedAt int64          `json:"created_at,omitempty"`
 	Notes     map[string]any `json:"notes,omitempty"`
@@ -192,17 +181,59 @@ func (p *PlanRequest) AddNote(key string, value any) {
 	}
 }
 
+// Order represents a Razorpay order entity.
+type Order struct {
+	ID             string         `json:"id,omitempty"`
+	Entity         string         `json:"entity,omitempty"`
+	Amount         int64          `json:"amount,omitempty"`
+	AmountPaid     int64          `json:"amount_paid,omitempty"`
+	AmountDue      int64          `json:"amount_due,omitempty"`
+	Currency       string         `json:"currency,omitempty"`
+	Receipt        string         `json:"receipt,omitempty"`
+	Status         string         `json:"status,omitempty"`
+	Attempts       int            `json:"attempts,omitempty"`
+	Notes          map[string]any `json:"notes,omitempty"`
+	CreatedAt      int64          `json:"created_at,omitempty"`
+	PartialPayment bool           `json:"partial_payment,omitempty"`
+}
+
+func NewOrder() *Order {
+	return &Order{
+		Notes: make(map[string]any),
+	}
+}
+
+// OrderRequest is the payload for creating an order.
+type OrderRequest struct {
+	Amount         int64          `json:"amount"`
+	Currency       string         `json:"currency"`
+	Receipt        string         `json:"receipt,omitempty"`
+	Notes          map[string]any `json:"notes,omitempty"`
+	PartialPayment bool           `json:"partial_payment,omitempty"`
+}
+
+func NewOrderRequest() *OrderRequest {
+	return &OrderRequest{
+		Currency: "INR",
+		Notes:    make(map[string]any),
+	}
+}
+
 // Refund represents a Razorpay refund entity.
 type Refund struct {
-	ID        string         `json:"id"`
-	Entity    string         `json:"entity"`
-	PaymentID string         `json:"payment_id"`
-	Amount    int64          `json:"amount"`
-	Currency  string         `json:"currency"`
-	Status    string         `json:"status"`
-	Speed     string         `json:"speed"`
-	CreatedAt int64          `json:"created_at"`
-	Notes     map[string]any `json:"notes,omitempty"`
+	ID             string         `json:"id"`
+	Entity         string         `json:"entity"`
+	PaymentID      string         `json:"payment_id"`
+	Amount         int64          `json:"amount"`
+	Currency       string         `json:"currency"`
+	Status         string         `json:"status"`
+	Speed          string         `json:"speed"`
+	SpeedRequested string         `json:"speed_requested,omitempty"`
+	SpeedProcessed string         `json:"speed_processed,omitempty"`
+	Receipt        string         `json:"receipt,omitempty"`
+	BatchID        string         `json:"batch_id,omitempty"`
+	CreatedAt      int64          `json:"created_at"`
+	Notes          map[string]any `json:"notes,omitempty"`
 }
 
 func NewRefund() *Refund {
@@ -286,18 +317,25 @@ func NewInvoiceRequest() *InvoiceRequest {
 
 // Payment represents a Razorpay payment entity.
 type Payment struct {
-	ID        string         `json:"id"`
-	Entity    string         `json:"entity"`
-	OrderID   string         `json:"order_id"`
-	Method    string         `json:"method"`
-	Amount    int64          `json:"amount"`
-	Currency  string         `json:"currency"`
-	Status    string         `json:"status"`
-	Captured  bool           `json:"captured"`
-	Email     string         `json:"email,omitempty"`
-	Contact   string         `json:"contact,omitempty"`
-	CreatedAt int64          `json:"created_at"`
-	Notes     map[string]any `json:"notes,omitempty"`
+	ID               string         `json:"id"`
+	Entity           string         `json:"entity"`
+	OrderID          string         `json:"order_id"`
+	Method           string         `json:"method"`
+	Amount           int64          `json:"amount"`
+	Currency         string         `json:"currency"`
+	Status           string         `json:"status"`
+	Captured         bool           `json:"captured"`
+	AmountRefunded   int64          `json:"amount_refunded,omitempty"`
+	RefundStatus     string         `json:"refund_status,omitempty"`
+	Description      string         `json:"description,omitempty"`
+	Email            string         `json:"email,omitempty"`
+	Contact          string         `json:"contact,omitempty"`
+	Fee              int64          `json:"fee,omitempty"`
+	Tax              int64          `json:"tax,omitempty"`
+	ErrorCode        string         `json:"error_code,omitempty"`
+	ErrorDescription string         `json:"error_description,omitempty"`
+	CreatedAt        int64          `json:"created_at"`
+	Notes            map[string]any `json:"notes,omitempty"`
 }
 
 func NewPayment() *Payment {

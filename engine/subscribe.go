@@ -1,15 +1,31 @@
 package engine
 
 import (
+	"strings"
+
 	natsInternal "github.com/abhissng/neuron/adapters/events/nats"
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 )
 
+// consumerNameForSubject derives a unique, NATS-safe consumer name for a given subject.
+// It replaces dots and wildcards with underscores and prefixes with the base durable name.
+// This ensures each subject gets its own durable consumer on the server, preventing the
+// "subject does not match consumer" error that occurs when multiple subjects share one name.
+func consumerNameForSubject(base, subject string) string {
+	r := strings.NewReplacer(".", "_", ">", "ALL", "*", "ANY")
+	safe := r.Replace(subject)
+	if base != "" {
+		return base + "_" + safe
+	}
+	return safe
+}
+
 type subscriberOpts struct {
-	durableName string
-	streamName  string
+	durableName   string
+	streamName    string
+	consumerName  string // if set, used as-is for JetStream consumer (no subject suffix)
 }
 
 // SubscriberOption applies optional overrides for a single subscription (durable name, stream name).
@@ -18,6 +34,12 @@ type SubscriberOption func(o *subscriberOpts)
 // WithSubscriberDurable sets the durable consumer name for this subscription.
 func WithSubscriberDurable(name string) SubscriberOption {
 	return func(o *subscriberOpts) { o.durableName = name }
+}
+
+// WithExactConsumerName sets the exact JetStream consumer name for this subscription (no subject suffix).
+// Use this when you need to match an existing consumer name (e.g. one created by a single-subscription path).
+func WithExactConsumerName(name string) SubscriberOption {
+	return func(o *subscriberOpts) { o.consumerName = name }
 }
 
 // WithSubscriberStream sets the stream name for this subscription.
@@ -91,10 +113,20 @@ func SubscribeWithMiddleware(
 		if stream == "" {
 			stream = subs.streamName
 		}
+		// Each subject must have its own uniquely named consumer, unless an exact name is set.
+		// Reusing a single durable name across subjects causes NATS to reject subscriptions with
+		// "subject does not match consumer" because the server-side consumer already
+		// has a different FilterSubject from the first registration.
+		var subjectDurable string
+		if opts.consumerName != "" {
+			subjectDurable = opts.consumerName
+		} else {
+			subjectDurable = consumerNameForSubject(durable, e.Subject)
+		}
 		_, cause := nm.SubscribeWithMiddleware(
 			e.Subject,
 			e.Processor,
-			natsInternal.BuildSubOpts(natsInternal.WithDurable(durable), natsInternal.WithBindStream(stream)),
+			natsInternal.BuildSubOpts(natsInternal.WithDurable(subjectDurable), natsInternal.WithBindStream(stream)),
 			append([]natsInternal.MiddlewareFunc{natsInternal.LogMiddleware(constant.Subscribe, logger)}, middlewares...)...,
 		)
 		if cause != nil {

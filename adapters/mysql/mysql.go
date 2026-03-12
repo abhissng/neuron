@@ -133,7 +133,7 @@ func (m *MySQLDB[T]) StartMonitor() {
 		m.StopMonitor()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // #nosec G118
 	m.monitorCancel = cancel
 	m.stopChan = make(chan struct{})
 

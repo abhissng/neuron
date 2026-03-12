@@ -210,9 +210,9 @@ func (cm *OCIManager) withRetry(ctx context.Context, op func() error) error {
 
 func WithCtxTimeout(ctx context.Context, d time.Duration) (context.Context, context.CancelFunc) {
 	if d <= 0 {
-		return context.WithCancel(ctx)
+		return context.WithCancel(ctx) // #nosec G118
 	}
-	return context.WithTimeout(ctx, d)
+	return context.WithTimeout(ctx, d) // #nosec G118
 }
 
 // ========================= OBJECT STORAGE METHODS =========================

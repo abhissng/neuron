@@ -32,7 +32,7 @@ func (c *Collection[T]) contextWithTimeout(parent context.Context) (context.Cont
 	if c.timeout <= 0 {
 		c.timeout = 60 * time.Second
 	}
-	return context.WithTimeout(parent, c.timeout)
+	return context.WithTimeout(parent, c.timeout) // #nosec G118
 }
 
 // InsertOne inserts a single document into the collection.

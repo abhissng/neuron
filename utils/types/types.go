@@ -27,12 +27,30 @@ func (r RequestID) String() string {
 	return string(r)
 }
 
+// UUID returns the underlying uuid.UUID value.
+func (r RequestID) UUID() (uuid.UUID, error) {
+	requestID, err := uuid.Parse(r.String())
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return requestID, nil
+}
+
 // CorrelationID represents a correlation ID.
 type CorrelationID string
 
 // String returns the string representat	ion of the CorrelationID.
 func (c CorrelationID) String() string {
 	return string(c)
+}
+
+// UUID returns the underlying uuid.UUID value.
+func (c CorrelationID) UUID() (uuid.UUID, error) {
+	correlationID, err := uuid.Parse(c.String())
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return correlationID, nil
 }
 
 // ErrorCode represents an error code.

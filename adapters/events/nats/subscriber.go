@@ -3,6 +3,7 @@ package nats
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/abhissng/neuron/adapters/log"
 	"github.com/abhissng/neuron/blame"
@@ -10,6 +11,43 @@ import (
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/nats-io/nats.go"
 )
+
+// resolveFilterConflict handles the "filtered consumer not unique on workqueue stream" error.
+// It locates the existing consumer whose FilterSubject matches the target subject and deletes it
+// only if it has no active push subscriber bound (PushBound == false), meaning no other running
+// instance is currently consuming from it. If the consumer is live, deletion is skipped and an
+// error is returned so the caller surfaces the conflict rather than silently disrupting another
+// instance's in-flight message processing.
+func (w *NATSManager) resolveFilterConflict(subject string) error {
+	streamName, err := w.js.StreamNameBySubject(subject)
+	if err != nil {
+		return fmt.Errorf("could not find stream for subject %q: %w", subject, err)
+	}
+
+	for info := range w.js.Consumers(streamName) {
+		if info.Config.FilterSubject != subject {
+			continue
+		}
+		if info.PushBound {
+			// Another live instance is actively consuming this subject.
+			// Deleting would disrupt its in-flight messages — refuse and surface the conflict.
+			return fmt.Errorf(
+				"consumer %q on stream %q is actively bound (PushBound=true); "+
+					"cannot safely remove it — another instance may be running",
+				info.Name, streamName,
+			)
+		}
+		w.logger.Warn("Removing stale unbound consumer blocking subject re-subscription",
+			log.Any("consumer", info.Name),
+			log.Any("stream", streamName),
+			log.Any("subject", subject),
+		)
+		if delErr := w.js.DeleteConsumer(streamName, info.Name); delErr != nil {
+			return fmt.Errorf("could not delete conflicting consumer %q: %w", info.Name, delErr)
+		}
+	}
+	return nil
+}
 
 func (w *NATSManager) SubscribeBindConsumer(subject, stream, consumer string, handler nats.MsgHandler, opts ...nats.SubOpt) (*nats.Subscription, blame.Blame) {
 	defer helpers.RecoverException(recover())
@@ -131,6 +169,15 @@ func (w *NATSManager) subscribeInternal(subject string, handler nats.MsgHandler,
 	if w.js != nil {
 		opts = append(opts, nats.ManualAck())
 		sub, err = w.js.Subscribe(subject, finalHandler, opts...)
+		if err != nil && strings.Contains(err.Error(), "filtered consumer not unique on workqueue stream") {
+			w.logger.Warn("Detected stale consumer conflict; attempting automatic cleanup before retrying",
+				log.Any("subject", subject))
+			if resolveErr := w.resolveFilterConflict(subject); resolveErr != nil {
+				w.logger.Error(constant.SubjectSubscribeFailed, log.Any("nats.Subscribe.resolveFilterConflict", resolveErr))
+			} else {
+				sub, err = w.js.Subscribe(subject, finalHandler, opts...)
+			}
+		}
 	} else {
 		sub, err = w.nc.Subscribe(subject, finalHandler)
 	}
