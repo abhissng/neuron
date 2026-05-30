@@ -284,3 +284,14 @@ func FutureUnixDays(days int) (int64, error) {
 func ParseUnixEpochSeconds(unixSeconds int64) *TimeWrapper {
 	return &TimeWrapper{time.Unix(unixSeconds, 0).UTC()}
 }
+
+// DateUTC returns the date portion of the time in UTC.
+func DateUTC(t time.Time) time.Time {
+	t = t.UTC()
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+// TimeUTC returns the time portion of the time in UTC.
+func TimeUTC(t time.Time) time.Time {
+	return t.UTC()
+}

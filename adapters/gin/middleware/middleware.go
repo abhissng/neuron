@@ -18,6 +18,7 @@ import (
 	"github.com/abhissng/neuron/utils/random"
 	"github.com/abhissng/neuron/utils/structures"
 	"github.com/abhissng/neuron/utils/structures/claims"
+	"github.com/abhissng/neuron/utils/types"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -275,7 +276,7 @@ func handleExcludedOptions(ctx *context.ServiceContext, excluded *structures.Exc
 			return blame.MissingServiceName(err)
 		}
 
-		if helpers.IsFoundInSlice(serviceName.String(), excluded.ExcludedServices()) {
+		if helpers.IsFoundInSlice(types.CreateRef(serviceName.String()), excluded.ExcludedServices()) {
 			return nil
 		}
 		return blame.NewBasicError("service not allowed")
@@ -287,7 +288,7 @@ func handleExcludedOptions(ctx *context.ServiceContext, excluded *structures.Exc
 			return blame.MissingRecordsName(err)
 		}
 
-		if helpers.IsFoundInSlice(*recordsName, excluded.ExcludedRecords()) {
+		if helpers.IsFoundInSlice(recordsName, excluded.ExcludedRecords()) {
 			return nil
 		}
 		return blame.NewBasicError("records not allowed")

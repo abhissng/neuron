@@ -19,7 +19,8 @@ type PasetoOption func(*PasetoManager)
 // **Constructor Using Option Pattern**
 func NewPasetoManager(opts ...PasetoOption) *PasetoManager {
 	pw := &PasetoManager{
-		basicTokenExpiry: time.Minute * 5,
+		basicTokenExpiry:    time.Minute * 5,
+		internalTokenExpiry: time.Hour * 24 * 30,
 	}
 
 	for _, opt := range opts {
@@ -87,6 +88,18 @@ func WithBasicTokenExpiry(basicToken time.Duration) PasetoOption {
 	return func(p *PasetoManager) {
 		p.basicTokenExpiry = basicToken
 	}
+}
+
+// WithInternalTokenExpiry sets the internal token expiry for the PASETO wrapper.
+func WithInternalTokenExpiry(internalToken time.Duration) PasetoOption {
+	return func(p *PasetoManager) {
+		p.internalTokenExpiry = internalToken
+	}
+}
+
+// GetInternalTokenExpiry returns the internal token expiry for the PASETO wrapper.
+func (p *PasetoManager) GetInternalTokenExpiry() time.Duration {
+	return p.internalTokenExpiry
 }
 
 // WithPasetoMiddlewareOption sets the middleware options for the PASETO wrapper.

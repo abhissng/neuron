@@ -1,9 +1,15 @@
 package context
 
 import (
+	"fmt"
+	"net/http"
+	"runtime/debug"
+
 	natsInternal "github.com/abhissng/neuron/adapters/events/nats"
 	"github.com/abhissng/neuron/adapters/log"
+	"github.com/abhissng/neuron/blame"
 	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/types"
 	"github.com/gin-gonic/gin"
 	"github.com/nats-io/nats.go"
@@ -208,4 +214,16 @@ func (ctx *ServiceContext) GetCookieSessionID() string {
 		return sessionID
 	}
 	return ""
+}
+
+// RecoverException handles panic recovery for Gin handlers and responds with 500 JSON.
+func (ctx *ServiceContext) RecoverException(err any) {
+	ctx.SlogError("Exception Occured")
+	stackTrace := debug.Stack()
+	helpers.Println(constant.ERROR, "Stack Trace: ", string(stackTrace))
+	serverBlame := blame.InternalServerError(fmt.Errorf("error %+v", err))
+	ctx.SlogError("Server Blame ", log.WithField("message", serverBlame.FetchErrorResponse()))
+	ctx.JSON(http.StatusInternalServerError, gin.H{
+		"Message": "An unexpected error occurred. Please contact the administrator.",
+	})
 }

@@ -4,37 +4,37 @@ import "errors"
 
 // Subscription represents a Razorpay subscription entity.
 type Subscription struct {
-	ID                  string   `json:"id,omitempty"`
-	Entity              string   `json:"entity,omitempty"`
-	PlanID              string   `json:"plan_id,omitempty"`
-	CustomerID          string   `json:"customer_id,omitempty"`
-	Status              string   `json:"status,omitempty"`
-	CurrentStart        int64    `json:"current_start,omitempty"`
-	CurrentEnd          int64    `json:"current_end,omitempty"`
-	EndedAt             *int64   `json:"ended_at,omitempty"`
-	Quantity            int      `json:"quantity,omitempty"`
-	ChargeAt            int64    `json:"charge_at,omitempty"`
-	StartAt             int64    `json:"start_at,omitempty"`
-	EndAt               int64    `json:"end_at,omitempty"`
-	AuthAttempts        int      `json:"auth_attempts,omitempty"`
-	TotalCount          int      `json:"total_count,omitempty"`
-	PaidCount           int      `json:"paid_count,omitempty"`
-	CustomerNotify      bool     `json:"customer_notify,omitempty"`
-	CreatedAt           int64    `json:"created_at,omitempty"`
-	ExpireBy            int64    `json:"expire_by,omitempty"`
-	ShortURL            string   `json:"short_url,omitempty"`
-	ScheduleChangeAt    string   `json:"schedule_change_at,omitempty"`
-	HasScheduledChanges bool     `json:"has_scheduled_changes,omitempty"`
-	ChangeScheduledAt   *int64   `json:"change_scheduled_at,omitempty"`
-	RemainingCount      int      `json:"remaining_count,omitempty"`
-	OfferID             string   `json:"offer_id,omitempty"`
-	Source              string   `json:"source,omitempty"`
-	Notes               []string `json:"notes,omitempty"`
+	ID                  string         `json:"id,omitempty"`
+	Entity              string         `json:"entity,omitempty"`
+	PlanID              string         `json:"plan_id,omitempty"`
+	CustomerID          string         `json:"customer_id,omitempty"`
+	Status              string         `json:"status,omitempty"`
+	CurrentStart        int64          `json:"current_start,omitempty"`
+	CurrentEnd          int64          `json:"current_end,omitempty"`
+	EndedAt             *int64         `json:"ended_at,omitempty"`
+	Quantity            int            `json:"quantity,omitempty"`
+	ChargeAt            int64          `json:"charge_at,omitempty"`
+	StartAt             int64          `json:"start_at,omitempty"`
+	EndAt               int64          `json:"end_at,omitempty"`
+	AuthAttempts        int            `json:"auth_attempts,omitempty"`
+	TotalCount          int            `json:"total_count,omitempty"`
+	PaidCount           int            `json:"paid_count,omitempty"`
+	CustomerNotify      bool           `json:"customer_notify,omitempty"`
+	CreatedAt           int64          `json:"created_at,omitempty"`
+	ExpireBy            int64          `json:"expire_by,omitempty"`
+	ShortURL            string         `json:"short_url,omitempty"`
+	ScheduleChangeAt    string         `json:"schedule_change_at,omitempty"`
+	HasScheduledChanges bool           `json:"has_scheduled_changes,omitempty"`
+	ChangeScheduledAt   *int64         `json:"change_scheduled_at,omitempty"`
+	RemainingCount      int            `json:"remaining_count,omitempty"`
+	OfferID             string         `json:"offer_id,omitempty"`
+	Source              string         `json:"source,omitempty"`
+	Notes               map[string]any `json:"notes,omitempty"`
 }
 
 func NewSubscription() *Subscription {
 	return &Subscription{
-		Notes: make([]string, 0),
+		Notes: make(map[string]any),
 	}
 }
 

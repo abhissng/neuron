@@ -167,7 +167,16 @@ func (l LanguageTag) String() string {
 
 // CreateRef generates a pointer for any given data.
 func CreateRef[T any](value T) *T {
-	return &value
+	return new(value)
+}
+
+// DeRef generates a value from a pointer.
+func DeRef[T any](value *T) T {
+	if value == nil {
+		var zero T
+		return zero
+	}
+	return *value
 }
 
 // ConvertUUIDToBytesRef converts a UUID pointer to a byte slice pointer.

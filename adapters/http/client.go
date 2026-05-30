@@ -144,7 +144,7 @@ func DoRequest[T any](payload any, config *HttpClientManager) result.Result[T] {
 	// Execute request
 	responseBody, err := client.Do(snap, bodyBytes, contentType)
 	if err != nil {
-		snap.Log.Error(constant.TransactionMessage, log.Any("client.Do", err))
+		snap.Log.Error(constant.TransactionFailed, log.Any("client.Do", err))
 		return result.NewFailure[T](blame.CreateHTTPClientFailed(err))
 	}
 	snap.Log.Debug(constant.TransactionSuccess, log.String("responseBody", string(responseBody)))

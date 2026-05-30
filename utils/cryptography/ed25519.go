@@ -125,7 +125,7 @@ func LoadEd25519PublicKey(filePath string, content []byte) (ed25519.PublicKey, e
 // GenerateAndSaveEd25519KeyPair generates a new Ed25519 key pair and saves
 // the PEM-encoded keys to the specified files.
 func GenerateAndSaveEd25519KeyPair(publicKeyPath, privateKeyPath string) error {
-	privateKey, publicKey, err := GenerateEd25519KeyPair()
+	publicKey, privateKey, err := GenerateEd25519KeyPair()
 	if err != nil {
 		return fmt.Errorf("failed to generate Ed25519 key pair: %w", err)
 	}

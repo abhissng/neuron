@@ -20,6 +20,7 @@ type PasetoManager struct {
 	basicTokenExpiry       time.Duration
 	accessTokenExpiry      time.Duration
 	refreshTokenExpiry     time.Duration
+	internalTokenExpiry    time.Duration
 	pasetoMiddlewareOption *PasetoMiddlewareOptions
 }
 
@@ -38,6 +39,11 @@ func (p *PasetoManager) FetchRefreshToken(options ...claims.StandardClaimsOption
 // FetchBasicToken generates a new basic token
 func (p *PasetoManager) FetchBasicToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
 	return p.createToken(p.issuer, p.basicTokenExpiry, options...)
+}
+
+// FetchInternalToken generates a new internal token
+func (p *PasetoManager) FetchInternalToken(options ...claims.StandardClaimsOption) result.Result[TokenDetails] {
+	return p.createToken(p.issuer, p.internalTokenExpiry, options...)
 }
 
 // createToken generates a new token with the given issuer, expiry, and options
