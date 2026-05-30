@@ -15,6 +15,7 @@ import (
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/types"
+	"github.com/vmihailenco/msgpack/v5"
 	"gopkg.in/yaml.v3"
 )
 
@@ -49,6 +50,12 @@ func Encode[T any](data T, codecType types.CodecType) ([]byte, error) {
 			}
 		}()
 
+	case MessagePack:
+		var encoded []byte
+		encoded, err = msgpack.Marshal(data)
+		if err == nil {
+			return encoded, nil
+		}
 	default:
 		return nil, errors.New("unsupported encoding format")
 	}
@@ -108,6 +115,8 @@ func Decode[T any](data []byte, codecType types.CodecType) (T, error) {
 			}
 		}
 
+	case MessagePack:
+		err = msgpack.Unmarshal(data, &result)
 	default:
 		err = errors.New("unsupported decoding format")
 	}

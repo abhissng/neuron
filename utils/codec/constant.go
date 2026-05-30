@@ -31,4 +31,6 @@ const (
 	Brotli types.CodecType = "brotli"
 	LZ4    types.CodecType = "lz4"
 	Snappy types.CodecType = "snappy"
+
+	NONE types.CodecType = ""
 )

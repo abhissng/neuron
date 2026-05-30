@@ -16,6 +16,7 @@ import (
 	"reflect"
 	"runtime"
 	"runtime/debug"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -118,7 +119,7 @@ func IsEmpty[T any](value T) bool {
 	}
 
 	// Handle pointer and interface types first
-	if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+	if v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
 		if v.IsNil() {
 			return true
 		}
@@ -337,29 +338,42 @@ func GetHealthyMessageFor(dependency string) string {
 	return dependency + " " + constant.HealthyStatusMessage
 }
 
-// IsFoundInSlice checks if the given key is found in the slice
-// IsFoundInSlice checks if a key exists in a slice of strings or a slice of string pointers, ignoring case.
-func IsFoundInSlice[T []string | []*string](key string, slice T) bool {
-	// We use a type switch on the generic slice `T`.
-	// The `any` cast is required to enable the type switch.
-	switch s := any(slice).(type) {
-	case []string:
-		// The slice is of type []string.
-		for _, v := range s {
-			if strings.EqualFold(v, key) {
-				return true
-			}
+// IsFoundInSlice reports whether key appears in slice using type-aware equality.
+//
+// Comparison rules:
+//   - string elements: match is case-insensitive (strings.EqualFold). key must also be string.
+//   - *string elements: case-insensitive on dereferenced values; both pointers must be non-nil.
+//   - any other element type T: uses == via any(v) == any(key). For structs and composite types
+//     this is true only when comparable and bitwise-equal; for pointers, same pointer identity
+//     or both nil as applicable. Types that are not comparable may panic at runtime when ==
+//     is evaluated (same rules as the language spec for generic constraints and interface equality).
+//
+// An empty slice always returns false. The slice and key must share the same type parameter T;
+// mixed concrete types in one slice are not supported beyond the string / *string special cases above.
+func IsFoundInSlice[T any](key T, slice []T) bool {
+	return slices.ContainsFunc(slice, func(v T) bool {
+
+		switch val := any(v).(type) {
+
+		case string:
+			// Case-insensitive membership for plain strings.
+			k, ok := any(key).(string)
+			return ok && strings.EqualFold(val, k)
+
+		case *string:
+			// Case-insensitive on pointed-to strings; avoid dereferencing nil.
+			k, ok := any(key).(*string)
+
+			return ok &&
+				val != nil &&
+				k != nil &&
+				strings.EqualFold(*val, *k)
+
+		default:
+			// Fallback: direct == for all other T (numbers, pointers to non-string, structs, etc.).
+			return any(v) == any(key)
 		}
-	case []*string:
-		// The slice is of type []*string.
-		for _, v := range s {
-			// We must check for nil pointers and then dereference the pointer `*v` for the comparison.
-			if v != nil && strings.EqualFold(*v, key) {
-				return true
-			}
-		}
-	}
-	return false
+	})
 }
 
 // IsSuccess returns true if the given status is equal to constant.Success or constant.Completed

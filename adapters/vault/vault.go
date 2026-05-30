@@ -31,6 +31,7 @@ type Vault struct {
 	// Clients
 	infisicalClient infisical.InfisicalClientInterface
 	awsClient       *neuron_aws.AWSManager
+	// TODO add HASHICORP VAULT CLIENT
 
 	// Configuration
 	env           string
@@ -70,7 +71,7 @@ func NewVault(opts ...Option) *Vault {
 	if v.defaultSource == "infisical" {
 		v.infisicalClient = infisical.NewInfisicalClient(context.Background(), infisical.Config{
 			SiteUrl:          v.siteURL, // Optional, default is https://app.infisical.com
-			AutoTokenRefresh: true,      // Whether or not to let the SDK handle the access token lifecycle. Defaults to true if not specified.
+			AutoTokenRefresh: new(true), // Whether or not to let the SDK handle the access token lifecycle. Defaults to true if not specified.
 		})
 		// In case of blank client id and client secret
 		// These values needs to be passed in environment variables with below key
@@ -133,7 +134,7 @@ func (v *Vault) retrieveInfisicalSecrets() ([]*models.Secret, error) {
 	if v.infisicalClient == nil {
 		return nil, errors.New("infisical client not initialized")
 	}
-	secrets, err := v.infisicalClient.Secrets().List(infisical.ListSecretsOptions{
+	secrets, err := v.infisicalClient.Secrets().ListSecrets(infisical.ListSecretsOptions{
 		ProjectID:          v.projectID,
 		Environment:        v.env,
 		SecretPath:         v.path,
@@ -145,8 +146,8 @@ func (v *Vault) retrieveInfisicalSecrets() ([]*models.Secret, error) {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	}
 	var secretList []*models.Secret
-	for i := range secrets {
-		secretList = append(secretList, &secrets[i])
+	for i := range secrets.Secrets {
+		secretList = append(secretList, &secrets.Secrets[i])
 	}
 	return secretList, nil
 }

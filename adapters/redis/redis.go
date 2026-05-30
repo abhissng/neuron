@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/abhissng/neuron/utils/codec"
+	"github.com/abhissng/neuron/utils/types"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -202,6 +204,64 @@ func (rw *RedisManager) GetJSON(ctx context.Context, key string, dest interface{
 		return fmt.Errorf("failed to unmarshal JSON for key %s: %w", key, err)
 	}
 	return nil
+}
+
+// CacheArgs is a struct that holds the arguments for the cache operations.
+type CacheArgs[T any] struct {
+	Key    string
+	Codec  types.CodecType
+	Value  T
+	TTL    time.Duration
+	Delete bool
+}
+
+// NewCacheArgs creates a new CacheArgs with the given key, value, and TTL.
+func NewCacheArgs[T any](key string, value T, ttl time.Duration) *CacheArgs[T] {
+	return &CacheArgs[T]{
+		Key:    key,
+		Value:  value,
+		TTL:    ttl,
+		Delete: false,
+		Codec:  codec.NONE,
+	}
+}
+
+// WithCodec sets the codec for the cache operations.
+func (args *CacheArgs[T]) WithCodec(codec types.CodecType) *CacheArgs[T] {
+	args.Codec = codec
+	return args
+}
+
+// SetCache sets the value for the given key using the codec.
+func SetCache[T any](ctx context.Context, rw *RedisManager, args *CacheArgs[T]) error {
+	c := args.Codec
+	if c == codec.NONE {
+		c = codec.JSON
+	}
+
+	data, err := codec.Encode(args.Value, c)
+	if err != nil {
+		return err
+	}
+
+	return rw.Set(ctx, args.Key, data, args.TTL)
+}
+
+// GetCache gets the value for the given key using the codec.
+func GetCache[T any](ctx context.Context, rw *RedisManager, args *CacheArgs[T]) (T, error) {
+	var zero T
+
+	val, err := rw.Get(ctx, args.Key)
+	if err != nil {
+		return zero, err
+	}
+
+	c := args.Codec
+	if c == codec.NONE {
+		c = codec.JSON
+	}
+
+	return codec.Decode[T]([]byte(val), c)
 }
 
 // === Cache Specific Operations (using DefaultTTL) ===
