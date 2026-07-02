@@ -77,6 +77,10 @@ type CloudManager interface {
 
 	// GetMetadata returns metadata about the cloud manager configuration.
 	GetMetadata() Metadata
+
+	// GetManagerByProvider returns the underlying manager instance for the specified provider.
+	// It returns an error if the manager is not initialized or if the provider is unsupported.
+	GetManagerByProvider(provider Provider) (any, error)
 }
 
 // ObjectInfo represents metadata about a cloud storage object.
@@ -218,4 +222,23 @@ func (cm *cloudManager) GetMetadata() Metadata {
 	}
 
 	return meta
+}
+
+// GetManagerByProvider returns the underlying manager instance for the specified provider.
+// It returns an error if the manager is not initialized or if the provider is unsupported.
+func (cm *cloudManager) GetManagerByProvider(provider Provider) (any, error) {
+	switch provider {
+	case ProviderAWS:
+		if cm.awsManager != nil {
+			return cm.awsManager, nil
+		}
+		return nil, ErrNotInitialized
+	case ProviderOCI:
+		if cm.ociManager != nil {
+			return cm.ociManager, nil
+		}
+		return nil, ErrNotInitialized
+	default:
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedProvider, provider)
+	}
 }
