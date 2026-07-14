@@ -84,14 +84,14 @@ func SetSessionCookie(c *gin.Context, sessionID, env, domainOverride string, ttl
 		sameSite = http.SameSiteNoneMode
 	}
 
-	cookie := &http.Cookie{ //nosec G124
+	cookie := &http.Cookie{ // #nosec G124
 		Name:     constant.SessionID,
 		Value:    sessionID,
 		Path:     "/",
 		Domain:   domain, // Now empty if origin is localhost
 		Expires:  timeutil.Now().Add(ttl),
 		MaxAge:   int(ttl.Seconds()),
-		Secure:   secure, // Must be TRUE for SameSite=None
+		Secure:   secure, // Must be TRUE for SameSite=None (localhost) #nosec G124
 		HttpOnly: true,
 		SameSite: sameSite,
 	}
