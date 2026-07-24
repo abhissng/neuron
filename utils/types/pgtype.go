@@ -508,3 +508,12 @@ func ToJSONBAny(v any) []byte {
 	}
 	return b
 }
+
+// ToPgTypeUUIDSlice converts a slice of uuid.UUID to a slice of pgtype.UUID
+func ToPgTypeUUIDSlice(ids []uuid.UUID) []pgtype.UUID {
+  pgUUIDs := make([]pgtype.UUID, len(ids))
+  for i, id := range ids {
+    pgUUIDs[i] = ToPgTypeUUID(id)
+  }
+  return pgUUIDs
+}

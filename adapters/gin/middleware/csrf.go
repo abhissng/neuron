@@ -114,14 +114,14 @@ func (m *CSRFManager) ValidateToken(sessionID, tokenValue string) bool {
 
 // SetCSRFCookie sets the CSRF token cookie
 func (m *CSRFManager) SetCSRFCookie(w http.ResponseWriter, token *CSRFToken) {
-	http.SetCookie(w, &http.Cookie{ //nosec G124
+	http.SetCookie(w, &http.Cookie{ // #nosec G124
 		Name:     m.cookieName,
 		Value:    token.Value,
 		Path:     m.path,
-		Secure:   m.secureCookie, //nosec G124
+		Secure:   m.secureCookie, // #nosec G124
 		HttpOnly: true,
 		SameSite: m.sameSite,
-		Expires:  token.ExpiresAt, //nosec G124
+		Expires:  token.ExpiresAt, // #nosec G124
 	})
 }
 
@@ -137,14 +137,14 @@ func (m *CSRFManager) GetOrCreateSessionID(r *http.Request, w http.ResponseWrite
 	sessionID := fmt.Sprintf("%d", time.Now().UnixNano())
 
 	// Set the session cookie
-	http.SetCookie(w, &http.Cookie{ //nosec G124
+	http.SetCookie(w, &http.Cookie{ // #nosec G124
 		Name:     constant.SessionID,
 		Value:    sessionID,
 		Path:     "/",
-		Secure:   m.secureCookie, //nosec G124
+		Secure:   m.secureCookie, // #nosec G124
 		HttpOnly: true,
 		SameSite: m.sameSite,
-		Expires:  time.Now().Add(m.tokenLifetime), //nosec G124
+		Expires:  time.Now().Add(m.tokenLifetime), // #nosec G124
 	})
 
 	return sessionID, nil
