@@ -520,6 +520,20 @@
     "Description": "An error occurred. {{.Error}}",
     "Component": "service",
     "ResponseType": "InternalServerError" 
+  },
+  {
+    "Code": "error-unauthorized-access",
+    "Message": "Unauthorized access",
+    "Description": "The user does not have the necessary permissions to access this resource.",
+    "Component": "service",
+    "ResponseType": "Unauthorized" 
+  },
+  {
+    "Code": "error-unauthorized-user",
+    "Message": "Unauthorized user",
+    "Description": "The user is not authorized to perform this action.",
+    "Component": "service",
+    "ResponseType": "Unauthorized" 
   }
 
 ]

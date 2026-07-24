@@ -586,3 +586,13 @@ func GeneralKnownError(cause error) Blame {
 	}
 	return getLocalBlameManager().FetchBlameForError(ErrGeneralKnownError, WithCauses(cause), WithFields(data))
 }
+
+// UnAuthorizedAccess is an error when the user is unauthorized to access a resource.
+func UnAuthorizedAccess(cause error) Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrUnAuthorizedAccess, WithCauses(cause))
+}
+
+// UnAuthorizedUser is an error when the user is unauthorized to perform an action.
+func UnAuthorizedUser(cause error) Blame {
+	return getLocalBlameManager().FetchBlameForError(ErrUnAuthorizedUser, WithCauses(cause))
+}
