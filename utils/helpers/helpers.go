@@ -33,6 +33,7 @@ import (
 	"github.com/nyaruka/phonenumbers"
 	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
@@ -1221,4 +1222,17 @@ func FromBytes(b []byte) any {
 	}
 
 	return s
+}
+
+// CapitalizeFirst capitalizes the first letter of the input string using Unicode title casing.
+func CapitalizeFirst(s string) string {
+	return cases.Title(language.Und).String(s)
+}
+
+// Plural returns a string with the number and unit, properly pluralized.
+func Plural(n int, unit string) string {
+	if n == 1 {
+		return fmt.Sprintf("%d %s", n, unit)
+	}
+	return fmt.Sprintf("%d %ss", n, unit)
 }
