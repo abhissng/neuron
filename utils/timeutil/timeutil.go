@@ -6,6 +6,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/abhissng/neuron/utils/constant"
+	"github.com/abhissng/neuron/utils/helpers"
 )
 
 /*
@@ -294,4 +297,34 @@ func DateUTC(t time.Time) time.Time {
 // TimeUTC returns the time portion of the time in UTC.
 func TimeUTC(t time.Time) time.Time {
 	return t.UTC()
+}
+
+// HumanDuration returns a human-readable approximation of a time.Duration.
+func HumanDuration(d time.Duration) string {
+	switch {
+	case d >= constant.Year:
+		n := int(d / constant.Year)
+		return helpers.Plural(n, "year")
+	case d >= constant.Month:
+		n := int(d / constant.Month)
+		return helpers.Plural(n, "month")
+	case d >= constant.Week:
+		n := int(d / constant.Week)
+		return helpers.Plural(n, "week")
+	case d >= constant.Day:
+		n := int(d / constant.Day)
+		return helpers.Plural(n, "day")
+	case d >= time.Hour:
+		n := int(d / time.Hour)
+		return helpers.Plural(n, "hour")
+	case d >= time.Minute:
+		n := int(d / time.Minute)
+		return helpers.Plural(n, "minute")
+	case d >= time.Second:
+		n := int(d / time.Second)
+		return helpers.Plural(n, "second")
+	default:
+		n := int(d / time.Millisecond)
+		return helpers.Plural(n, "millisecond")
+	}
 }

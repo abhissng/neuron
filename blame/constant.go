@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	ReasonCodeNameSpace = "INTLIB"
-	ReasonCodeBase      = 100000
+	ReasonCodeNameSpace = "NEURON"
+	ReasonCodeBase      = 01
 )
 
 // Error Identifiers for internal library
@@ -85,4 +85,6 @@ const (
 	ErrorMissingFeatureFlags             types.ErrorCode = "error-missing-feature-flags"
 	ErrorMissingXLocationId              types.ErrorCode = "error-missing-x-location-id"
 	ErrGeneralKnownError                 types.ErrorCode = "error-general-known-error"
+	ErrUnAuthorizedAccess                types.ErrorCode = "error-unauthorized-access"
+	ErrUnAuthorizedUser                  types.ErrorCode = "error-unauthorized-user"
 )

@@ -72,3 +72,13 @@ const (
 	ServerDefaultGracefulTime  time.Duration = 10 * time.Second
 	ServiceDefaultGracefulTime time.Duration = 5 * time.Second
 )
+
+// These are generic constant for the timeUtil
+const (
+	Day      = 24 * time.Hour
+	Week     = 7 * Day
+	Month    = 30 * Day  // Approximate
+	Year     = 365 * Day // Approximate
+	LeapYear = 366 * Day // Approximate
+	OddMonth = 31 * Day  // Approximate
+)
