@@ -73,6 +73,7 @@ func WithMaxSendMsgSize(size int) Option {
 	}
 }
 
+// WithLogger sets the server logger used for gRPC interceptors and internal logging.
 func WithLogger(log *log.Log) Option {
 	return func(c *ServerConfig) {
 		c.log = log

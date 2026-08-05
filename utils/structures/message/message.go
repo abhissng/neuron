@@ -8,8 +8,8 @@ import (
 	"github.com/abhissng/neuron/utils/types"
 )
 
-// Message represents the structure of a transaction message.
-// or you can use your custom Type if needed
+// Message represents the canonical transaction message structure for new code.
+// Legacy draft variants may exist in commented reference files under utils/structures.
 type Message[T any] struct {
 	CorrelationID  types.CorrelationID `json:"correlation_id"`
 	RequestId      types.RequestID     `json:"request_id"`

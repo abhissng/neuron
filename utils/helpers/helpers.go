@@ -9,11 +9,9 @@ import (
 	"math"
 	"net"
 	"net/http"
-	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"runtime/debug"
 	"slices"
@@ -27,129 +25,13 @@ import (
 	"github.com/abhissng/neuron/utils/types"
 	"github.com/biter777/countries"
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/nyaruka/phonenumbers"
 	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
-
-// isEmptyPrimitive checks if a primitive type value is empty.
-// It returns (isEmpty, wasHandled) where wasHandled indicates if the type was recognized.
-func isEmptyPrimitive(v reflect.Value) (bool, bool) {
-	switch v.Kind() {
-	case reflect.String:
-		return strings.TrimSpace(v.String()) == "", true
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0, true
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0, true
-	case reflect.Float32, reflect.Float64:
-		return v.Float() == 0, true
-	case reflect.Bool:
-		return !v.Bool(), true
-	}
-	return false, false
-}
-
-// isEmptyCollection checks if a collection type (slice, map, array, func) is empty.
-// It returns (isEmpty, wasHandled) where wasHandled indicates if the type was recognized.
-func isEmptyCollection(v reflect.Value) (bool, bool) {
-	switch v.Kind() {
-	case reflect.Func, reflect.Map, reflect.Slice:
-		return v.IsNil() || v.Len() == 0, true
-	case reflect.Array:
-		for i := 0; i < v.Len(); i++ {
-			if !IsEmpty(v.Index(i).Interface()) {
-				return false, true
-			}
-		}
-		return true, true
-	}
-	return false, false
-}
-
-// isEmptyStruct checks if a struct type is empty by recursively checking all fields.
-// It handles time.Time as a special case and returns (isEmpty, wasHandled).
-func isEmptyStruct(v reflect.Value) (bool, bool) {
-	if v.Kind() != reflect.Struct {
-		return false, false
-	}
-
-	// Check all struct fields recursively
-	for i := 0; i < v.NumField(); i++ {
-		// Skip unexported fields to avoid panics if necessary,
-		// though IsEmpty generally handles interface conversion safely.
-		if !IsEmpty(v.Field(i).Interface()) {
-			return false, true
-		}
-	}
-	return true, true
-}
-
-// isEmptyKnownType checks for specific named types that have well-defined empty states.
-// It handles time.Time and uuid.UUID regardless of their underlying structure (Struct vs Array).
-func isEmptyKnownType(v reflect.Value) (bool, bool) {
-	if !v.CanInterface() {
-		return false, false
-	}
-
-	switch val := v.Interface().(type) {
-	case time.Time:
-		return val.IsZero(), true
-	case uuid.UUID:
-		return val == uuid.Nil, true
-	}
-	return false, false
-}
-
-// IsEmpty checks if the given interface value represents an empty or zero value.
-// It supports custom EmptyCheck interface and handles all Go types recursively.
-func IsEmpty[T any](value T) bool {
-	// Check if value implements EmptyCheck interface
-	if v, ok := any(value).(types.EmptyCheck); ok {
-		return v.IsEmpty()
-	}
-
-	v := reflect.ValueOf(value)
-	if !v.IsValid() {
-		return true
-	}
-
-	// Handle pointer and interface types first
-	if v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
-		if v.IsNil() {
-			return true
-		}
-		return IsEmpty(v.Elem().Interface())
-	}
-
-	// 1. Check Known Types (UUID, Time) - Added this priority check
-	if isEmpty, ok := isEmptyKnownType(v); ok {
-		return isEmpty
-	}
-
-	// 2. Check primitive types
-	if isEmpty, ok := isEmptyPrimitive(v); ok {
-		return isEmpty
-	}
-
-	// 3. Check collection types
-	if isEmpty, ok := isEmptyCollection(v); ok {
-		return isEmpty
-	}
-
-	// 4. Check struct types
-	if isEmpty, ok := isEmptyStruct(v); ok {
-		return isEmpty
-	}
-
-	// Default: Compare with zero value
-	return v.Interface() == reflect.Zero(v.Type()).Interface()
-}
 
 // FetchErrorStrings extracts error messages from a slice of errors.
 // It filters out nil errors and returns only the error message strings.
@@ -257,37 +139,6 @@ func GetMaxConns(maxConn int) int {
 	return maxConn
 }
 
-// GetServiceName returns the service name from the app config or config files
-func GetServiceName() string {
-	return viper.GetString(constant.Service)
-}
-
-// GetDefaultLanguageTag returns the default language tag
-func GetDefaultLanguageTag() types.LanguageTag {
-	return types.LanguageTag(language.English)
-}
-
-// ParseLanguageTag parses a string into a language.Tag and returns a LanguageTag
-func ParseLanguageTag(tagString string) types.LanguageTag {
-	if tagString == "" {
-		return GetDefaultLanguageTag()
-	}
-	// Parse the string into a language.Tag
-	parsedTag, err := language.Parse(tagString)
-	if err != nil {
-		return GetDefaultLanguageTag()
-	}
-	return types.LanguageTag(parsedTag)
-}
-
-// NewBundle creates a new i18n.Bundle
-func NewBundle(language types.LanguageTag) *i18n.Bundle {
-	if IsEmpty(language) {
-		language = GetDefaultLanguageTag()
-	}
-	return i18n.NewBundle(types.ToLanguageTag(language))
-}
-
 // UserHomeDir returns the user's home directory
 func UserHomeDir() string {
 	if runtime.GOOS == "windows" {
@@ -380,43 +231,6 @@ func IsFoundInSlice[T any](key T, slice []T) bool {
 // IsSuccess returns true if the given status is equal to constant.Success or constant.Completed
 func IsSuccess(status types.Status) bool {
 	return strings.EqualFold(status.String(), constant.Success.String()) || strings.EqualFold(status.String(), constant.Completed.String())
-}
-
-// GetEnvironment retrieves the current environment setting from various sources.
-// It checks environment variables and viper configuration in order of priority.
-func GetEnvironment() string {
-	if os.Getenv(constant.Environment) != "" {
-		return os.Getenv(constant.Environment)
-	}
-
-	if os.Getenv(constant.RunMode) != "" {
-		return os.Getenv(constant.RunMode)
-	}
-
-	if viper.GetString(constant.Environment) != "" {
-		return viper.GetString(constant.Environment)
-	}
-
-	return os.Getenv(constant.Environment)
-}
-
-// GetEnvironmentSlug normalizes environment names to standard slugs.
-// It maps various environment name variations to consistent short forms.
-func GetEnvironmentSlug(environment string) string {
-	switch strings.ToLower(environment) {
-	case "dev", "development":
-		return "dev"
-	case "test", "testing":
-		return "test"
-	case "staging":
-		return "staging"
-	case "prod", "production":
-		return "prod"
-	case "uat":
-		return "uat"
-	default:
-		return "dev"
-	}
 }
 
 // GetAvailablePort finds an available port for the given protocol (TCP or UDP).
@@ -780,57 +594,6 @@ func Valid() *bool {
 	return &valid
 }
 
-// MustGetEnv retrieves a required environment variable or exits the program.
-// If the variable is not set or empty, it logs a fatal error and exits with code 1.
-func MustGetEnv(key string) string {
-	value := os.Getenv(key)
-
-	if value == "" || strings.TrimSpace(value) == "" {
-		// In a real application, you would use a proper logging system (like Zap)
-		// and maybe the logging's Fatal method here.
-		Printf(constant.FATAL, "FATAL ERROR: Required environment variable '%s' is not set or is empty.\n", key)
-	}
-
-	return value
-}
-
-// IsURL checks if the given string starts with http:// or https://.
-// It performs a simple prefix check to identify URLs.
-func IsURL(s string) bool {
-	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
-}
-
-// ToNetIPAddr converts a remote address string to a netip.Addr.
-// It handles addresses with or without ports and validates IP format.
-func ToNetIPAddr(remoteAddress string) (*netip.Addr, error) {
-	var host string
-
-	// Try to split if remoteAddress contains port (e.g. "192.168.0.1:5000")
-	if strings.Contains(remoteAddress, ":") {
-		h, _, err := net.SplitHostPort(remoteAddress)
-		if err != nil {
-			// It might still be a plain IP like "::1" or malformed
-			host = remoteAddress
-		} else {
-			host = h
-		}
-	} else {
-		host = remoteAddress
-	}
-
-	ip := net.ParseIP(host)
-	if ip == nil {
-		return nil, fmt.Errorf("invalid IP: %s", remoteAddress)
-	}
-
-	ipAddr, ok := netip.AddrFromSlice(ip)
-	if !ok {
-		return nil, fmt.Errorf("failed to convert %s to netip.Addr", remoteAddress)
-	}
-
-	return &ipAddr, nil
-}
-
 // NormalizePrecision rounds a float64 value to the specified number of decimal places.
 // It uses math.Pow10 and math.Round for precise decimal rounding.
 func NormalizePrecision(val float64, digits int) float64 {
@@ -1126,104 +889,6 @@ func MapTo[T any](input any) (T, error) {
 	return out, nil
 }
 
-// RoundToIntAmount rounds a float64 amount to the nearest integer.
-// For example, 69900 translates to 699.
-func RoundToIntAmount(amount float64) int64 {
-	return int64(math.Round(amount * 100))
-}
-
-// ToBytes converts any supported value into a []byte payload suitable for encryption.
-//
-// Conversion rules:
-//   - nil           → error
-//   - []byte        → returned as-is
-//   - string        → []byte(s)
-//   - bool          → "true" / "false"
-//   - integers      → decimal text (strconv)
-//   - floats        → shortest round-trip text (strconv)
-//   - map / slice / struct / other → JSON encoding
-func ToBytes(v any) ([]byte, error) {
-	if v == nil {
-		return nil, fmt.Errorf("cannot convert nil value to bytes")
-	}
-
-	switch t := v.(type) {
-	case []byte:
-		return t, nil
-	case string:
-		return []byte(t), nil
-	case bool:
-		return []byte(strconv.FormatBool(t)), nil
-	case int:
-		return []byte(strconv.Itoa(t)), nil
-	case int8:
-		return []byte(strconv.FormatInt(int64(t), 10)), nil
-	case int16:
-		return []byte(strconv.FormatInt(int64(t), 10)), nil
-	case int32:
-		return []byte(strconv.FormatInt(int64(t), 10)), nil
-	case int64:
-		return []byte(strconv.FormatInt(t, 10)), nil
-	case uint:
-		return []byte(strconv.FormatUint(uint64(t), 10)), nil
-	case uint8:
-		return []byte(strconv.FormatUint(uint64(t), 10)), nil
-	case uint16:
-		return []byte(strconv.FormatUint(uint64(t), 10)), nil
-	case uint32:
-		return []byte(strconv.FormatUint(uint64(t), 10)), nil
-	case uint64:
-		return []byte(strconv.FormatUint(t, 10)), nil
-	case float32:
-		return []byte(strconv.FormatFloat(float64(t), 'g', -1, 32)), nil
-	case float64:
-		return []byte(strconv.FormatFloat(t, 'g', -1, 64)), nil
-	case json.Number:
-		return []byte(t.String()), nil
-	default:
-		b, err := json.Marshal(t)
-		if err != nil {
-			return nil, fmt.Errorf("cannot convert %T to bytes: %w", v, err)
-		}
-		return b, nil
-	}
-}
-
-// FromBytes reverses ToBytes for decrypted payloads.
-//
-// Restoration rules:
-//   - JSON object / array → map[string]any / []any (not escaped string)
-//   - integer text       → int64
-//   - float text         → float64
-//   - bool text          → bool
-//   - everything else    → string
-func FromBytes(b []byte) any {
-	s := strings.TrimSpace(string(b))
-	if s == "" {
-		return ""
-	}
-
-	first, last := s[0], s[len(s)-1]
-	if (first == '{' && last == '}') || (first == '[' && last == ']') {
-		var v any
-		if err := json.Unmarshal([]byte(s), &v); err == nil {
-			return v
-		}
-	}
-
-	if i, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return i
-	}
-	if f, err := strconv.ParseFloat(s, 64); err == nil {
-		return f
-	}
-	if bv, err := strconv.ParseBool(s); err == nil {
-		return bv
-	}
-
-	return s
-}
-
 // CapitalizeFirst capitalizes the first letter of the input string using Unicode title casing.
 func CapitalizeFirst(s string) string {
 	return cases.Title(language.Und).String(s)
@@ -1235,4 +900,16 @@ func Plural(n int, unit string) string {
 		return fmt.Sprintf("%d %s", n, unit)
 	}
 	return fmt.Sprintf("%d %ss", n, unit)
+}
+
+// GetKeyByValue returns the key for a given value in a map.
+func GetKeyByValue[K comparable, V comparable](m map[K]V, value V) (K, bool) {
+	for k, v := range m {
+		if v == value {
+			return k, true
+		}
+	}
+
+	var zero K
+	return zero, false
 }

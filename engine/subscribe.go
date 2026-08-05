@@ -23,9 +23,9 @@ func consumerNameForSubject(base, subject string) string {
 }
 
 type subscriberOpts struct {
-	durableName   string
-	streamName    string
-	consumerName  string // if set, used as-is for JetStream consumer (no subject suffix)
+	durableName  string
+	streamName   string
+	consumerName string // if set, used as-is for JetStream consumer (no subject suffix)
 }
 
 // SubscriberOption applies optional overrides for a single subscription (durable name, stream name).

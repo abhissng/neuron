@@ -1,3 +1,5 @@
+// Package cosmos is currently disabled.
+// The implementation below is preserved as a commented draft and is not part of active workflows.
 package cosmos
 
 /*

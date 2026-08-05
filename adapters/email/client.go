@@ -14,10 +14,12 @@ import (
 	gomail "gopkg.in/mail.v2"
 )
 
+// EmailClient sends EmailData through a concrete provider (SMTP/gomail or AWS SES).
 type EmailClient interface {
 	Send(data *EmailData) error
 }
 
+// GomailClient sends email through an SMTP dialer configured via ClientOptions.
 type GomailClient struct {
 	opts ClientOptions
 }
@@ -202,6 +204,8 @@ func (c *SESClient) sendRawEmail(data *EmailData, subject, html, text string) er
 	return nil
 }
 
+// Send builds and delivers an email via SMTP, applying template substitution when
+// TemplateData is set. Returns an error when data is nil, attachments fail, or delivery fails.
 func (c *GomailClient) Send(data *EmailData) error {
 	if data == nil {
 		return fmt.Errorf("email data is required")

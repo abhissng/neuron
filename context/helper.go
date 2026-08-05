@@ -32,6 +32,7 @@ type DependencyDetails struct {
 	Paseto   DependencyStatus `json:"paseto,omitzero"`
 }
 
+// NewDependencyDetails creates a new instance.
 func NewDependencyDetails() DependencyDetails {
 	return DependencyDetails{
 		Logger:   DependencyStatus{},

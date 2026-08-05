@@ -21,12 +21,17 @@ var (
 	ErrInvalidExtension = errors.New("file extension not allowed")
 )
 
+// FileRule constrains uploads: AllowedMIMEs and AllowedExts are allow-list sets
+// (empty maps mean no restriction for that dimension), and MaxSizeBytes rejects
+// files larger than the limit when greater than zero.
 type FileRule struct {
 	MaxSizeBytes int64
 	AllowedMIMEs map[string]struct{}
 	AllowedExts  map[string]struct{}
 }
 
+// UploadProfile names a preset rule registered in the upload profile registry
+// and looked up via GetUploadProfile or MergeUploadProfiles.
 type UploadProfile string
 
 const (
@@ -108,6 +113,7 @@ func init() {
 	))
 }
 
+// RegisterUploadProfile stores rule under name in the global registry.
 func RegisterUploadProfile(name UploadProfile, rule *FileRule) {
 	if rule == nil {
 		helpers.Println(constant.ERROR, "RegisterUploadProfile: rule is nil")
@@ -118,6 +124,7 @@ func RegisterUploadProfile(name UploadProfile, rule *FileRule) {
 	ruleRegistry[name] = rule
 }
 
+// GetUploadProfile returns the registered rule for name and whether it exists.
 func GetUploadProfile(name UploadProfile) (*FileRule, bool) {
 	registryMu.RLock()
 	defer registryMu.RUnlock()
@@ -125,6 +132,8 @@ func GetUploadProfile(name UploadProfile) (*FileRule, bool) {
 	return rule, ok
 }
 
+// MergeUploadProfiles unions AllowedMIMEs and AllowedExts across the given profiles
+// and sets MaxSizeBytes to the largest limit among them. Returns nil when none resolve.
 func MergeUploadProfiles(profiles ...UploadProfile) *FileRule {
 	merged := &FileRule{
 		MaxSizeBytes: 0,
@@ -166,6 +175,8 @@ func MergeUploadProfiles(profiles ...UploadProfile) *FileRule {
 ========================================
 */
 
+// NewCustomRule builds a FileRule from explicit allow-lists. When maxSize is zero
+// or negative, MaxSizeBytes defaults to 10 MiB.
 func NewCustomRule(maxSize int64, mimes []string, exts []string) *FileRule {
 	if maxSize <= 0 {
 		maxSize = 10 * MB

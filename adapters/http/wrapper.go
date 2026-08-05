@@ -30,6 +30,9 @@ type HttpClientManager struct {
 	UseFastHTTP bool // New flag to enable fastHTTP
 }
 
+// Clear resets request maps and TLS/fast-HTTP flags to their zero values.
+// Headers, QueryParams, Files, and FormValues become empty maps; SkipVerify and
+// UseFastHTTP become false. URL, Method, Timeout, ContentType, and cert fields are unchanged.
 func (c *HttpClientManager) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -95,132 +98,154 @@ func NewHttpClientManager(requestURL string, opts ...RequestOption) *HttpClientM
 	return config
 }
 
+// AddHeaders replaces the entire Headers map with a clone of headers (does not merge).
 func (c *HttpClientManager) AddHeaders(headers map[string]string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Headers = helpers.CloneMap(headers)
 }
 
+// ResetHeaders clears Headers to an empty map.
 func (c *HttpClientManager) ResetHeaders() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Headers = make(map[string]string)
 }
 
+// AddQueryParams replaces the entire QueryParams map with a clone of params (does not merge).
 func (c *HttpClientManager) AddQueryParams(params map[string]any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.QueryParams = helpers.CloneMap(params)
 }
 
+// ResetQueryParams clears QueryParams to an empty map.
 func (c *HttpClientManager) ResetQueryParams() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.QueryParams = make(map[string]any)
 }
 
+// AddFiles replaces the entire Files map with a clone of files (does not merge).
 func (c *HttpClientManager) AddFiles(files map[string]string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Files = helpers.CloneMap(files)
 }
 
+// ResetFiles clears Files to an empty map.
 func (c *HttpClientManager) ResetFiles() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Files = make(map[string]string)
 }
 
+// AddFormValues replaces the entire FormValues map with a clone of values (does not merge).
 func (c *HttpClientManager) AddFormValues(values map[string]string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.FormValues = helpers.CloneMap(values)
 }
 
+// ResetFormValues clears FormValues to an empty map.
 func (c *HttpClientManager) ResetFormValues() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.FormValues = make(map[string]string)
 }
 
+// AddTimeout add timeout.
 func (c *HttpClientManager) AddTimeout(timeout time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Timeout = timeout
 }
 
+// ResetTimeout restores Timeout to the default of 10 seconds.
 func (c *HttpClientManager) ResetTimeout() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Timeout = 10 * time.Second
 }
 
+// AddContentType add content type.
 func (c *HttpClientManager) AddContentType(contentType types.ContentType) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.ContentType = contentType
 }
 
+// ResetContentType restores ContentType to ContentTypeJSON.
 func (c *HttpClientManager) ResetContentType() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.ContentType = ContentTypeJSON
 }
 
+// AddIsTLS add is tls.
 func (c *HttpClientManager) AddIsTLS(isTLS bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.IsTLS = isTLS
 }
 
+// ResetIsTLS sets IsTLS to false.
 func (c *HttpClientManager) ResetIsTLS() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.IsTLS = false
 }
 
+// AddCertFile add cert file.
 func (c *HttpClientManager) AddCertFile(certFile string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.CertFile = certFile
 }
 
+// ResetCertFile clears CertFile to an empty string.
 func (c *HttpClientManager) ResetCertFile() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.CertFile = ""
 }
 
+// AddKeyFile add key file.
 func (c *HttpClientManager) AddKeyFile(keyFile string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.KeyFile = keyFile
 }
 
+// ResetKeyFile clears KeyFile to an empty string.
 func (c *HttpClientManager) ResetKeyFile() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.KeyFile = ""
 }
 
+// AddSkipVerify add skip verify.
 func (c *HttpClientManager) AddSkipVerify(skipVerify bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.SkipVerify = skipVerify
 }
 
+// ResetSkipVerify sets SkipVerify to false.
 func (c *HttpClientManager) ResetSkipVerify() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.SkipVerify = false
 }
 
+// AddFastHTTP add fast http.
 func (c *HttpClientManager) AddFastHTTP() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.UseFastHTTP = true
 }
 
+// ResetFastHTTP sets UseFastHTTP to false.
 func (c *HttpClientManager) ResetFastHTTP() {
 	c.mu.Lock()
 	defer c.mu.Unlock()

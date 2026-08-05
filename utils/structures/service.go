@@ -1,5 +1,9 @@
 package structures
 
+// This file preserves legacy service-structure drafts as comments for historical reference.
+// Active service structure models are maintained in utils/structures/service/.
+// For message payload models, prefer utils/structures/message.Message in new code.
+
 // import (
 // 	"fmt"
 // 	"sync"
@@ -151,11 +155,13 @@ func NewServicePayload[T any](ctx *context.ServiceContext, payload T) ServicePay
 	}
 }
 
+// RollbackHistory represents rollback history.
 type RollbackHistory struct {
 	CorrelationID types.CorrelationID `json:"correlation_id"`
 	History       []string            `json:"history"`
 }
 
+// NewRollbackHistory creates a new instance.
 func NewRollbackHistory(correlationId types.CorrelationID) *RollbackHistory {
 	return &RollbackHistory{
 		CorrelationID: correlationId,
@@ -163,6 +169,7 @@ func NewRollbackHistory(correlationId types.CorrelationID) *RollbackHistory {
 	}
 }
 
+// AppendHistory appends one entry to RollbackHistory.History and returns the receiver for chaining.
 func (r *RollbackHistory) AppendHistory(history string) *RollbackHistory {
 	r.History = append(r.History, history)
 	return r

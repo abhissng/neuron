@@ -77,9 +77,10 @@ func Err(err error) types.Field {
 	return zap.Error(err)
 }
 
-// Blame creates a single types.Field (error) for a given error.
+// errorArray encodes multiple errors as a zap log array of Error() strings.
 type errorArray []error
 
+// MarshalLogArray writes each error's message into the zap array encoder.
 func (a errorArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
 	for _, e := range a {
 		if e == nil {
@@ -91,6 +92,8 @@ func (a errorArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
 	return nil
 }
 
+// Blame converts a blame.Blame into a zap field: Skip when empty, a single error
+// when one cause exists, or a "causes" array when multiple causes are present.
 func Blame(b blame.Blame) zap.Field {
 	cs := b.FetchCauses()
 	switch len(cs) {
@@ -172,6 +175,8 @@ func Sprintf(format string, a ...any) string {
 	return fmt.Sprintf(format, a...)
 }
 
+// LoggerConfig holds options for constructing a Log (environment, zap/OpenSearch
+// settings, service metadata, encoder tail length, and optional field sanitizer).
 type LoggerConfig struct {
 	// IsProd enables production mode (JSON output, Info level)
 	IsProd bool

@@ -7,6 +7,7 @@ type SessionMiddlewareOptions struct {
 	excludedOptions *structures.ExcludedOptions // List of options to exclude from token validation.
 }
 
+// NewSessionMiddlewareOptions creates a new instance.
 func NewSessionMiddlewareOptions() *SessionMiddlewareOptions {
 	return &SessionMiddlewareOptions{}
 }

@@ -69,6 +69,7 @@ func (c *StandardClaims) WithPid() *StandardClaims {
 	return c
 }
 
+// GetRandomPid returns a payload ID derived from subject, issuer, and JWT ID.
 func GetRandomPid(subject, issuer, jti string) string {
 	// Comment: Generates a unique Payload ID based on subject, issuer, and JWT ID.
 	return random.JoinComponentsToID(subject, issuer, jti)
@@ -95,39 +96,55 @@ func NewStandardClaims(issuer string, expiry time.Duration, options ...StandardC
 	return claims
 }
 
-// Getters for immutable fields (No setters, preventing modifications)
+// Issuer returns the token issuer (Iss claim).
 func (c *StandardClaims) Issuer() string {
 	// Comment: Returns the issuer of the token.
 	return c.Iss
 }
+
+// Expiration returns the token expiration time (Exp claim).
 func (c *StandardClaims) Expiration() time.Time {
 	// Comment: Returns the expiration time of the token.
 	return c.Exp
 }
+
+// IssuedAt returns the token issued-at time (Iat claim).
 func (c *StandardClaims) IssuedAt() time.Time {
 	// Comment: Returns the issued at time of the token.
 	return c.Iat
 }
+
+// JWTID returns the unique token identifier (Jti claim).
 func (c *StandardClaims) JWTID() string {
 	// Comment: Returns the unique identifier of the token.
 	return c.Jti
 }
+
+// Audience returns the intended audience (Aud claim), if set.
 func (c *StandardClaims) Audience() string {
 	// Comment: Returns the intended audience of the token (optional).
 	return c.Aud
 }
+
+// NotBefore returns the not-before time (Nbf claim), if set.
 func (c *StandardClaims) NotBefore() time.Time {
 	// Comment: Returns the time before which the token should not be accepted (optional).
 	return c.Nbf
 }
+
+// Subject returns the token subject (Sub claim), if set.
 func (c *StandardClaims) Subject() string {
 	// Comment: Returns the subject of the token (optional).
 	return c.Sub
 }
+
+// IP returns the client IP claim (Ip), if set.
 func (c *StandardClaims) IP() string {
 	// Comment: Returns the IP address associated with the token (optional).
 	return c.Ip
 }
+
+// GetData returns the custom data map (Data claim), if set.
 func (c *StandardClaims) GetData() map[string]any {
 	// Comment: Returns the data associated with the token (optional).
 	return c.Data

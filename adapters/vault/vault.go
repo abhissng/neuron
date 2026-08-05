@@ -256,6 +256,9 @@ func (v *Vault) FetchVaultValue(key string) (string, error) {
 	}
 }
 
+// DecryptVaultValues returns value unchanged unless key contains EncryptedPrefix, in
+// which case it decrypts via cryptoManager. Returns an error when decryption is required
+// but cryptoManager is nil or Decrypt fails.
 func (v *Vault) DecryptVaultValues(key, value string) (string, error) {
 	if strings.Contains(key, EncryptedPrefix) {
 		if v.cryptoManager == nil {
@@ -273,6 +276,7 @@ func (v *Vault) DecryptVaultValues(key, value string) (string, error) {
 // OLD code for vault
 // Vault struct holds the configuration for the Vault client
 /*
+// Vault represents vault.
 type Vault struct {
 	client    infisical.InfisicalClientInterface
 	env       string

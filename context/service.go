@@ -84,7 +84,8 @@ func (ctx *ServiceContext) GetGinContextCorrelationID() types.CorrelationID {
 	return ""
 }
 
-// SlogFields returns a slice of types.Field with request and correlation fields and additional fields.
+// SlogFields prepends Gin request and correlation ID fields to withFields when a Gin
+// context is present; otherwise it returns withFields unchanged.
 func (ctx *ServiceContext) SlogFields(withFields ...types.Field) []types.Field {
 	// Start with the request and correlation fields
 	if ctx.Context == nil {
@@ -100,7 +101,7 @@ func (ctx *ServiceContext) SlogFields(withFields ...types.Field) []types.Field {
 	return fields
 }
 
-// SlogInfo logs a message at the InfoLevel.
+// SlogInfo logs message at info level with request/correlation fields from SlogFields.
 func (ctx *ServiceContext) SlogInfo(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
@@ -108,6 +109,7 @@ func (ctx *ServiceContext) SlogInfo(message string, withFields ...types.Field) {
 	logger.Info(message, slogfields...)
 }
 
+// SlogWarn logs message at warn level with request/correlation fields from SlogFields.
 func (ctx *ServiceContext) SlogWarn(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
@@ -115,6 +117,7 @@ func (ctx *ServiceContext) SlogWarn(message string, withFields ...types.Field) {
 	logger.Warn(message, slogfields...)
 }
 
+// SlogError logs message at error level with request/correlation fields from SlogFields.
 func (ctx *ServiceContext) SlogError(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
@@ -122,6 +125,8 @@ func (ctx *ServiceContext) SlogError(message string, withFields ...types.Field) 
 	logger.Error(message, slogfields...)
 }
 
+// SlogFatal logs message at fatal level with request/correlation fields from SlogFields
+// and terminates the process via zap's Fatal handler.
 func (ctx *ServiceContext) SlogFatal(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
@@ -129,6 +134,7 @@ func (ctx *ServiceContext) SlogFatal(message string, withFields ...types.Field) 
 	logger.Fatal(message, slogfields...)
 }
 
+// SlogDebug slog debug.
 func (ctx *ServiceContext) SlogDebug(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)

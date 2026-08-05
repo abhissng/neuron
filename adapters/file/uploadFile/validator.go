@@ -18,6 +18,9 @@ import (
 ========================================
 */
 
+// ValidateFile checks one upload against the configured rule and virus scanner.
+// It returns errors for unreadable files, non-seekable streams during scanning,
+// seek failures, MIME/extension/size violations, scanner errors, and virus detection.
 func (cfg *Config) ValidateFile(file *multipart.FileHeader) error {
 
 	if cfg.rule == nil {
@@ -77,6 +80,8 @@ func (cfg *Config) validateSingleFile(file *multipart.FileHeader) error {
 	return nil
 }
 
+// ValidateFiles runs validation on each header and stops at the first failure,
+// prefixing the error with the offending filename.
 func (cfg *Config) ValidateFiles(files []*multipart.FileHeader) error {
 	for _, file := range files {
 		if err := cfg.validateSingleFile(file); err != nil {

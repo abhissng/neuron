@@ -23,7 +23,7 @@ type OpenSearchWriter struct {
 	batchSize    int           // Number of logs to buffer before sending
 	flushTimeout time.Duration // How often to flush logs
 	wg           sync.WaitGroup
-	closeOnce    sync.Once     // Ensures close() only runs once
+	closeOnce    sync.Once // Ensures close() only runs once
 }
 
 // Write is now non-blocking. It sends the log to a channel.

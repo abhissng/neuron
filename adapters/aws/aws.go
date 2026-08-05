@@ -39,6 +39,7 @@ type AWSConfig struct {
 	S3ForcePathStyle bool
 }
 
+// NewAwsConfig creates a new instance.
 func NewAwsConfig() *AWSConfig {
 	return &AWSConfig{
 		Region:           "ap-south-1",

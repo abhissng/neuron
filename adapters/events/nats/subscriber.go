@@ -49,6 +49,8 @@ func (w *NATSManager) resolveFilterConflict(subject string) error {
 	return nil
 }
 
+// SubscribeBindConsumer creates a JetStream push subscription on subject, binding to
+// stream/consumer when it exists or creating a durable consumer on stream when missing.
 func (w *NATSManager) SubscribeBindConsumer(subject, stream, consumer string, handler nats.MsgHandler, opts ...nats.SubOpt) (*nats.Subscription, blame.Blame) {
 	defer helpers.RecoverException(recover())
 	if w.js == nil {
@@ -67,6 +69,8 @@ func (w *NATSManager) SubscribeBindConsumer(subject, stream, consumer string, ha
 	return w.Subscribe(subject, handler, opts...)
 }
 
+// PullSubscribeBindConsumer creates a JetStream pull subscription on subject, binding to
+// stream/consumer when it exists or attaching to stream when the consumer is missing.
 func (w *NATSManager) PullSubscribeBindConsumer(subject, stream, consumer string, opts ...nats.SubOpt) (*nats.Subscription, blame.Blame) {
 	defer helpers.RecoverException(recover())
 	if w.js == nil {

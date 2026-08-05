@@ -9,6 +9,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// EssentialHeaders holds org, user, role, and optional feature-flag and location
+// metadata parsed from request headers. Org, user, and role are always required;
+// feature flags and location ID are optional unless enforced via options.
 type EssentialHeaders struct {
 	OrgId        types.OrgID  `json:"org_id"`
 	UserId       types.UserID `json:"user_id"`
@@ -31,14 +34,14 @@ type essentialHeadersConfig struct {
 // Option type
 type EssentialHeadersOption func(*essentialHeadersConfig)
 
-// require X-Feature-Flags header
+// WithFeatureFlagRequired requires a non-empty X-Feature-Flags header.
 func WithFeatureFlagRequired() EssentialHeadersOption {
 	return func(c *essentialHeadersConfig) {
 		c.RequireFeatureFlags = true
 	}
 }
 
-// require X-Location-Id header
+// WithLocationIdRequired requires a non-empty X-Location-Id header.
 func WithLocationIdRequired() EssentialHeadersOption {
 	return func(c *essentialHeadersConfig) {
 		c.RequireLocationID = true
@@ -123,18 +126,21 @@ func GetEssentialHeadersValues(ctx *context.ServiceContext, options ...Essential
 	}, nil
 }
 
+// RequestAuthValues holds authentication-related headers extracted from the request.
 type RequestAuthValues struct {
 	Token         string
 	CorrelationID types.CorrelationID
 	XSubject      string
 }
 
+// RequestAuthConfig toggles which auth headers GetRequestAuthValues must enforce.
 type RequestAuthConfig struct {
 	RequireToken         bool
 	RequireCorrelationID bool
 	RequireXSubject      bool
 }
 
+// RequestAuthOption represents request auth option.
 type RequestAuthOption func(*RequestAuthConfig)
 
 // WithRequireToken marks the auth token as required when fetching request auth values.
@@ -158,7 +164,9 @@ func WithRequireXSubject() RequestAuthOption {
 	}
 }
 
-// GetRequestAuthValues returns the request auth values
+// GetRequestAuthValues reads the PASETO bearer token, correlation ID, and X-Subject
+// header. By default all three are optional; WithRequireToken, WithRequireCorrelationID,
+// and WithRequireXSubject mark individual headers mandatory and return blame on absence.
 func GetRequestAuthValues(ctx *context.ServiceContext, options ...RequestAuthOption) (*RequestAuthValues, blame.Blame) {
 	defer func() { helpers.RecoverException(recover()) }()
 
