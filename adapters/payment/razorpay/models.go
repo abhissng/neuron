@@ -60,7 +60,7 @@ func NewSubscriptionRequest() *SubscriptionRequest {
 	}
 }
 
-// AddNote add note.
+// AddNote sets or removes a key in the subscription request Notes map (nil value deletes the key).
 func (s *SubscriptionRequest) AddNote(key string, value any) {
 	if s.Notes == nil {
 		s.Notes = make(map[string]any)
@@ -72,7 +72,7 @@ func (s *SubscriptionRequest) AddNote(key string, value any) {
 	}
 }
 
-// AddAddOn add add on.
+// AddAddOn appends addOn to the subscription request AddOns slice.
 func (s *SubscriptionRequest) AddAddOn(addOn *PlanItem) {
 	s.AddOns = append(s.AddOns, addOn)
 }
@@ -96,7 +96,7 @@ func NewPlan() *Plan {
 	}
 }
 
-// AddNote add note.
+// AddNote sets or removes a key in the plan Notes map (nil value deletes the key).
 func (p *Plan) AddNote(key string, value any) {
 	if p.Notes == nil {
 		p.Notes = make(map[string]any)
@@ -108,7 +108,7 @@ func (p *Plan) AddNote(key string, value any) {
 	}
 }
 
-// Validate validate.
+// Validate checks required plan fields (period, interval) and validates the nested item when present.
 func (p *Plan) Validate() error {
 	if p.Period == "" {
 		return errors.New("period is required")
@@ -151,7 +151,7 @@ func NewPlanItem() *PlanItem {
 	return &PlanItem{}
 }
 
-// Validate validate.
+// Validate checks required plan item fields: name, amount, and currency.
 func (p *PlanItem) Validate() error {
 	if p.Name == "" {
 		return errors.New("name is required")
@@ -181,7 +181,7 @@ func NewPlanRequest() *PlanRequest {
 	}
 }
 
-// AddNote add note.
+// AddNote sets or removes a key in the plan request Notes map (nil value deletes the key).
 func (p *PlanRequest) AddNote(key string, value any) {
 	if p.Notes == nil {
 		p.Notes = make(map[string]any)

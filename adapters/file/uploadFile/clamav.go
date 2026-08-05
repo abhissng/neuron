@@ -10,17 +10,20 @@ import (
 	"github.com/abhissng/neuron/utils/helpers"
 )
 
-// ClamAVScanner represents clam avscanner.
+// ClamAVScanner scans file content over ClamAV's TCP INSTREAM protocol.
+// Address is the host:port of clamd (for example "127.0.0.1:3310").
 type ClamAVScanner struct {
 	Address string
 }
 
-// NewClamAVScanner creates a new instance.
+// NewClamAVScanner returns a scanner that dials Address for each Scan call.
 func NewClamAVScanner(addr string) *ClamAVScanner {
 	return &ClamAVScanner{Address: addr}
 }
 
-// Scan scan.
+// Scan streams r to clamd and reports whether the payload is clean.
+// It returns (true, nil) when clamd replies with "OK", (false, nil) when the reply
+// contains "FOUND", and (false, err) for dial/write/read failures or unexpected responses.
 func (c *ClamAVScanner) Scan(r io.Reader) (bool, error) {
 	conn, err := net.DialTimeout("tcp", c.Address, 10*time.Second)
 	if err != nil {

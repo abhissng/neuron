@@ -23,8 +23,10 @@ svc := razorpay.NewService(client)
 pm.Register(payment.ProviderRazorpay, svc)
 
 rz, ok := payment.GetService[razorpay.Service](pm, payment.ProviderRazorpay)
+if !ok {
+	return fmt.Errorf("razorpay service not registered")
+}
 _ = rz
-_ = ok
 ```
 
 ## Razorpay Adapter
@@ -69,7 +71,9 @@ err = emailClient.Send(&email.EmailData{
 	Subject: "Welcome",
 	TextBody: "Hello from neuron",
 })
-_ = err
+if err != nil {
+	return err
+}
 ```
 
 ## Internal Helpers (implementation detail)

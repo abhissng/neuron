@@ -34,8 +34,14 @@ Recent structure is split by theme (`helpers.go`, `env.go`, `convert.go`, `refle
 env := helpers.GetEnvironment()
 slug := helpers.GetEnvironmentSlug(env)
 
-m, _ := helpers.StructToMap(payload)
-decoded, _ := helpers.MapToStruct[MyType](m)
+m, err := helpers.StructToMap(payload)
+if err != nil {
+	return err
+}
+decoded, err := helpers.MapToStruct[MyType](m)
+if err != nil {
+	return err
+}
 _ = decoded
 
 empty := helpers.IsEmpty(payload)
@@ -63,7 +69,10 @@ This is one of the highest API-density packages and should be treated as foundat
 ```go
 uuidV4OrV7 := random.GenerateUUID(random.WithUUIDVersion7())
 requestID := random.GenerateUUIDString()
-token, _ := random.GenerateTokenID()
+token, err := random.GenerateTokenID()
+if err != nil {
+	return err
+}
 _ = uuidV4OrV7
 _ = requestID
 _ = token

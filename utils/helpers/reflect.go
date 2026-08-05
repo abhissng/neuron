@@ -50,11 +50,15 @@ func isEmptyStruct(v reflect.Value) (bool, bool) {
 		return false, false
 	}
 
-	// Check all struct fields recursively
 	for i := 0; i < v.NumField(); i++ {
-		// Skip unexported fields to avoid panics if necessary,
-		// though IsEmpty generally handles interface conversion safely.
-		if !IsEmpty(v.Field(i).Interface()) {
+		field := v.Field(i)
+		if field.CanInterface() {
+			if !IsEmpty(field.Interface()) {
+				return false, true
+			}
+			continue
+		}
+		if !field.IsZero() {
 			return false, true
 		}
 	}

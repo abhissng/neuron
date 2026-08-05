@@ -139,7 +139,7 @@ func (e BusinessID) String() string {
 	return uuid.UUID(e).String()
 }
 
-// UserID represents a user ID.
+// UserID is a UUID-backed user identifier.
 type UserID uuid.UUID
 
 // String returns the string representation of the UserID.
@@ -152,12 +152,12 @@ func (e UserID) UUID() uuid.UUID {
 	return uuid.UUID(e)
 }
 
-// MarshalJSON marshal json.
+// MarshalJSON encodes UserID as its UUID string form.
 func (o UserID) MarshalJSON() ([]byte, error) {
 	return json.Marshal(o.String())
 }
 
-// UnmarshalJSON unmarshal json.
+// UnmarshalJSON decodes a UUID string into UserID.
 func (o *UserID) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
@@ -245,7 +245,7 @@ type IDType interface {
 	~string | ~int64 | ~int32 | uuid.UUID
 }
 
-// OrgID represents org id.
+// OrgID is a UUID-backed organization identifier.
 type OrgID uuid.UUID
 
 // String returns the string representation of the OrgID.
@@ -263,12 +263,12 @@ func ToOrgID(uuid uuid.UUID) OrgID {
 	return OrgID(uuid)
 }
 
-// MarshalJSON marshal json.
+// MarshalJSON encodes OrgID as its UUID string form.
 func (o OrgID) MarshalJSON() ([]byte, error) {
 	return json.Marshal(o.String())
 }
 
-// UnmarshalJSON unmarshal json.
+// UnmarshalJSON decodes a UUID string into OrgID.
 func (o *OrgID) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {

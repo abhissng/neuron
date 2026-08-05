@@ -13,7 +13,8 @@ import (
 ========================================
 */
 
-// Config represents config.
+// Config holds validator inputs: rule defines allowed uploads and virusScanner
+// performs optional malware checks (nil skips virus scanning).
 type Config struct {
 	rule         *FileRule
 	virusScanner VirusScanner
@@ -22,14 +23,14 @@ type Config struct {
 // Option represents option.
 type Option func(*Config)
 
-// WithRule applies an option value.
+// WithRule sets the FileRule used for MIME, extension, and size validation.
 func WithRule(rule *FileRule) Option {
 	return func(c *Config) {
 		c.rule = rule
 	}
 }
 
-// WithProfile applies an option value.
+// WithProfile sets the rule from a registered UploadProfile; unknown profiles are ignored.
 func WithProfile(profile UploadProfile) Option {
 	return func(c *Config) {
 		rule, ok := GetUploadProfile(profile)
@@ -41,28 +42,29 @@ func WithProfile(profile UploadProfile) Option {
 	}
 }
 
-// WithVirusScanner applies an option value.
+// WithVirusScanner sets the scanner invoked after rule checks; nil disables scanning.
 func WithVirusScanner(scanner VirusScanner) Option {
 	return func(c *Config) {
 		c.virusScanner = scanner
 	}
 }
 
-// WithClamAV applies an option value.
+// WithClamAV configures a ClamAVScanner at address as the virus scanner.
 func WithClamAV(address string) Option {
 	return func(c *Config) {
 		c.virusScanner = NewClamAVScanner(address)
 	}
 }
 
-// WithCustomRule applies an option value.
+// WithCustomRule sets the rule from explicit MIME, extension, and size limits.
 func WithCustomRule(maxSize int64, mimes []string, exts []string) Option {
 	return func(c *Config) {
 		c.rule = NewCustomRule(maxSize, mimes, exts)
 	}
 }
 
-// NewUploadFileValidator creates a new instance.
+// NewUploadFileValidator builds a Config from options. At least one option must
+// supply a non-nil rule (WithRule, WithProfile, or WithCustomRule); otherwise it returns an error.
 func NewUploadFileValidator(opts ...Option) (*Config, error) {
 	cfg := &Config{}
 	for _, opt := range opts {

@@ -60,7 +60,8 @@ type OCIManager struct {
 
 type Option func(*OCIManager) error
 
-// WithUserCredentials applies an option value.
+// WithUserCredentials configures API-key authentication with tenancy, user OCID,
+// region, key fingerprint, private key path, and optional passphrase. Default timeout is 2 minutes.
 func WithUserCredentials(tenancy, user, region, fingerprint, keyPath, passphrase string) Option {
 	return func(cm *OCIManager) error {
 		cm.config = &Config{
@@ -77,7 +78,7 @@ func WithUserCredentials(tenancy, user, region, fingerprint, keyPath, passphrase
 	}
 }
 
-// WithInstancePrincipal applies an option value.
+// WithInstancePrincipal configures instance-principal authentication for the given region.
 func WithInstancePrincipal(region string) Option {
 	return func(cm *OCIManager) error {
 		cm.config = &Config{
@@ -89,7 +90,7 @@ func WithInstancePrincipal(region string) Option {
 	}
 }
 
-// WithObjectStorage applies an option value.
+// WithObjectStorage enables the Object Storage client during manager initialization.
 func WithObjectStorage() Option {
 	return func(cm *OCIManager) error {
 		cm.enableObject = true
@@ -97,7 +98,7 @@ func WithObjectStorage() Option {
 	}
 }
 
-// WithCompute applies an option value.
+// WithCompute enables the Compute client during manager initialization.
 func WithCompute() Option {
 	return func(cm *OCIManager) error {
 		cm.enableCompute = true
@@ -105,7 +106,7 @@ func WithCompute() Option {
 	}
 }
 
-// WithIdentity applies an option value.
+// WithIdentity enables the Identity client during manager initialization.
 func WithIdentity() Option {
 	return func(cm *OCIManager) error {
 		cm.enableIdentity = true
@@ -113,7 +114,7 @@ func WithIdentity() Option {
 	}
 }
 
-// WithLogger applies an option value.
+// WithLogger sets the logger used for OCI operations and retry diagnostics.
 func WithLogger(logger *log.Log) Option {
 	return func(cm *OCIManager) error {
 		cm.logger = logger
@@ -216,7 +217,7 @@ func (cm *OCIManager) withRetry(ctx context.Context, op func() error) error {
 	return err
 }
 
-// WithCtxTimeout applies an option value.
+// WithCtxTimeout returns a child context with timeout d, or a cancel-only context when d <= 0.
 func WithCtxTimeout(ctx context.Context, d time.Duration) (context.Context, context.CancelFunc) {
 	if d <= 0 {
 		return context.WithCancel(ctx) // #nosec G118
@@ -337,7 +338,7 @@ func (cm *OCIManager) DownloadObject(ctx context.Context, namespace, bucket, obj
 	return err
 }
 
-// ListObjects list objects.
+// ListObjects returns object summaries in bucket, optionally filtered by prefix.
 func (cm *OCIManager) ListObjects(ctx context.Context, namespace, bucket string, prefix *string) ([]objectstorage.ObjectSummary, error) {
 	if cm.objectClient == nil {
 		return nil, errors.New("object storage client not initialized")
@@ -358,7 +359,7 @@ func (cm *OCIManager) ListObjects(ctx context.Context, namespace, bucket string,
 	return result, err
 }
 
-// DeleteObject delete object.
+// DeleteObject removes objectName from the bucket.
 func (cm *OCIManager) DeleteObject(ctx context.Context, namespace, bucket, objectName string) error {
 	if cm.objectClient == nil {
 		return errors.New("object storage client not initialized")
@@ -373,7 +374,7 @@ func (cm *OCIManager) DeleteObject(ctx context.Context, namespace, bucket, objec
 	})
 }
 
-// CreateBucket create bucket.
+// CreateBucket creates bucketName in namespace within compartmentOCID using storageTier.
 func (cm *OCIManager) CreateBucket(ctx context.Context, namespace, compartmentOCID, bucketName, storageTier string) error {
 	if cm.objectClient == nil {
 		return errors.New("object storage client not initialized")
@@ -391,7 +392,7 @@ func (cm *OCIManager) CreateBucket(ctx context.Context, namespace, compartmentOC
 	})
 }
 
-// GetBucket returns data.
+// GetBucket returns bucket metadata for bucketName in namespace.
 func (cm *OCIManager) GetBucket(ctx context.Context, namespace, bucketName string) (*objectstorage.Bucket, error) {
 	if cm.objectClient == nil {
 		return nil, errors.New("object storage client not initialized")
@@ -411,7 +412,8 @@ func (cm *OCIManager) GetBucket(ctx context.Context, namespace, bucketName strin
 	return result, err
 }
 
-// IsObjectExists reports whether a condition is true.
+// IsObjectExists reports whether objectName exists in bucket via HeadObject.
+// Returns (false, err) when the object is missing or the request fails.
 func (cm *OCIManager) IsObjectExists(ctx context.Context, namespace, bucket, objectName string) (bool, error) {
 	if cm.objectClient == nil {
 		return false, errors.New("object storage client not initialized")
@@ -457,7 +459,7 @@ func (cm *OCIManager) LaunchInstance(ctx context.Context, compartmentOCID, ad, s
 	return instance, err
 }
 
-// TerminateInstance terminate instance.
+// TerminateInstance terminates the compute instance identified by instanceID.
 func (cm *OCIManager) TerminateInstance(ctx context.Context, instanceID string) error {
 	if cm.computeClient == nil {
 		return errors.New("compute client not initialized")
@@ -468,7 +470,7 @@ func (cm *OCIManager) TerminateInstance(ctx context.Context, instanceID string) 
 	})
 }
 
-// ListInstances list instances.
+// ListInstances returns compute instances in compartmentOCID.
 func (cm *OCIManager) ListInstances(ctx context.Context, compartmentOCID string) ([]core.Instance, error) {
 	if cm.computeClient == nil {
 		return nil, errors.New("compute client not initialized")

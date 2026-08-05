@@ -19,7 +19,8 @@ func getDefaultHashSize() int {
 	return 16 // default to 16 bytes (~128-bit hash)
 }
 
-// GenerateHash generate hash.
+// GenerateHash produces a keyed BLAKE2s hash (128-bit when size is 16, 256-bit when
+// size is 32) and returns it as a base64 raw URL-encoded string without padding.
 func GenerateHash(key, data []byte, size int) (string, error) {
 	if len(key) < 16 {
 		return "", fmt.Errorf("key must be at least 16 bytes")

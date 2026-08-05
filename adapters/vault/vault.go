@@ -256,7 +256,9 @@ func (v *Vault) FetchVaultValue(key string) (string, error) {
 	}
 }
 
-// DecryptVaultValues decrypt vault values.
+// DecryptVaultValues returns value unchanged unless key contains EncryptedPrefix, in
+// which case it decrypts via cryptoManager. Returns an error when decryption is required
+// but cryptoManager is nil or Decrypt fails.
 func (v *Vault) DecryptVaultValues(key, value string) (string, error) {
 	if strings.Contains(key, EncryptedPrefix) {
 		if v.cryptoManager == nil {

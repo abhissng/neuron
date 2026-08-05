@@ -4,26 +4,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"strconv"
-	"strings"
 )
 
-// RoundToIntAmount rounds a float64 amount to the nearest integer.
-// For example, 69900 translates to 699.
+// RoundToIntAmount converts a currency amount in major units to smallest currency
+// units by multiplying by 100 and rounding (for example, 699.99 → 69999).
 func RoundToIntAmount(amount float64) int64 {
 	return int64(math.Round(amount * 100))
 }
 
-// ToBytes converts any supported value into a []byte payload suitable for encryption.
-//
-// Conversion rules:
-//   - nil           → error
-//   - []byte        → returned as-is
-//   - string        → []byte(s)
-//   - bool          → "true" / "false"
-//   - integers      → decimal text (strconv)
-//   - floats        → shortest round-trip text (strconv)
-//   - map / slice / struct / other → JSON encoding
+const (
+	bytesKindString  = "string"
+	bytesKindBool    = "bool"
+	bytesKindInt64   = "int64"
+	bytesKindUint64  = "uint64"
+	bytesKindFloat64 = "float64"
+	bytesKindBytes   = "bytes"
+	bytesKindJSON    = "json"
+)
+
+type bytesEnvelope struct {
+	Kind string          `json:"k"`
+	V    json.RawMessage `json:"v"`
+}
+
+func marshalEnvelope(kind string, v any) ([]byte, error) {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(bytesEnvelope{Kind: kind, V: raw})
+}
+
+// ToBytes converts v into a typed byte envelope suitable for encryption.
+// Strings, numeric types, bools, and byte slices round-trip through FromBytes
+// without trimming or type inference. Other values are JSON-encoded under kind "json".
 func ToBytes(v any) ([]byte, error) {
 	if v == nil {
 		return nil, fmt.Errorf("cannot convert nil value to bytes")
@@ -31,77 +45,94 @@ func ToBytes(v any) ([]byte, error) {
 
 	switch t := v.(type) {
 	case []byte:
-		return t, nil
+		return marshalEnvelope(bytesKindBytes, t)
 	case string:
-		return []byte(t), nil
+		return marshalEnvelope(bytesKindString, t)
 	case bool:
-		return []byte(strconv.FormatBool(t)), nil
+		return marshalEnvelope(bytesKindBool, t)
 	case int:
-		return []byte(strconv.Itoa(t)), nil
+		return marshalEnvelope(bytesKindInt64, int64(t))
 	case int8:
-		return []byte(strconv.FormatInt(int64(t), 10)), nil
+		return marshalEnvelope(bytesKindInt64, int64(t))
 	case int16:
-		return []byte(strconv.FormatInt(int64(t), 10)), nil
+		return marshalEnvelope(bytesKindInt64, int64(t))
 	case int32:
-		return []byte(strconv.FormatInt(int64(t), 10)), nil
+		return marshalEnvelope(bytesKindInt64, int64(t))
 	case int64:
-		return []byte(strconv.FormatInt(t, 10)), nil
+		return marshalEnvelope(bytesKindInt64, t)
 	case uint:
-		return []byte(strconv.FormatUint(uint64(t), 10)), nil
+		return marshalEnvelope(bytesKindUint64, uint64(t))
 	case uint8:
-		return []byte(strconv.FormatUint(uint64(t), 10)), nil
+		return marshalEnvelope(bytesKindUint64, uint64(t))
 	case uint16:
-		return []byte(strconv.FormatUint(uint64(t), 10)), nil
+		return marshalEnvelope(bytesKindUint64, uint64(t))
 	case uint32:
-		return []byte(strconv.FormatUint(uint64(t), 10)), nil
+		return marshalEnvelope(bytesKindUint64, uint64(t))
 	case uint64:
-		return []byte(strconv.FormatUint(t, 10)), nil
+		return marshalEnvelope(bytesKindUint64, t)
 	case float32:
-		return []byte(strconv.FormatFloat(float64(t), 'g', -1, 32)), nil
+		return marshalEnvelope(bytesKindFloat64, float64(t))
 	case float64:
-		return []byte(strconv.FormatFloat(t, 'g', -1, 64)), nil
+		return marshalEnvelope(bytesKindFloat64, t)
 	case json.Number:
-		return []byte(t.String()), nil
+		return marshalEnvelope(bytesKindString, t.String())
 	default:
-		b, err := json.Marshal(t)
-		if err != nil {
-			return nil, fmt.Errorf("cannot convert %T to bytes: %w", v, err)
-		}
-		return b, nil
+		return marshalEnvelope(bytesKindJSON, t)
 	}
 }
 
-// FromBytes reverses ToBytes for decrypted payloads.
-//
-// Restoration rules:
-//   - JSON object / array → map[string]any / []any (not escaped string)
-//   - integer text       → int64
-//   - float text         → float64
-//   - bool text          → bool
-//   - everything else    → string
-func FromBytes(b []byte) any {
-	s := strings.TrimSpace(string(b))
-	if s == "" {
-		return ""
+// FromBytes restores a value produced by ToBytes using the embedded type tag.
+// It returns an error when the payload is not a valid envelope.
+func FromBytes(b []byte) (any, error) {
+	var env bytesEnvelope
+	if err := json.Unmarshal(b, &env); err != nil {
+		return nil, fmt.Errorf("invalid bytes envelope: %w", err)
 	}
 
-	first, last := s[0], s[len(s)-1]
-	if (first == '{' && last == '}') || (first == '[' && last == ']') {
-		var v any
-		if err := json.Unmarshal([]byte(s), &v); err == nil {
-			return v
+	switch env.Kind {
+	case bytesKindString:
+		var s string
+		if err := json.Unmarshal(env.V, &s); err != nil {
+			return nil, err
 		}
+		return s, nil
+	case bytesKindBool:
+		var v bool
+		if err := json.Unmarshal(env.V, &v); err != nil {
+			return nil, err
+		}
+		return v, nil
+	case bytesKindInt64:
+		var v int64
+		if err := json.Unmarshal(env.V, &v); err != nil {
+			return nil, err
+		}
+		return v, nil
+	case bytesKindUint64:
+		var v uint64
+		if err := json.Unmarshal(env.V, &v); err != nil {
+			return nil, err
+		}
+		return v, nil
+	case bytesKindFloat64:
+		var v float64
+		if err := json.Unmarshal(env.V, &v); err != nil {
+			return nil, err
+		}
+		return v, nil
+	case bytesKindBytes:
+		var v []byte
+		if err := json.Unmarshal(env.V, &v); err != nil {
+			return nil, err
+		}
+		return v, nil
+	case bytesKindJSON:
+		var v any
+		if err := json.Unmarshal(env.V, &v); err != nil {
+			return nil, err
+		}
+		return v, nil
+	default:
+		return nil, fmt.Errorf("unknown bytes envelope kind: %q", env.Kind)
 	}
-
-	if i, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return i
-	}
-	if f, err := strconv.ParseFloat(s, 64); err == nil {
-		return f
-	}
-	if bv, err := strconv.ParseBool(s); err == nil {
-		return bv
-	}
-
-	return s
 }

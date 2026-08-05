@@ -54,7 +54,8 @@ func fallbackDecode[T any](reader io.Reader) (T, error) {
 	return zero, errors.New("failed to decode response using fallback methods")
 }
 
-// GetContentTypeFromResponse returns data.
+// GetContentTypeFromResponse reads the response Content-Type header, strips any
+// charset or parameter suffix after ';', and returns the base media type.
 func GetContentTypeFromResponse(resp *http.Response) types.ContentType {
 	// Get response Content-Type
 	contentType := resp.Header.Get("Content-Type")
@@ -62,7 +63,8 @@ func GetContentTypeFromResponse(resp *http.Response) types.ContentType {
 	return types.ContentType(contentType)
 }
 
-// GetDecoder returns data.
+// GetDecoder returns the streaming decoder for JSON, XML, YAML, MsgPack, or plain
+// text. Unsupported content types yield a nil DecoderFunc and an error.
 func GetDecoder(contentType types.ContentType) (DecoderFunc, error) {
 	// Get appropriate decoder
 	decoder, exists := decoders[contentType]

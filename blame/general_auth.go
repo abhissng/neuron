@@ -1,11 +1,11 @@
 package blame
 
-// CreateTokenFailedError is an error when creating a token fails.
+// CreateTokenFailed is an error when creating a token fails.
 func CreateTokenFailed() Blame {
 	return getLocalBlameManager().FetchBlameForError(ErrorCreateTokenFailed)
 }
 
-// CreateTokenIdFailedError is an error when creating a token ID fails.
+// CreateTokenIdFailed is an error when creating a token ID fails.
 func CreateTokenIdFailed() Blame {
 	return getLocalBlameManager().FetchBlameForError(ErrorCreateTokenIdFailed)
 }

@@ -33,6 +33,7 @@ order := &Order{ID: "ord_123"}
 ok := result.NewSuccess(order)
 _ = ok
 
+err := errors.New("order lookup failed")
 fail := result.NewFailure[Order](blame.InternalServerError(err))
 _ = fail
 ```

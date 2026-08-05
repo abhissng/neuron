@@ -15,7 +15,8 @@ var (
 	ErrVirusDetected = errors.New("virus detected in file")
 )
 
-// VirusScanner represents virus scanner.
+// VirusScanner inspects raw file bytes. Scan must return (true, nil) when clean,
+// (false, nil) when infected, and (false, err) when scanning cannot complete.
 type VirusScanner interface {
 	Scan(r io.Reader) (clean bool, err error)
 }

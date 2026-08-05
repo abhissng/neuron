@@ -51,8 +51,14 @@ if err != nil {
 	return err
 }
 
-cipher, _ := cm.Encrypt([]byte("secret"))
-plain, _ := cm.Decrypt(cipher)
+cipher, err := cm.Encrypt([]byte("secret"))
+if err != nil {
+	return err
+}
+plain, err := cm.Decrypt(cipher)
+if err != nil {
+	return err
+}
 _ = plain
 ```
 

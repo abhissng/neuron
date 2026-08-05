@@ -31,7 +31,7 @@ func (a *PgxRowsAdapter) Err() error {
 	return a.rows.Err()
 }
 
-// Columns columns.
+// Columns returns the result-set column names from the underlying pgx rows.
 func (a *PgxRowsAdapter) Columns() ([]string, error) {
 	fields := a.rows.FieldDescriptions()
 	columns := make([]string, len(fields))

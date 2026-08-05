@@ -78,14 +78,15 @@ func WithInsecureTLS() Option {
 	}
 }
 
-// WithDisableOpenSearch applies an option value.
+// WithDisableOpenSearch disables OpenSearch client creation; NewClient returns an error when set.
 func WithDisableOpenSearch() Option {
 	return func(o *Options) {
 		o.Disable = true
 	}
 }
 
-// WithEncoderLength applies an option value.
+// WithEncoderLength sets caller-path depth in log encoders (0 uses the short encoder;
+// values above 7 are capped at 7, values <= 2 are treated as 0).
 func WithEncoderLength(length int) Option {
 	return func(o *Options) {
 		// Values <= 2 don't provide meaningful context beyond short encoder

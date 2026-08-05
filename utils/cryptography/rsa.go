@@ -100,7 +100,9 @@ func LoadRSAPublicKeyPEM(path string) (*rsa.PublicKey, error) {
 	return pub, nil
 }
 
-// GenerateAndSaveRSAKeypair generate and save rsakeypair.
+// GenerateAndSaveRSAKeypair generates a 4096-bit RSA key pair and writes PKCS#1 private
+// and PKIX public PEM files to privateKeyPath and publicKeyPath. Returns an error if key
+// generation or either file write fails.
 func GenerateAndSaveRSAKeypair(publicKeyPath, privateKeyPath string) error {
 	priv, err := GenerateRSAKeypair(4096)
 	if err != nil {

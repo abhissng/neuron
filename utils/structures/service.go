@@ -169,7 +169,7 @@ func NewRollbackHistory(correlationId types.CorrelationID) *RollbackHistory {
 	}
 }
 
-// AppendHistory append history.
+// AppendHistory appends one entry to RollbackHistory.History and returns the receiver for chaining.
 func (r *RollbackHistory) AppendHistory(history string) *RollbackHistory {
 	r.History = append(r.History, history)
 	return r

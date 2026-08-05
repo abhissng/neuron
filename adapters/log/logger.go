@@ -207,7 +207,7 @@ func (l *Log) SanitizeValue(value any) any {
 	return value
 }
 
-// Printf printf.
+// Printf formats msg with fmt.Sprintf and logs at the given zap level.
 func (l *Log) Printf(level zapcore.Level, msg string, v ...interface{}) {
 	formattedMsg := fmt.Sprintf(msg, v...)
 	switch level {

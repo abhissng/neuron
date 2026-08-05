@@ -30,7 +30,8 @@ func (s *ServiceContext) Background() context.Context {
 	return context.Background()
 }
 
-// GetPreField returns data.
+// GetPreField returns a shallow copy of the service context that preserves
+// DefaultContext, AppContext, and the Gin context while omitting request-scoped mutations.
 func (s *ServiceContext) GetPreField() *ServiceContext {
 	return &ServiceContext{
 		// These are unaffected fields
@@ -167,7 +168,8 @@ func (s *ServiceContext) RecoverFromException() {
 	}
 }
 
-// RunSafely run safely.
+// RunSafely executes fn and recovers panics, logging the panic value and stack trace
+// via the service logger or helpers.Println when no logger is configured.
 func (s *ServiceContext) RunSafely(fn func()) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -209,7 +211,8 @@ func DefaultContextWithTimeout(timeout time.Duration) (DefaultContext, context.C
 	}, cancel
 }
 
-// GetGinCtxRecordsName returns data.
+// GetGinCtxRecordsName returns the records name stored under constant.Records in the
+// Gin context. It returns an error when that key is absent.
 func (ctx *ServiceContext) GetGinCtxRecordsName() (*string, error) {
 
 	records, exists := ctx.Get(constant.Records)

@@ -70,7 +70,9 @@ func HandleCreate(sc *context.ServiceContext) error {
 Use standard context derivation to preserve cancellation:
 
 ```go
-ctx, cancel := context.WithTimeout(sc.Context, 5*time.Second)
+import stdctx "context"
+
+ctx, cancel := stdctx.WithTimeout(sc.Context, 5*time.Second)
 defer cancel()
 ```
 
