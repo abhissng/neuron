@@ -43,6 +43,7 @@ type ServiceState struct {
 	RollbackSubject string `json:"rollbackSubject"`
 }
 
+// NewServiceState creates a new instance.
 func NewServiceState(service, executeSubject, rollbackSubject string) *ServiceState {
 	return &ServiceState{
 		Service:         service,

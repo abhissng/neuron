@@ -108,6 +108,7 @@ func (ctx *ServiceContext) SlogInfo(message string, withFields ...types.Field) {
 	logger.Info(message, slogfields...)
 }
 
+// SlogWarn slog warn.
 func (ctx *ServiceContext) SlogWarn(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
@@ -115,6 +116,7 @@ func (ctx *ServiceContext) SlogWarn(message string, withFields ...types.Field) {
 	logger.Warn(message, slogfields...)
 }
 
+// SlogError slog error.
 func (ctx *ServiceContext) SlogError(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
@@ -122,6 +124,7 @@ func (ctx *ServiceContext) SlogError(message string, withFields ...types.Field) 
 	logger.Error(message, slogfields...)
 }
 
+// SlogFatal slog fatal.
 func (ctx *ServiceContext) SlogFatal(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)
@@ -129,6 +132,7 @@ func (ctx *ServiceContext) SlogFatal(message string, withFields ...types.Field) 
 	logger.Fatal(message, slogfields...)
 }
 
+// SlogDebug slog debug.
 func (ctx *ServiceContext) SlogDebug(message string, withFields ...types.Field) {
 	// Start with the request and correlation fields and additional fields
 	slogfields := ctx.SlogFields(withFields...)

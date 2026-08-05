@@ -49,6 +49,7 @@ func (w *NATSManager) resolveFilterConflict(subject string) error {
 	return nil
 }
 
+// SubscribeBindConsumer subscribe bind consumer.
 func (w *NATSManager) SubscribeBindConsumer(subject, stream, consumer string, handler nats.MsgHandler, opts ...nats.SubOpt) (*nats.Subscription, blame.Blame) {
 	defer helpers.RecoverException(recover())
 	if w.js == nil {
@@ -67,6 +68,7 @@ func (w *NATSManager) SubscribeBindConsumer(subject, stream, consumer string, ha
 	return w.Subscribe(subject, handler, opts...)
 }
 
+// PullSubscribeBindConsumer pull subscribe bind consumer.
 func (w *NATSManager) PullSubscribeBindConsumer(subject, stream, consumer string, opts ...nats.SubOpt) (*nats.Subscription, blame.Blame) {
 	defer helpers.RecoverException(recover())
 	if w.js == nil {

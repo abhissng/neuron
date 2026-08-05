@@ -15,10 +15,10 @@ import (
 // Log struct holds the zap Logger instance.
 type Log struct {
 	*zap.Logger
-	mu           sync.Mutex   // Mutex for thread-safe logging
-	closeLog     func() error // Function to gracefully shut down the logger
-	sanitizer    *helpers.Sanitizer
-	syncCloseOnce sync.Once   // Ensures closeLog is only invoked once when Sync is called multiple times during shutdown
+	mu            sync.Mutex   // Mutex for thread-safe logging
+	closeLog      func() error // Function to gracefully shut down the logger
+	sanitizer     *helpers.Sanitizer
+	syncCloseOnce sync.Once // Ensures closeLog is only invoked once when Sync is called multiple times during shutdown
 }
 
 // It creates basic logger for utilities function and by default it will carry default confinguration
@@ -207,6 +207,7 @@ func (l *Log) SanitizeValue(value any) any {
 	return value
 }
 
+// Printf printf.
 func (l *Log) Printf(level zapcore.Level, msg string, v ...interface{}) {
 	formattedMsg := fmt.Sprintf(msg, v...)
 	switch level {

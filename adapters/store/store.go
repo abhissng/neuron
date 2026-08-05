@@ -2,6 +2,7 @@ package store
 
 import "github.com/abhissng/neuron/adapters/store/regex"
 
+// StoreManager represents store manager.
 type StoreManager struct {
 	*regex.RegexManager
 }
@@ -25,6 +26,7 @@ func WithRegexManager(manager *regex.RegexManager) StoreOption {
 	}
 }
 
+// GetRegexManager returns data.
 func (s *StoreManager) GetRegexManager() *regex.RegexManager {
 	return s.RegexManager
 }

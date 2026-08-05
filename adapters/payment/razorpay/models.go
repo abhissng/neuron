@@ -32,6 +32,7 @@ type Subscription struct {
 	Notes               map[string]any `json:"notes,omitempty"`
 }
 
+// NewSubscription creates a new instance.
 func NewSubscription() *Subscription {
 	return &Subscription{
 		Notes: make(map[string]any),
@@ -51,6 +52,7 @@ type SubscriptionRequest struct {
 	OfferID        string         `json:"offer_id,omitempty"`
 }
 
+// NewSubscriptionRequest creates a new instance.
 func NewSubscriptionRequest() *SubscriptionRequest {
 	return &SubscriptionRequest{
 		AddOns: make([]*PlanItem, 0),
@@ -58,6 +60,7 @@ func NewSubscriptionRequest() *SubscriptionRequest {
 	}
 }
 
+// AddNote add note.
 func (s *SubscriptionRequest) AddNote(key string, value any) {
 	if s.Notes == nil {
 		s.Notes = make(map[string]any)
@@ -69,6 +72,7 @@ func (s *SubscriptionRequest) AddNote(key string, value any) {
 	}
 }
 
+// AddAddOn add add on.
 func (s *SubscriptionRequest) AddAddOn(addOn *PlanItem) {
 	s.AddOns = append(s.AddOns, addOn)
 }
@@ -84,6 +88,7 @@ type Plan struct {
 	Notes     map[string]any `json:"notes,omitempty"`
 }
 
+// NewPlan creates a new instance.
 func NewPlan() *Plan {
 	return &Plan{
 		Item:  NewPlanItem(),
@@ -91,6 +96,7 @@ func NewPlan() *Plan {
 	}
 }
 
+// AddNote add note.
 func (p *Plan) AddNote(key string, value any) {
 	if p.Notes == nil {
 		p.Notes = make(map[string]any)
@@ -101,6 +107,8 @@ func (p *Plan) AddNote(key string, value any) {
 		p.Notes[key] = value
 	}
 }
+
+// Validate validate.
 func (p *Plan) Validate() error {
 	if p.Period == "" {
 		return errors.New("period is required")
@@ -138,10 +146,12 @@ type PlanItem struct {
 	UpdatedAt    int64  `json:"updated_at,omitempty"`
 }
 
+// NewPlanItem creates a new instance.
 func NewPlanItem() *PlanItem {
 	return &PlanItem{}
 }
 
+// Validate validate.
 func (p *PlanItem) Validate() error {
 	if p.Name == "" {
 		return errors.New("name is required")
@@ -164,12 +174,14 @@ type PlanRequest struct {
 	Notes    map[string]any `json:"notes,omitempty"`
 }
 
+// NewPlanRequest creates a new instance.
 func NewPlanRequest() *PlanRequest {
 	return &PlanRequest{
 		Notes: make(map[string]any),
 	}
 }
 
+// AddNote add note.
 func (p *PlanRequest) AddNote(key string, value any) {
 	if p.Notes == nil {
 		p.Notes = make(map[string]any)
@@ -197,6 +209,7 @@ type Order struct {
 	PartialPayment bool           `json:"partial_payment,omitempty"`
 }
 
+// NewOrder creates a new instance.
 func NewOrder() *Order {
 	return &Order{
 		Notes: make(map[string]any),
@@ -212,6 +225,7 @@ type OrderRequest struct {
 	PartialPayment bool           `json:"partial_payment,omitempty"`
 }
 
+// NewOrderRequest creates a new instance.
 func NewOrderRequest() *OrderRequest {
 	return &OrderRequest{
 		Currency: "INR",
@@ -236,6 +250,7 @@ type Refund struct {
 	Notes          map[string]any `json:"notes,omitempty"`
 }
 
+// NewRefund creates a new instance.
 func NewRefund() *Refund {
 	return &Refund{
 		Notes: make(map[string]any),
@@ -261,6 +276,7 @@ type Invoice struct {
 	Notes           map[string]any    `json:"notes,omitempty"`
 }
 
+// NewInvoice creates a new instance.
 func NewInvoice() *Invoice {
 	return &Invoice{
 		LineItems: []InvoiceLineItem{},
@@ -278,6 +294,7 @@ type InvoiceCustomer struct {
 	BillingAddr string `json:"billing_address,omitempty"`
 }
 
+// NewInvoiceCustomer creates a new instance.
 func NewInvoiceCustomer() *InvoiceCustomer {
 	return &InvoiceCustomer{}
 }
@@ -293,6 +310,7 @@ type InvoiceLineItem struct {
 	TaxAmount   int64  `json:"tax_amount,omitempty"`
 }
 
+// NewInvoiceLineItem creates a new instance.
 func NewInvoiceLineItem() *InvoiceLineItem {
 	return &InvoiceLineItem{}
 }
@@ -308,6 +326,7 @@ type InvoiceRequest struct {
 	Notes           map[string]any    `json:"notes,omitempty"`
 }
 
+// NewInvoiceRequest creates a new instance.
 func NewInvoiceRequest() *InvoiceRequest {
 	return &InvoiceRequest{
 		LineItems: []InvoiceLineItem{},
@@ -338,6 +357,7 @@ type Payment struct {
 	Notes            map[string]any `json:"notes,omitempty"`
 }
 
+// NewPayment creates a new instance.
 func NewPayment() *Payment {
 	return &Payment{
 		Notes: make(map[string]any),
@@ -354,6 +374,7 @@ type WebhookEvent struct {
 	CreatedAt int64          `json:"created_at"`
 }
 
+// NewWebhookEvent creates a new instance.
 func NewWebhookEvent() *WebhookEvent {
 	return &WebhookEvent{
 		Contains: []string{},

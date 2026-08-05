@@ -272,6 +272,7 @@ func WithBundle(bundle *i18n.Bundle) Option {
 	}
 }
 
+// NewBlameManagerOption creates a new instance.
 func NewBlameManagerOption(opts ...Option) *BlameManagerOption {
 	bw := &BlameManagerOption{
 		LanguageTag: helpers.GetDefaultLanguageTag().String(),

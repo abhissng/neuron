@@ -49,6 +49,10 @@ func (c *Client) KeyID() string {
 	return c.key
 }
 
+// Response decoding convention in this client:
+// - Use helpers.MapToStruct for single-object SDK responses.
+// - Use helpers.MapTo for collection payloads, especially items arrays.
+
 // CreateOrder creates an order.
 func (c *Client) CreateOrder(req *OrderRequest, extraHeaders map[string]string) (*Order, error) {
 	defer func() {

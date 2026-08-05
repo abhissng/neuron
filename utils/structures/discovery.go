@@ -1,5 +1,8 @@
 package structures
 
+// This file keeps legacy service discovery drafts in a block comment.
+// Active discovery-related structures are defined in dedicated package files.
+
 /*
 // ServiceDiscoveryConfig represents the JSON configuration structure
 type ServiceDiscoveryConfig struct {

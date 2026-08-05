@@ -17,6 +17,7 @@ type ClientOptions struct {
 	log       *log.Log
 }
 
+// Option represents option.
 type Option func(*ClientOptions)
 
 // WithHost sets the host for the email client

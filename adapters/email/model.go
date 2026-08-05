@@ -29,6 +29,7 @@ type EmailData struct {
 	Headers map[string]string
 }
 
+// NewEmailData creates a new instance.
 func NewEmailData() *EmailData {
 	return &EmailData{
 		To:           make([]string, 0),

@@ -53,12 +53,16 @@ func fallbackDecode[T any](reader io.Reader) (T, error) {
 	var zero T
 	return zero, errors.New("failed to decode response using fallback methods")
 }
+
+// GetContentTypeFromResponse returns data.
 func GetContentTypeFromResponse(resp *http.Response) types.ContentType {
 	// Get response Content-Type
 	contentType := resp.Header.Get("Content-Type")
 	contentType = strings.Split(contentType, ";")[0] // Remove charset info
 	return types.ContentType(contentType)
 }
+
+// GetDecoder returns data.
 func GetDecoder(contentType types.ContentType) (DecoderFunc, error) {
 	// Get appropriate decoder
 	decoder, exists := decoders[contentType]

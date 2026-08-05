@@ -100,6 +100,7 @@ func LoadRSAPublicKeyPEM(path string) (*rsa.PublicKey, error) {
 	return pub, nil
 }
 
+// GenerateAndSaveRSAKeypair generate and save rsakeypair.
 func GenerateAndSaveRSAKeypair(publicKeyPath, privateKeyPath string) error {
 	priv, err := GenerateRSAKeypair(4096)
 	if err != nil {

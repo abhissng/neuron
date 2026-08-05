@@ -78,12 +78,14 @@ func WithInsecureTLS() Option {
 	}
 }
 
+// WithDisableOpenSearch applies an option value.
 func WithDisableOpenSearch() Option {
 	return func(o *Options) {
 		o.Disable = true
 	}
 }
 
+// WithEncoderLength applies an option value.
 func WithEncoderLength(length int) Option {
 	return func(o *Options) {
 		// Values <= 2 don't provide meaningful context beyond short encoder

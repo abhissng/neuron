@@ -30,6 +30,8 @@ func (a *PgxRowsAdapter) Scan(dest ...any) error {
 func (a *PgxRowsAdapter) Err() error {
 	return a.rows.Err()
 }
+
+// Columns columns.
 func (a *PgxRowsAdapter) Columns() ([]string, error) {
 	fields := a.rows.FieldDescriptions()
 	columns := make([]string, len(fields))

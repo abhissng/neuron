@@ -18,6 +18,7 @@ import (
 ========================================
 */
 
+// ValidateFile validate file.
 func (cfg *Config) ValidateFile(file *multipart.FileHeader) error {
 
 	if cfg.rule == nil {
@@ -77,6 +78,7 @@ func (cfg *Config) validateSingleFile(file *multipart.FileHeader) error {
 	return nil
 }
 
+// ValidateFiles validate files.
 func (cfg *Config) ValidateFiles(files []*multipart.FileHeader) error {
 	for _, file := range files {
 		if err := cfg.validateSingleFile(file); err != nil {

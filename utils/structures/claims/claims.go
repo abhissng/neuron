@@ -69,6 +69,7 @@ func (c *StandardClaims) WithPid() *StandardClaims {
 	return c
 }
 
+// GetRandomPid returns data.
 func GetRandomPid(subject, issuer, jti string) string {
 	// Comment: Generates a unique Payload ID based on subject, issuer, and JWT ID.
 	return random.JoinComponentsToID(subject, issuer, jti)
@@ -100,34 +101,50 @@ func (c *StandardClaims) Issuer() string {
 	// Comment: Returns the issuer of the token.
 	return c.Iss
 }
+
+// Expiration expiration.
 func (c *StandardClaims) Expiration() time.Time {
 	// Comment: Returns the expiration time of the token.
 	return c.Exp
 }
+
+// IssuedAt reports whether a condition is true.
 func (c *StandardClaims) IssuedAt() time.Time {
 	// Comment: Returns the issued at time of the token.
 	return c.Iat
 }
+
+// JWTID jwtid.
 func (c *StandardClaims) JWTID() string {
 	// Comment: Returns the unique identifier of the token.
 	return c.Jti
 }
+
+// Audience audience.
 func (c *StandardClaims) Audience() string {
 	// Comment: Returns the intended audience of the token (optional).
 	return c.Aud
 }
+
+// NotBefore not before.
 func (c *StandardClaims) NotBefore() time.Time {
 	// Comment: Returns the time before which the token should not be accepted (optional).
 	return c.Nbf
 }
+
+// Subject subject.
 func (c *StandardClaims) Subject() string {
 	// Comment: Returns the subject of the token (optional).
 	return c.Sub
 }
+
+// IP ip.
 func (c *StandardClaims) IP() string {
 	// Comment: Returns the IP address associated with the token (optional).
 	return c.Ip
 }
+
+// GetData returns data.
 func (c *StandardClaims) GetData() map[string]any {
 	// Comment: Returns the data associated with the token (optional).
 	return c.Data

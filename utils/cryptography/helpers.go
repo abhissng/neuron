@@ -19,6 +19,7 @@ func getDefaultHashSize() int {
 	return 16 // default to 16 bytes (~128-bit hash)
 }
 
+// GenerateHash generate hash.
 func GenerateHash(key, data []byte, size int) (string, error) {
 	if len(key) < 16 {
 		return "", fmt.Errorf("key must be at least 16 bytes")

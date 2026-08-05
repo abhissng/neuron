@@ -241,46 +241,6 @@ func UnknownCorrelationIDError(correlationID types.CorrelationID, cause error) B
 	)
 }
 
-// CreateTokenFailedError is an error when creating a token fails.
-func CreateTokenFailed() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorCreateTokenFailed)
-}
-
-// CreateTokenIdFailedError is an error when creating a token ID fails.
-func CreateTokenIdFailed() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorCreateTokenIdFailed)
-}
-
-// MissingAuthCredential is an error when an auth credential is missing.
-func MissingAuthCredential(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorMissingAuthCredential, WithCauses(cause))
-}
-
-// MalformedAuthToken is an error when an auth token is malformed.
-func MalformedAuthToken(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorMalformedAuthToken, WithCauses(cause))
-}
-
-// ExpiredAuthToken is an error when an auth token expires.
-func ExpiredAuthToken() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorExpiredAuthToken)
-}
-
-// UntrustedTokenIssuer is an error when an auth token issuer is untrusted.
-func UntrustedTokenIssuer() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorUntrustedTokenIssuer)
-}
-
-// AuthPayloadInvalid is an error when an auth payload is invalid.
-func AuthPayloadInvalid() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorAuthPayloadInvalid)
-}
-
-// AuthValidationFailed is an error when an auth validation fails.
-func AuthValidationFailed(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorAuthValidationFailed, WithCauses(cause))
-}
-
 // RequestBodyDataExtractionFailed is an error when request body data extraction fails.
 func RequestBodyDataExtractionFailed(cause error) Blame {
 	return getLocalBlameManager().FetchBlameForError(ErrorRequestBodyDataExtractionFailed, WithCauses(cause))
@@ -359,20 +319,6 @@ func CorrelationIDHeaderMissing(correlationIdField string, cause ...error) Blame
 	)
 }
 
-// AuthSignatureMissing is an error when an auth signature is missing.
-func AuthSignatureMissing() Blame {
-	return getLocalBlameManager().FetchBlameForError(
-		ErrorAuthSignatureMissing,
-	)
-}
-
-// AuthSignatureInvalid is an error when an auth signature is invalid.
-func AuthSignatureInvalid() Blame {
-	return getLocalBlameManager().FetchBlameForError(
-		ErrorAuthSignatureInvalid,
-	)
-}
-
 // XSubjectHeaderMissing is an error when an X-Subject header is missing.
 func XSubjectHeaderMissing(causes ...error) Blame {
 	return getLocalBlameManager().FetchBlameForError(
@@ -384,13 +330,6 @@ func XSubjectHeaderMissing(causes ...error) Blame {
 func ServerStartFailed(causes error) Blame {
 	return getLocalBlameManager().FetchBlameForError(
 		ErrorServerStartFailed,
-		WithCauses(causes))
-}
-
-// RequestBodyInvalid is an error when the request body is invalid.
-func RequestBodyInvalid(causes error) Blame {
-	return getLocalBlameManager().FetchBlameForError(
-		ErrorRequestBodyInvalid,
 		WithCauses(causes))
 }
 
@@ -469,130 +408,10 @@ func ServiceDefinitionNotFound(serviceName string, cause error) Blame {
 	return getLocalBlameManager().FetchBlameForError(ErrorServiceDefinitionNotFound, WithFields(data), WithCauses(cause))
 }
 
-// URLValidationFailed is an error when the URL validation fails.
-func URLValidationFailed(url string, cause error) Blame {
-	data := map[string]interface{}{
-		"url": url,
-	}
-	return getLocalBlameManager().FetchBlameForError(ErrorURLValidationFailed, WithFields(data), WithCauses(cause))
-}
-
-// URLParsingFailed is an error when the URL parsing fails.
-func URLParsingFailed(url string, cause error) Blame {
-	data := map[string]interface{}{
-		"url": url,
-	}
-	return getLocalBlameManager().FetchBlameForError(ErrorURLParsingFailed, WithFields(data), WithCauses(cause))
-}
-
-// URLConstructionFailed is an error when the URL construction fails.
-func URLConstructionFailed(url string, queryParams map[string]any, cause error) Blame {
-	data := map[string]interface{}{
-		"url":         url,
-		"queryParams": queryParams,
-	}
-	return getLocalBlameManager().FetchBlameForError(ErrorURLConstructionFailed, WithFields(data), WithCauses(cause))
-}
-
-// CreateRequestBodyFailed is an error when the request body creation fails.
-func CreateRequestBodyFailed(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorCreateRequestBodyFailed, WithCauses(cause))
-}
-
-// CreateHTTPRequestFailed is an error when the HTTP request creation fails.
-func CreateHTTPRequestFailed(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorCreateHTTPRequestFailed, WithCauses(cause))
-}
-
-// CreateHTTPClientFailed is an error when the HTTP client creation fails.
-func CreateHTTPClientFailed(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorCreateHTTPClientFailed, WithCauses(cause))
-}
-
-// DecodeResponseFailed is an error when the response decoding fails.
-func DecodeResponseFailed(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorDecodeResponseFailed, WithCauses(cause))
-}
-
-// ResponseResultError is an error when the response result has an error.
-func ResponseResultError(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorResponseResultError, WithCauses(cause))
-}
-
-// MissingCorrelationID is an error when the correlation ID is missing.
-func MissingCorrelationID() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorMissingCorrelationID)
-}
-
-// MissingRecordsName is an error when the records name is missing.
-func MissingRecordsName(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorMissingRecordsName, WithCauses(cause))
-}
-
-// MissingXUserRole is an error when the X-User-Role is missing.
-func MissingXUserRole() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorMissingXUserRole)
-}
-
-// MissingXOrgId is an error when the X-Org-Id is missing.
-func MissingXOrgId() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorMissingXOrgId)
-}
-
-// MissingXUserId is an error when the X-User-Id is missing.
-func MissingXUserId() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorMissingXUserId)
-}
-
-// SessionNotFound is an error when the session is not found.
-func SessionNotFound() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorSessionNotFound)
-}
-
-// SessionMalformed is an error when the session is malformed.
-func SessionMalformed(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorSessionMalformed, WithCauses(cause))
-}
-
-// SessionValidationFailed is an error when the session validation fails.
-func SessionValidationFailed(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorSessionValidationFailed, WithCauses(cause))
-}
-
-// SessionInvalid is an error when the session is invalid.
-func SessionInvalid() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorSessionInvalid)
-}
-
-// SessionUnauthenticated is an error when the session is unauthenticated.
-func SessionUnauthenticated() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorSessionUnauthenticated)
-}
-
-// MissingFeatureFlags is an error when the feature flags are missing.
-func MissingFeatureFlags() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorMissingFeatureFlags)
-}
-
-// MissingXLocationId is an error when the X-Location-Id is missing.
-func MissingXLocationId() Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrorMissingXLocationId)
-}
-
 // GeneralKnownError is an error when we want to return any kind of error
 func GeneralKnownError(cause error) Blame {
 	data := map[string]any{
 		"Error": cause.Error(),
 	}
 	return getLocalBlameManager().FetchBlameForError(ErrGeneralKnownError, WithCauses(cause), WithFields(data))
-}
-
-// UnAuthorizedAccess is an error when the user is unauthorized to access a resource.
-func UnAuthorizedAccess(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrUnAuthorizedAccess, WithCauses(cause))
-}
-
-// UnAuthorizedUser is an error when the user is unauthorized to perform an action.
-func UnAuthorizedUser(cause error) Blame {
-	return getLocalBlameManager().FetchBlameForError(ErrUnAuthorizedUser, WithCauses(cause))
 }

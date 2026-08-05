@@ -103,6 +103,7 @@ type TokenDetails struct {
 	ID        string // Unique identifier for the token
 }
 
+// NewTokenDetails creates a new instance.
 func NewTokenDetails() *TokenDetails {
 	return &TokenDetails{}
 }

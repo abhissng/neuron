@@ -73,6 +73,7 @@ func WithMaxSendMsgSize(size int) Option {
 	}
 }
 
+// WithLogger applies an option value.
 func WithLogger(log *log.Log) Option {
 	return func(c *ServerConfig) {
 		c.log = log

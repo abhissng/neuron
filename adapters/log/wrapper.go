@@ -80,6 +80,7 @@ func Err(err error) types.Field {
 // Blame creates a single types.Field (error) for a given error.
 type errorArray []error
 
+// MarshalLogArray marshal log array.
 func (a errorArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
 	for _, e := range a {
 		if e == nil {
@@ -91,6 +92,7 @@ func (a errorArray) MarshalLogArray(enc zapcore.ArrayEncoder) error {
 	return nil
 }
 
+// Blame blame.
 func Blame(b blame.Blame) zap.Field {
 	cs := b.FetchCauses()
 	switch len(cs) {
@@ -172,6 +174,7 @@ func Sprintf(format string, a ...any) string {
 	return fmt.Sprintf(format, a...)
 }
 
+// LoggerConfig represents logger config.
 type LoggerConfig struct {
 	// IsProd enables production mode (JSON output, Info level)
 	IsProd bool

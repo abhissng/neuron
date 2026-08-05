@@ -72,12 +72,14 @@ func (m *MetaData) ValidateMetaData() error {
 	return nil
 }
 
+// ExcludedOptions represents excluded options.
 type ExcludedOptions struct {
 	Services []*string `json:"services"`
 	Records  []*string `json:"records"`
 	Events   []*string `json:"events"`
 }
 
+// NewExcludedOptions creates a new instance.
 func NewExcludedOptions() *ExcludedOptions {
 	return &ExcludedOptions{
 		Services: make([]*string, 0),
@@ -132,6 +134,7 @@ type PhoneNumberInfo struct {
 	NationalNumber uint64 // The number without the country code
 }
 
+// EssentialHeaders represents essential headers.
 type EssentialHeaders struct {
 	OrgId        types.OrgID  `json:"org_id"`
 	UserId       types.UserID `json:"user_id"`
@@ -151,6 +154,7 @@ type EssentialHeadersConfig struct {
 	RequireLocationID   bool
 }
 
+// NewEssentialHeadersConfig creates a new instance.
 func NewEssentialHeadersConfig() *EssentialHeadersConfig {
 	return &EssentialHeadersConfig{
 		RequireFeatureFlags: false,
@@ -175,18 +179,21 @@ func WithLocationIdRequired() EssentialHeadersOption {
 	}
 }
 
+// RequestAuthValues represents request auth values.
 type RequestAuthValues struct {
 	Token         string
 	CorrelationID types.CorrelationID
 	XSubject      string
 }
 
+// RequestAuthConfig represents request auth config.
 type RequestAuthConfig struct {
 	RequireToken         bool
 	RequireCorrelationID bool
 	RequireXSubject      bool
 }
 
+// RequestAuthOption represents request auth option.
 type RequestAuthOption func(*RequestAuthConfig)
 
 // WithRequireToken marks the auth token as required when fetching request auth values.

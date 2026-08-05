@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// EssentialHeaders represents essential headers.
 type EssentialHeaders struct {
 	OrgId        types.OrgID  `json:"org_id"`
 	UserId       types.UserID `json:"user_id"`
@@ -123,18 +124,21 @@ func GetEssentialHeadersValues(ctx *context.ServiceContext, options ...Essential
 	}, nil
 }
 
+// RequestAuthValues represents request auth values.
 type RequestAuthValues struct {
 	Token         string
 	CorrelationID types.CorrelationID
 	XSubject      string
 }
 
+// RequestAuthConfig represents request auth config.
 type RequestAuthConfig struct {
 	RequireToken         bool
 	RequireCorrelationID bool
 	RequireXSubject      bool
 }
 
+// RequestAuthOption represents request auth option.
 type RequestAuthOption func(*RequestAuthConfig)
 
 // WithRequireToken marks the auth token as required when fetching request auth values.

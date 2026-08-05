@@ -32,6 +32,7 @@ type Service interface {
 	VerifyWebhookSignature(body []byte, signature string) error
 }
 
+// NewService creates a new instance.
 func NewService(client *Client) Service {
 	return client
 }

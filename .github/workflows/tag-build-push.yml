@@ -119,8 +119,8 @@ jobs:
             echo "neuron_tag=$neuron_tag" >> $GITHUB_OUTPUT
             echo "Found neuron tag: $neuron_tag"
           else
-            echo "neuron_tag=v0.0.1-20260222-200821-4dd0c14" >> $GITHUB_OUTPUT
-            echo "Using default neuron tag: v0.0.1-20260222-200821-4dd0c14"
+            echo "neuron_tag=v0.1.0-20260724-134353-71cf310" >> $GITHUB_OUTPUT
+            echo "Using default neuron tag: v0.1.0-20260724-134353-71cf310"
           fi
 
       - name: Set up Docker Buildx

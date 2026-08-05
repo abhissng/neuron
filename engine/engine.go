@@ -37,7 +37,7 @@ func NewServiceResult() *ServiceResult {
 	}
 }
 
-// processServiceStates processes each state defined in the service definition.
+// ProcessServiceStates processes each state defined in the service definition.
 // It forwards a request payload to each external service using NATS.
 // Returns the response from each state and a list of executed states as a ServiceResult.
 func ProcessServiceStates[T any](

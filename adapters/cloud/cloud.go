@@ -115,6 +115,7 @@ type Config struct {
 	OCINamespace string
 }
 
+// NewConfig creates a new instance.
 func NewConfig() *Config {
 	return &Config{}
 }

@@ -10,14 +10,17 @@ import (
 	"github.com/abhissng/neuron/utils/helpers"
 )
 
+// ClamAVScanner represents clam avscanner.
 type ClamAVScanner struct {
 	Address string
 }
 
+// NewClamAVScanner creates a new instance.
 func NewClamAVScanner(addr string) *ClamAVScanner {
 	return &ClamAVScanner{Address: addr}
 }
 
+// Scan scan.
 func (c *ClamAVScanner) Scan(r io.Reader) (bool, error) {
 	conn, err := net.DialTimeout("tcp", c.Address, 10*time.Second)
 	if err != nil {

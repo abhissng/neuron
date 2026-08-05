@@ -27,6 +27,7 @@ type SessionData struct {
 	IsAuthenticated bool           `json:"is_authenticated"`
 }
 
+// NewSessionData creates a new instance.
 func NewSessionData() *SessionData {
 	return &SessionData{
 		CustomData: make(map[string]any),

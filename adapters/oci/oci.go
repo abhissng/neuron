@@ -26,6 +26,7 @@ const (
 	AuthInstancePrincipal
 )
 
+// Config represents config.
 type Config struct {
 	Mode           AuthMode
 	TenancyOCID    string
@@ -59,6 +60,7 @@ type OCIManager struct {
 
 type Option func(*OCIManager) error
 
+// WithUserCredentials applies an option value.
 func WithUserCredentials(tenancy, user, region, fingerprint, keyPath, passphrase string) Option {
 	return func(cm *OCIManager) error {
 		cm.config = &Config{
@@ -75,6 +77,7 @@ func WithUserCredentials(tenancy, user, region, fingerprint, keyPath, passphrase
 	}
 }
 
+// WithInstancePrincipal applies an option value.
 func WithInstancePrincipal(region string) Option {
 	return func(cm *OCIManager) error {
 		cm.config = &Config{
@@ -86,6 +89,7 @@ func WithInstancePrincipal(region string) Option {
 	}
 }
 
+// WithObjectStorage applies an option value.
 func WithObjectStorage() Option {
 	return func(cm *OCIManager) error {
 		cm.enableObject = true
@@ -93,6 +97,7 @@ func WithObjectStorage() Option {
 	}
 }
 
+// WithCompute applies an option value.
 func WithCompute() Option {
 	return func(cm *OCIManager) error {
 		cm.enableCompute = true
@@ -100,6 +105,7 @@ func WithCompute() Option {
 	}
 }
 
+// WithIdentity applies an option value.
 func WithIdentity() Option {
 	return func(cm *OCIManager) error {
 		cm.enableIdentity = true
@@ -107,6 +113,7 @@ func WithIdentity() Option {
 	}
 }
 
+// WithLogger applies an option value.
 func WithLogger(logger *log.Log) Option {
 	return func(cm *OCIManager) error {
 		cm.logger = logger
@@ -114,6 +121,7 @@ func WithLogger(logger *log.Log) Option {
 	}
 }
 
+// WithRetries applies an option value.
 func WithRetries(n int) Option {
 	return func(cm *OCIManager) error {
 		cm.retries = n
@@ -208,6 +216,7 @@ func (cm *OCIManager) withRetry(ctx context.Context, op func() error) error {
 	return err
 }
 
+// WithCtxTimeout applies an option value.
 func WithCtxTimeout(ctx context.Context, d time.Duration) (context.Context, context.CancelFunc) {
 	if d <= 0 {
 		return context.WithCancel(ctx) // #nosec G118
@@ -328,6 +337,7 @@ func (cm *OCIManager) DownloadObject(ctx context.Context, namespace, bucket, obj
 	return err
 }
 
+// ListObjects list objects.
 func (cm *OCIManager) ListObjects(ctx context.Context, namespace, bucket string, prefix *string) ([]objectstorage.ObjectSummary, error) {
 	if cm.objectClient == nil {
 		return nil, errors.New("object storage client not initialized")
@@ -348,6 +358,7 @@ func (cm *OCIManager) ListObjects(ctx context.Context, namespace, bucket string,
 	return result, err
 }
 
+// DeleteObject delete object.
 func (cm *OCIManager) DeleteObject(ctx context.Context, namespace, bucket, objectName string) error {
 	if cm.objectClient == nil {
 		return errors.New("object storage client not initialized")
@@ -362,6 +373,7 @@ func (cm *OCIManager) DeleteObject(ctx context.Context, namespace, bucket, objec
 	})
 }
 
+// CreateBucket create bucket.
 func (cm *OCIManager) CreateBucket(ctx context.Context, namespace, compartmentOCID, bucketName, storageTier string) error {
 	if cm.objectClient == nil {
 		return errors.New("object storage client not initialized")
@@ -379,6 +391,7 @@ func (cm *OCIManager) CreateBucket(ctx context.Context, namespace, compartmentOC
 	})
 }
 
+// GetBucket returns data.
 func (cm *OCIManager) GetBucket(ctx context.Context, namespace, bucketName string) (*objectstorage.Bucket, error) {
 	if cm.objectClient == nil {
 		return nil, errors.New("object storage client not initialized")
@@ -398,6 +411,7 @@ func (cm *OCIManager) GetBucket(ctx context.Context, namespace, bucketName strin
 	return result, err
 }
 
+// IsObjectExists reports whether a condition is true.
 func (cm *OCIManager) IsObjectExists(ctx context.Context, namespace, bucket, objectName string) (bool, error) {
 	if cm.objectClient == nil {
 		return false, errors.New("object storage client not initialized")
@@ -443,6 +457,7 @@ func (cm *OCIManager) LaunchInstance(ctx context.Context, compartmentOCID, ad, s
 	return instance, err
 }
 
+// TerminateInstance terminate instance.
 func (cm *OCIManager) TerminateInstance(ctx context.Context, instanceID string) error {
 	if cm.computeClient == nil {
 		return errors.New("compute client not initialized")
@@ -453,6 +468,7 @@ func (cm *OCIManager) TerminateInstance(ctx context.Context, instanceID string) 
 	})
 }
 
+// ListInstances list instances.
 func (cm *OCIManager) ListInstances(ctx context.Context, compartmentOCID string) ([]core.Instance, error) {
 	if cm.computeClient == nil {
 		return nil, errors.New("compute client not initialized")

@@ -1,6 +1,5 @@
 package context
 
-///
 import (
 	"context"
 	"errors"
@@ -30,6 +29,8 @@ func NewDefaultContext() *DefaultContext {
 func (s *ServiceContext) Background() context.Context {
 	return context.Background()
 }
+
+// GetPreField returns data.
 func (s *ServiceContext) GetPreField() *ServiceContext {
 	return &ServiceContext{
 		// These are unaffected fields
@@ -166,6 +167,7 @@ func (s *ServiceContext) RecoverFromException() {
 	}
 }
 
+// RunSafely run safely.
 func (s *ServiceContext) RunSafely(fn func()) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -207,6 +209,7 @@ func DefaultContextWithTimeout(timeout time.Duration) (DefaultContext, context.C
 	}, cancel
 }
 
+// GetGinCtxRecordsName returns data.
 func (ctx *ServiceContext) GetGinCtxRecordsName() (*string, error) {
 
 	records, exists := ctx.Get(constant.Records)

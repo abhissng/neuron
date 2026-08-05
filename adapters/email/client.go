@@ -14,10 +14,12 @@ import (
 	gomail "gopkg.in/mail.v2"
 )
 
+// EmailClient represents email client.
 type EmailClient interface {
 	Send(data *EmailData) error
 }
 
+// GomailClient represents gomail client.
 type GomailClient struct {
 	opts ClientOptions
 }
@@ -202,6 +204,7 @@ func (c *SESClient) sendRawEmail(data *EmailData, subject, html, text string) er
 	return nil
 }
 
+// Send send.
 func (c *GomailClient) Send(data *EmailData) error {
 	if data == nil {
 		return fmt.Errorf("email data is required")

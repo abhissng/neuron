@@ -21,12 +21,14 @@ var (
 	ErrInvalidExtension = errors.New("file extension not allowed")
 )
 
+// FileRule represents file rule.
 type FileRule struct {
 	MaxSizeBytes int64
 	AllowedMIMEs map[string]struct{}
 	AllowedExts  map[string]struct{}
 }
 
+// UploadProfile represents upload profile.
 type UploadProfile string
 
 const (
@@ -108,6 +110,7 @@ func init() {
 	))
 }
 
+// RegisterUploadProfile register upload profile.
 func RegisterUploadProfile(name UploadProfile, rule *FileRule) {
 	if rule == nil {
 		helpers.Println(constant.ERROR, "RegisterUploadProfile: rule is nil")
@@ -118,6 +121,7 @@ func RegisterUploadProfile(name UploadProfile, rule *FileRule) {
 	ruleRegistry[name] = rule
 }
 
+// GetUploadProfile returns data.
 func GetUploadProfile(name UploadProfile) (*FileRule, bool) {
 	registryMu.RLock()
 	defer registryMu.RUnlock()
@@ -125,6 +129,7 @@ func GetUploadProfile(name UploadProfile) (*FileRule, bool) {
 	return rule, ok
 }
 
+// MergeUploadProfiles merge upload profiles.
 func MergeUploadProfiles(profiles ...UploadProfile) *FileRule {
 	merged := &FileRule{
 		MaxSizeBytes: 0,
@@ -166,6 +171,7 @@ func MergeUploadProfiles(profiles ...UploadProfile) *FileRule {
 ========================================
 */
 
+// NewCustomRule creates a new instance.
 func NewCustomRule(maxSize int64, mimes []string, exts []string) *FileRule {
 	if maxSize <= 0 {
 		maxSize = 10 * MB

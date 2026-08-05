@@ -10,15 +10,58 @@ import (
 	"github.com/google/uuid"
 )
 
+type uuidConfig struct {
+	useV7 bool
+}
+
+// UUIDOption configures UUID generation behavior.
+type UUIDOption func(*uuidConfig)
+
+// WithUUIDVersion7 enables UUID v7 generation with fallback to the default UUID generator.
+func WithUUIDVersion7() UUIDOption {
+	return func(cfg *uuidConfig) {
+		cfg.useV7 = true
+	}
+}
+
 // GenerateUUID generates a UUID
 func GenerateUUIDString() string {
 	// Implement your UUID generation logic here
 	return uuid.New().String()
 }
 
-func GenerateUUID() uuid.UUID {
-	// Implement your UUID generation logic here
+// GenerateUUID generate uuid.
+func GenerateUUID(opts ...UUIDOption) uuid.UUID {
+	return GenerateUUIDWithOptions(opts...)
+}
+
+// GenerateUUIDWithOptions generates a UUID using the provided options.
+// If UUID v7 generation is enabled and fails, it falls back to the default UUID generator.
+func GenerateUUIDWithOptions(opts ...UUIDOption) uuid.UUID {
+	cfg := &uuidConfig{}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(cfg)
+		}
+	}
+
+	if cfg.useV7 {
+		id, err := uuid.NewV7()
+		if err == nil {
+			return id
+		}
+	}
+
 	return uuid.New()
+}
+
+// GenerateUUIDV7 generates a UUID v7
+func GenerateUUIDV7() (string, error) {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return "", err
+	}
+	return id.String(), nil
 }
 
 // JoinComponentsToID joins multiple strings into a single ID

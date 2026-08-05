@@ -152,10 +152,12 @@ func (e UserID) UUID() uuid.UUID {
 	return uuid.UUID(e)
 }
 
+// MarshalJSON marshal json.
 func (o UserID) MarshalJSON() ([]byte, error) {
 	return json.Marshal(o.String())
 }
 
+// UnmarshalJSON unmarshal json.
 func (o *UserID) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
@@ -243,6 +245,7 @@ type IDType interface {
 	~string | ~int64 | ~int32 | uuid.UUID
 }
 
+// OrgID represents org id.
 type OrgID uuid.UUID
 
 // String returns the string representation of the OrgID.
@@ -260,10 +263,12 @@ func ToOrgID(uuid uuid.UUID) OrgID {
 	return OrgID(uuid)
 }
 
+// MarshalJSON marshal json.
 func (o OrgID) MarshalJSON() ([]byte, error) {
 	return json.Marshal(o.String())
 }
 
+// UnmarshalJSON unmarshal json.
 func (o *OrgID) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {

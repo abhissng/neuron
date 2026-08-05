@@ -307,6 +307,7 @@ type serverStreamWithContext struct {
 	ctx context.Context
 }
 
+// Context context.
 func (w *serverStreamWithContext) Context() context.Context { return w.ctx }
 
 // InterceptorLogger is a simple logging manager
@@ -669,6 +670,7 @@ type server struct {
 	pb.UnimplementedDiscoveryServiceServer
 }
 
+// ProcessDiscovery process discovery.
 func (s *server) ProcessDiscovery(ctx context.Context, req *pb.DiscoveryMessage) (*pb.DiscoveryMessage, error) {
 	// Unpack core payload
 	var core pb.Core
