@@ -79,6 +79,8 @@ func FetchHTTPStatusCode(response types.ResponseErrorType) int {
 		return http.StatusNotFound
 	case constant.AlreadyExists:
 		return http.StatusConflict
+	case constant.ServiceUnavailable:
+		return http.StatusServiceUnavailable
 	}
 	return http.StatusInternalServerError
 }

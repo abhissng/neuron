@@ -173,7 +173,7 @@ func WithVault(vlt *vault.Vault) AppContextOption {
 }
 
 // WithCacheManager sets the cache manager for the AppContext.
-// Named caches are created later via GetNamedCache or GetNamedCacheWithConfig.
+// Named caches are created later via GetNamedCache.
 func WithCacheManager(config *cache.CacheConfig) AppContextOption {
 	return func(ctx *AppContext) {
 		if config != nil {
@@ -195,14 +195,6 @@ func (ctx *AppContext) GetNamedCache(name string) cache.Cache[string, any] {
 		return nil
 	}
 	return ctx.GetOrCreateCache(name)
-}
-
-// GetNamedCacheWithConfig returns an existing named cache or creates one with the given config.
-func (ctx *AppContext) GetNamedCacheWithConfig(name string) cache.Cache[string, any] {
-	if ctx.CacheManager == nil {
-		return nil
-	}
-	return ctx.GetOrCreateCacheWithConfig(name)
 }
 
 // WithCryptoManager sets the crypto manager for the AppContext.

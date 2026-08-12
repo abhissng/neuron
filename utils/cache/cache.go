@@ -1,6 +1,9 @@
 package cache
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 // CacheType represents the type of cache implementation to use
 type CacheType int
@@ -57,6 +60,7 @@ func DefaultLRUConfig() *CacheConfig {
 
 // CacheManager provides a factory for creating and managing different types of caches
 type CacheManager struct {
+	mu sync.Mutex
 	// Store active caches to ensure they can be properly stopped when needed
 	caches map[string]Cache[string, any]
 	// configuration to use when none is provided
@@ -80,62 +84,75 @@ func NewCacheManagerWithConfig(config *CacheConfig) *CacheManager {
 	}
 }
 
-// CreateCache creates a new cache with the given name using the default configuration
+// CreateCache creates a new cache with the given name using the manager default configuration.
 func (m *CacheManager) CreateCache(name string) Cache[string, any] {
 	return m.CreateCacheWithConfig(name)
 }
 
-// CreateCacheWithConfig creates a new cache with the given name and specific configuration
-// The key type is string and value type is any for maximum flexibility
+// CreateCacheWithConfig creates a new cache with the given name using the manager default configuration.
+// Per-call configuration is not supported; name is retained for compatibility.
+// The key type is string and value type is any for maximum flexibility.
 func (m *CacheManager) CreateCacheWithConfig(name string) Cache[string, any] {
-	var cache Cache[string, any]
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.createCacheLocked(name)
+}
 
+// createCacheLocked creates and stores a cache. Caller must hold m.mu.
+func (m *CacheManager) createCacheLocked(name string) Cache[string, any] {
+	if m.config == nil {
+		m.config = defaultConfig()
+	}
+
+	var cache Cache[string, any]
 	switch m.config.Type {
 	case LRU:
-		if m.config.MaxSize <= 0 {
-			m.config.MaxSize = 1000 // Default size if not specified
+		maxSize := m.config.MaxSize
+		if maxSize <= 0 {
+			maxSize = 1000 // Default size if not specified
+			m.config.MaxSize = maxSize
 		}
-		cache = NewLRUCacheWithCleanupInterval[string, any](m.config.MaxSize, m.config.CleanupInterval)
+		cache = NewLRUCacheWithCleanupInterval[string, any](maxSize, m.config.CleanupInterval)
 	default: // Basic cache is the default
 		cache = NewBasicCacheWithCleanupInterval[string, any](m.config.CleanupInterval)
 	}
 
-	// Store the cache for later cleanup
 	m.caches[name] = cache
-
 	return cache
 }
 
-// GetOrCreateCache returns an existing cache or creates a new one if it doesn't exist
-// Uses the default configuration if it needs to create the cache
+// GetOrCreateCache returns an existing cache or creates a new one if it doesn't exist.
+// Uses the manager default configuration if it needs to create the cache.
 func (m *CacheManager) GetOrCreateCache(name string) Cache[string, any] {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if cache, exists := m.caches[name]; exists {
 		return cache
 	}
-
-	return m.CreateCache(name)
+	return m.createCacheLocked(name)
 }
 
-// GetOrCreateCacheWithConfig returns an existing cache or creates a new one with specified config
+// GetOrCreateCacheWithConfig is a compatibility alias for GetOrCreateCache.
+// It uses the manager-level configuration; per-call configuration is not supported.
 func (m *CacheManager) GetOrCreateCacheWithConfig(name string) Cache[string, any] {
-	if m.config == nil {
-		m.config = defaultConfig()
-	}
-	if cache, exists := m.caches[name]; exists {
-		return cache
-	}
-
-	return m.CreateCacheWithConfig(name)
+	return m.GetOrCreateCache(name)
 }
 
 // GetCache retrieves a cache by name
 func (m *CacheManager) GetCache(name string) (Cache[string, any], bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	cache, exists := m.caches[name]
 	return cache, exists
 }
 
 // RemoveCache stops and removes a cache
 func (m *CacheManager) RemoveCache(name string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if cache, exists := m.caches[name]; exists {
 		cache.StopCleanup()
 		delete(m.caches, name)
@@ -144,6 +161,9 @@ func (m *CacheManager) RemoveCache(name string) {
 
 // StopAll stops all running caches
 func (m *CacheManager) StopAll() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	for _, cache := range m.caches {
 		cache.StopCleanup()
 	}
@@ -152,11 +172,21 @@ func (m *CacheManager) StopAll() {
 
 // Getconfig returns the current default configuration
 func (m *CacheManager) Getconfig() *CacheConfig {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	return m.config
 }
 
-// Setconfig changes the default configuration for new caches
+// Setconfig changes the default configuration for new caches.
+// A nil config is replaced with defaultConfig() so later CreateCache calls always have a non-nil configuration.
 func (m *CacheManager) Setconfig(config *CacheConfig) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if config == nil {
+		m.config = defaultConfig()
+		return
+	}
 	m.config = config
 }
 
