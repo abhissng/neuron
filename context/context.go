@@ -9,6 +9,7 @@ import (
 
 	"github.com/abhissng/neuron/adapters/events/nats"
 	"github.com/abhissng/neuron/adapters/log"
+	"github.com/abhissng/neuron/adapters/store"
 	"github.com/abhissng/neuron/utils/constant"
 	"github.com/abhissng/neuron/utils/helpers"
 	"github.com/abhissng/neuron/utils/random"
@@ -221,4 +222,9 @@ func (ctx *ServiceContext) GetGinCtxRecordsName() (*string, error) {
 	}
 
 	return records.(*string), nil
+}
+
+// GetStoreManager retrieves the StoreManager from the App context.
+func (ctx *ServiceContext) GetStoreManager() *store.StoreManager {
+	return ctx.StoreManager
 }

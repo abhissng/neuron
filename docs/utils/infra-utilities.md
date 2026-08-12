@@ -14,16 +14,39 @@ Packages covered:
 
 ## Cache
 
-`utils/cache` provides cache abstractions and implementations (including basic/LRU patterns) used by app-level managers and request paths.
+`utils/cache` provides cache abstractions and implementations (including basic/LRU patterns). Prefer wiring a `CacheManager` into `AppContext`, then creating named caches as needed. Each named cache has its own capacity (for LRU, `MaxSize` is total keys in that cache).
+
+### Standalone CacheManager
 
 ```go
-cm := cache.NewCacheManager()
-c := cm.GetOrCreateCache("orders")
+cm := cache.NewCacheManagerWithConfig(cache.DefaultLRUConfig())
 
-c.Set("ord_123", map[string]any{"status": "created"})
-value, ok := c.Get("ord_123")
+orders := cm.GetOrCreateCache("orders")
+orders.Set("ord_123", map[string]any{"status": "created"})
+orders.SetWithExpiry("ord_tmp", map[string]any{"status": "pending"}, 2*time.Minute)
+
+value, ok := orders.Get("ord_123")
 _ = value
 _ = ok
+
+tokens := cm.GetOrCreateCache("tokens") // separate cache, own MaxSize limit
+tokens.SetWithExpiry("t1", "abc", 5*time.Minute)
+
+defer cm.StopAll()
+```
+
+### AppContext (recommended)
+
+```go
+appCtx := context.NewAppContext(
+	context.WithCacheManager(cache.DefaultLRUConfig()),
+)
+
+orders := appCtx.GetNamedCache("orders")
+orders.Set("ord_123", map[string]any{"status": "created"})
+
+tokens := appCtx.GetNamedCache("tokens")
+tokens.SetWithExpiry("t1", "abc", 5*time.Minute)
 ```
 
 ## Circuit Breaker

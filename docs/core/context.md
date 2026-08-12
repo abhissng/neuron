@@ -28,6 +28,7 @@ appCtx := context.NewAppContext(
 	context.WithPostgresDB(pg),
 	context.WithNATSManager(natsMgr),
 	context.WithLogger(logger),
+	context.WithCacheManager(cache.DefaultLRUConfig()),
 	context.WithPaymentManager(paymentMgr),
 )
 ```
@@ -37,6 +38,7 @@ Common option families in `app.go`:
 - identity and service metadata
 - error manager (`blame`) and logger
 - event manager (`nats`) and HTTP client
+- cache manager (`utils/cache`) for named in-memory caches
 - data adapters (`postgres`, `mysql`, `redis`, `mongo`, `opensearch`)
 - auth/session/vault/cloud/payment adapters
 
@@ -61,6 +63,21 @@ func HandleCreate(sc *context.ServiceContext) error {
 	db := sc.FetchDatabase()
 	_ = log
 	_ = db
+	return nil
+}
+```
+
+### Named caches via CacheManager
+
+`AppContext` holds a `*cache.CacheManager`, not a single embedded cache. Create separate named caches as needed:
+
+```go
+func HandleCreate(sc *context.ServiceContext) error {
+	orders := sc.GetNamedCache("orders")
+	orders.Set("ord_123", map[string]any{"status": "created"})
+
+	tokens := sc.GetNamedCache("tokens")
+	tokens.SetWithExpiry("t1", "abc", 5*time.Second)
 	return nil
 }
 ```

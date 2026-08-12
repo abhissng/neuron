@@ -79,6 +79,8 @@ func FetchHTTPStatusCode(response types.ResponseErrorType) int {
 		return http.StatusNotFound
 	case constant.AlreadyExists:
 		return http.StatusConflict
+	case constant.ServiceUnavailable:
+		return http.StatusServiceUnavailable
 	}
 	return http.StatusInternalServerError
 }
@@ -912,4 +914,9 @@ func GetKeyByValue[K comparable, V comparable](m map[K]V, value V) (K, bool) {
 
 	var zero K
 	return zero, false
+}
+
+// NormalizeString trims leading and trailing whitespace from the input string.
+func NormalizeString(s string) string {
+	return strings.TrimSpace(s)
 }

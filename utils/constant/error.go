@@ -18,12 +18,13 @@ const (
 
 // These are generic HTTP request error constant
 const (
-	BadRequest     types.ResponseErrorType = "BadRequest"
-	Forbidden      types.ResponseErrorType = "Forbidden"
-	NotFound       types.ResponseErrorType = "NotFound"
-	AlreadyExists  types.ResponseErrorType = "AlreadyExists"
-	InternalServer types.ResponseErrorType = "InternalServerError"
-	Unauthorized   types.ResponseErrorType = "Unauthorized"
+	BadRequest         types.ResponseErrorType = "BadRequest"
+	Forbidden          types.ResponseErrorType = "Forbidden"
+	NotFound           types.ResponseErrorType = "NotFound"
+	AlreadyExists      types.ResponseErrorType = "AlreadyExists"
+	InternalServer     types.ResponseErrorType = "InternalServerError"
+	Unauthorized       types.ResponseErrorType = "Unauthorized"
+	ServiceUnavailable types.ResponseErrorType = "ServiceUnavailable"
 )
 
 const (

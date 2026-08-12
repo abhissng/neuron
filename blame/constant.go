@@ -87,4 +87,5 @@ const (
 	ErrGeneralKnownError                 types.ErrorCode = "error-general-known-error"
 	ErrUnAuthorizedAccess                types.ErrorCode = "error-unauthorized-access"
 	ErrUnAuthorizedUser                  types.ErrorCode = "error-unauthorized-user"
+	ErrDatabaseUnavailable               types.ErrorCode = "error-database-unavailable"
 )
