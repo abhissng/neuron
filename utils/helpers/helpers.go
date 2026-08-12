@@ -913,3 +913,8 @@ func GetKeyByValue[K comparable, V comparable](m map[K]V, value V) (K, bool) {
 	var zero K
 	return zero, false
 }
+
+// NormalizeString trims leading and trailing whitespace from the input string.
+func NormalizeString(s string) string {
+	return strings.TrimSpace(s)
+}

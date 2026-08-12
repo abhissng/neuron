@@ -39,7 +39,7 @@ type AppContext struct {
 	*redis.RedisManager
 	*aws.AWSManager
 	database.Database
-	cache.Cache[string, any]
+	*cache.CacheManager
 	*cryptography.CryptoManager
 	email.EmailClient
 	*oci.OCIManager
@@ -173,14 +173,36 @@ func WithVault(vlt *vault.Vault) AppContextOption {
 }
 
 // WithCacheManager sets the cache manager for the AppContext.
+// Named caches are created later via GetNamedCache or GetNamedCacheWithConfig.
 func WithCacheManager(config *cache.CacheConfig) AppContextOption {
 	return func(ctx *AppContext) {
 		if config != nil {
-			ctx.Cache = cache.NewCacheManagerWithConfig(*config).CreateCache("default")
+			ctx.CacheManager = cache.NewCacheManagerWithConfig(config)
 			return
 		}
-		ctx.Cache = cache.NewCacheManager().CreateCache("default")
+		ctx.CacheManager = cache.NewCacheManager()
 	}
+}
+
+// GetCacheManager retrieves the CacheManager from the AppContext.
+func (ctx *AppContext) GetCacheManager() *cache.CacheManager {
+	return ctx.CacheManager
+}
+
+// GetNamedCache returns an existing named cache or creates one with the manager default config.
+func (ctx *AppContext) GetNamedCache(name string) cache.Cache[string, any] {
+	if ctx.CacheManager == nil {
+		return nil
+	}
+	return ctx.GetOrCreateCache(name)
+}
+
+// GetNamedCacheWithConfig returns an existing named cache or creates one with the given config.
+func (ctx *AppContext) GetNamedCacheWithConfig(name string) cache.Cache[string, any] {
+	if ctx.CacheManager == nil {
+		return nil
+	}
+	return ctx.GetOrCreateCacheWithConfig(name)
 }
 
 // WithCryptoManager sets the crypto manager for the AppContext.

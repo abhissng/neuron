@@ -415,3 +415,11 @@ func GeneralKnownError(cause error) Blame {
 	}
 	return getLocalBlameManager().FetchBlameForError(ErrGeneralKnownError, WithCauses(cause), WithFields(data))
 }
+
+// DatabaseUnavailableError is an error when the database is unavailable.
+func DatabaseUnavailableError(cause error) Blame {
+	return getLocalBlameManager().FetchBlameForError(
+		ErrDatabaseUnavailable,
+		WithCauses(cause),
+	)
+}

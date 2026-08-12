@@ -25,6 +25,9 @@ type Cache[K comparable, V any] interface {
 	StopCleanup()                                       // Stop the background cleanup goroutine.
 }
 
+// DefaultCacheName is the conventional name for a default named cache.
+const DefaultCacheName = "default"
+
 // CacheConfig holds configuration options for creating caches
 type CacheConfig struct {
 	// Type determines which cache implementation to use
@@ -35,17 +38,17 @@ type CacheConfig struct {
 	MaxSize int
 }
 
-// config returns a default configuration using BasicCache
-func config() CacheConfig {
-	return CacheConfig{
+// defaultConfig returns a default configuration using BasicCache
+func defaultConfig() *CacheConfig {
+	return &CacheConfig{
 		Type:            Basic,
 		CleanupInterval: 5 * time.Minute,
 	}
 }
 
 // DefaultLRUConfig returns a default configuration using LRUCache with 1000 items
-func DefaultLRUConfig() CacheConfig {
-	return CacheConfig{
+func DefaultLRUConfig() *CacheConfig {
+	return &CacheConfig{
 		Type:            LRU,
 		CleanupInterval: 5 * time.Minute,
 		MaxSize:         1000,
@@ -57,40 +60,44 @@ type CacheManager struct {
 	// Store active caches to ensure they can be properly stopped when needed
 	caches map[string]Cache[string, any]
 	// configuration to use when none is provided
-	config CacheConfig
+	config *CacheConfig
 }
 
 // NewCacheManager creates a new cache manager with the basic cache as default
 func NewCacheManager() *CacheManager {
-	return NewCacheManagerWithConfig(config())
+	return NewCacheManagerWithConfig(defaultConfig())
 }
 
 // NewCacheManagerWithConfig creates a new cache manager with the specified default configuration
-func NewCacheManagerWithConfig(config CacheConfig) *CacheManager {
+func NewCacheManagerWithConfig(config *CacheConfig) *CacheManager {
+	newConfig := defaultConfig()
+	if config != nil {
+		newConfig = config
+	}
 	return &CacheManager{
 		caches: make(map[string]Cache[string, any]),
-		config: config,
+		config: newConfig,
 	}
 }
 
 // CreateCache creates a new cache with the given name using the default configuration
 func (m *CacheManager) CreateCache(name string) Cache[string, any] {
-	return m.CreateCacheWithConfig(name, m.config)
+	return m.CreateCacheWithConfig(name)
 }
 
 // CreateCacheWithConfig creates a new cache with the given name and specific configuration
 // The key type is string and value type is any for maximum flexibility
-func (m *CacheManager) CreateCacheWithConfig(name string, config CacheConfig) Cache[string, any] {
+func (m *CacheManager) CreateCacheWithConfig(name string) Cache[string, any] {
 	var cache Cache[string, any]
 
-	switch config.Type {
+	switch m.config.Type {
 	case LRU:
-		if config.MaxSize <= 0 {
-			config.MaxSize = 1000 // Default size if not specified
+		if m.config.MaxSize <= 0 {
+			m.config.MaxSize = 1000 // Default size if not specified
 		}
-		cache = NewLRUCacheWithCleanupInterval[string, any](config.MaxSize, config.CleanupInterval)
+		cache = NewLRUCacheWithCleanupInterval[string, any](m.config.MaxSize, m.config.CleanupInterval)
 	default: // Basic cache is the default
-		cache = NewBasicCacheWithCleanupInterval[string, any](config.CleanupInterval)
+		cache = NewBasicCacheWithCleanupInterval[string, any](m.config.CleanupInterval)
 	}
 
 	// Store the cache for later cleanup
@@ -110,12 +117,15 @@ func (m *CacheManager) GetOrCreateCache(name string) Cache[string, any] {
 }
 
 // GetOrCreateCacheWithConfig returns an existing cache or creates a new one with specified config
-func (m *CacheManager) GetOrCreateCacheWithConfig(name string, config CacheConfig) Cache[string, any] {
+func (m *CacheManager) GetOrCreateCacheWithConfig(name string) Cache[string, any] {
+	if m.config == nil {
+		m.config = defaultConfig()
+	}
 	if cache, exists := m.caches[name]; exists {
 		return cache
 	}
 
-	return m.CreateCacheWithConfig(name, config)
+	return m.CreateCacheWithConfig(name)
 }
 
 // GetCache retrieves a cache by name
@@ -141,12 +151,12 @@ func (m *CacheManager) StopAll() {
 }
 
 // Getconfig returns the current default configuration
-func (m *CacheManager) Getconfig() CacheConfig {
+func (m *CacheManager) Getconfig() *CacheConfig {
 	return m.config
 }
 
 // Setconfig changes the default configuration for new caches
-func (m *CacheManager) Setconfig(config CacheConfig) {
+func (m *CacheManager) Setconfig(config *CacheConfig) {
 	m.config = config
 }
 

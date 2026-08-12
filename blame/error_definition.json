@@ -534,6 +534,13 @@
     "Description": "The user is not authorized to perform this action.",
     "Component": "service",
     "ResponseType": "Unauthorized" 
+  },
+  {
+    "Code": "error-database-unavailable",
+    "Message": "Database is currently unavailable.",
+    "Description": "The routing service could not reach PostgreSQL.",
+    "Component": "service",
+    "ResponseType": "ServiceUnavailable"
   }
 
 ]
