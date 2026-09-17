@@ -45,6 +45,33 @@ func TestGenerate_AppliesDefaults(t *testing.T) {
 	assert.Equal(t, 4, provider.lastRequest.Margin)
 }
 
+func TestRequestConstructors(t *testing.T) {
+	empty := qr.NewRequest("https://example.com")
+	assert.Equal(t, qr.Request{Payload: "https://example.com"}, *empty)
+
+	defaults := qr.DefaultRequest("https://example.com")
+	assert.Equal(t, qr.FormatPNG, defaults.Format)
+	assert.Equal(t, qr.ErrorCorrectionMedium, defaults.ErrorCorrection)
+	assert.Equal(t, 10, defaults.Scale)
+	assert.Equal(t, 4, defaults.Margin)
+	assert.Equal(t, qr.EncodingModeAuto, defaults.Encoding)
+	assert.Empty(t, defaults.Payload)
+	assert.Nil(t, defaults.Render)
+}
+
+func TestRenderOptionsConstructors(t *testing.T) {
+	empty := qr.NewRenderOptions()
+	assert.Equal(t, &qr.RenderOptions{}, empty)
+
+	defaults := qr.DefaultRenderOptions()
+	assert.Equal(t, "#000000", defaults.Foreground)
+	assert.Equal(t, "#FFFFFF", defaults.Background)
+	assert.False(t, defaults.CompactSVG)
+	assert.False(t, defaults.IncludeSVGXMLHeader)
+	assert.Empty(t, defaults.Logo)
+	assert.Zero(t, defaults.LogoSizeRatio)
+}
+
 func TestGenerate_ValidationFailures(t *testing.T) {
 	provider := &mockProvider{}
 	generator, err := qr.NewGenerator(qr.WithProvider(provider))

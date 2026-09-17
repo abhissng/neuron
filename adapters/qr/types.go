@@ -37,6 +37,21 @@ type RenderOptions struct {
 	LogoSizeRatio       float64
 }
 
+// NewRenderOptions returns empty render options. Empty fields leave rendering
+// choices to the configured provider.
+func NewRenderOptions() *RenderOptions {
+	return &RenderOptions{}
+}
+
+// DefaultRenderOptions returns conventional QR rendering options. Services can
+// start with these values and override only the options they need.
+func DefaultRenderOptions() *RenderOptions {
+	return &RenderOptions{
+		Foreground: "#000000",
+		Background: "#FFFFFF",
+	}
+}
+
 // Request is a provider-agnostic QR generation request.
 //
 // Defaults are applied by the generator when fields are left zero-valued.
@@ -48,6 +63,27 @@ type Request struct {
 	Margin          int
 	Encoding        EncodingMode
 	Render          *RenderOptions
+}
+
+// NewRequest returns an empty QR request. The generator applies its configured
+// defaults for every optional field when Generate is called.
+func NewRequest(payload string) *Request {
+	return &Request{
+		Payload: payload,
+	}
+}
+
+// DefaultRequest returns a QR request populated with the package's standard
+// generation defaults. Payload remains empty and must be supplied before use.
+func DefaultRequest(payload string) *Request {
+	return &Request{
+		Payload:         payload,
+		Format:          FormatPNG,
+		ErrorCorrection: ErrorCorrectionMedium,
+		Scale:           10,
+		Margin:          4,
+		Encoding:        EncodingModeAuto,
+	}
 }
 
 // Result contains a generated QR artifact and metadata useful for HTTP responses.
