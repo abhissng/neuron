@@ -175,6 +175,7 @@ For concrete package-by-package usage, use [`USAGE.md`](USAGE.md).
 - [`adapters/paseto`](adapters/paseto), [`adapters/jwt`](adapters/jwt), [`adapters/session`](adapters/session), [`adapters/vault`](adapters/vault)
 - [`adapters/payment`](adapters/payment), [`adapters/payment/razorpay`](adapters/payment/razorpay)
 - [`adapters/file`](adapters/file), [`adapters/file/uploadFile`](adapters/file/uploadFile)
+- [`adapters/qr`](adapters/qr), [`adapters/qr/piglig`](adapters/qr/piglig)
 - [`adapters/email`](adapters/email), [`adapters/log`](adapters/log), [`adapters/prometheus`](adapters/prometheus), [`adapters/store`](adapters/store), [`adapters/store/regex`](adapters/store/regex), [`adapters/validator`](adapters/validator), [`adapters/viper`](adapters/viper)
 
 ### Utilities
