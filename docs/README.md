@@ -16,6 +16,7 @@ This directory contains deep usage guides grouped by domain.
 - [`adapters/auth-and-security.md`](adapters/auth-and-security.md)
 - [`adapters/data-and-storage.md`](adapters/data-and-storage.md)
 - [`adapters/cloud-and-file.md`](adapters/cloud-and-file.md)
+- [`../adapters/qr/README.md`](../adapters/qr/README.md)
 - [`adapters/payment-and-email.md`](adapters/payment-and-email.md)
 - [`adapters/ops-and-observability.md`](adapters/ops-and-observability.md)
 
