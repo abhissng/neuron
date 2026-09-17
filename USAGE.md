@@ -45,6 +45,60 @@ id := random.GenerateUUID(random.WithUUIDVersion7())
 _ = id
 ```
 
+### Return QR codes from an HTTP handler
+
+Generate in memory with `adapters/qr`, then write `Content-Type` and `Data` on the response. The QR package does not depend on Gin or `net/http`; any framework can use the same fields.
+
+```go
+import (
+	"net/http"
+
+	"github.com/abhissng/neuron/adapters/qr"
+	"github.com/abhissng/neuron/adapters/qr/piglig"
+)
+
+// Inject once at startup (safe for concurrent use).
+var qrGen, _ = piglig.NewGenerator()
+
+func handleQRPNG(w http.ResponseWriter, r *http.Request) {
+	payload := r.URL.Query().Get("payload")
+	if payload == "" {
+		http.Error(w, "missing payload", http.StatusBadRequest)
+		return
+	}
+
+	result, err := qrGen.Generate(r.Context(), qr.Request{
+		Payload: payload,
+		Format:  qr.FormatPNG,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", result.ContentType)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(result.Data)
+}
+
+func handleQRSVG(w http.ResponseWriter, r *http.Request) {
+	result, err := qrGen.Generate(r.Context(), qr.Request{
+		Payload: "https://example.com",
+		Format:  qr.FormatSVG,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", result.ContentType)
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(result.Data)
+}
+```
+
+More options (ECC, scale, margin, colors): [`adapters/qr/README.md`](adapters/qr/README.md).
+
 ## By Use Case
 
 ### Build HTTP APIs
@@ -52,6 +106,7 @@ _ = id
 - Gin server options and lifecycle: [`docs/adapters/http-and-gin.md`](docs/adapters/http-and-gin.md)
 - Request parsing and validation helpers: [`docs/adapters/http-and-gin.md`](docs/adapters/http-and-gin.md)
 - HTTP client wrappers and middleware: [`docs/adapters/http-and-gin.md`](docs/adapters/http-and-gin.md)
+- QR image responses (PNG/SVG): [`adapters/qr/README.md`](adapters/qr/README.md) and [Quick Samples](#return-qr-codes-from-an-http-handler) above
 
 ### Build Event-Driven Services
 
@@ -122,6 +177,7 @@ Internal sections are explicitly marked as implementation detail and may change.
 - [`adapters/mongo`](adapters/mongo), [`adapters/mysql`](adapters/mysql), [`adapters/postgres`](adapters/postgres), [`adapters/redis`](adapters/redis), [`adapters/opensearch`](adapters/opensearch), [`adapters/cosmos`](adapters/cosmos)
 - [`adapters/paseto`](adapters/paseto), [`adapters/session`](adapters/session), [`adapters/vault`](adapters/vault)
 - [`adapters/payment`](adapters/payment), [`adapters/payment/razorpay`](adapters/payment/razorpay)
+- [`adapters/qr`](adapters/qr), [`adapters/qr/piglig`](adapters/qr/piglig)
 - [`adapters/prometheus`](adapters/prometheus), [`adapters/store`](adapters/store), [`adapters/store/regex`](adapters/store/regex), [`adapters/validator`](adapters/validator), [`adapters/viper`](adapters/viper), [`adapters/email`](adapters/email)
 
 ### Utils
