@@ -74,7 +74,7 @@ func NewRequest(payload string) *Request {
 }
 
 // DefaultRequest returns a QR request populated with the package's standard
-// generation defaults. Payload remains empty and must be supplied before use.
+// generation defaults. The provided payload is assigned to Request.Payload.
 func DefaultRequest(payload string) *Request {
 	return &Request{
 		Payload:         payload,

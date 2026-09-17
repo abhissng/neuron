@@ -55,7 +55,7 @@ func TestRequestConstructors(t *testing.T) {
 	assert.Equal(t, 10, defaults.Scale)
 	assert.Equal(t, 4, defaults.Margin)
 	assert.Equal(t, qr.EncodingModeAuto, defaults.Encoding)
-	assert.Empty(t, defaults.Payload)
+	assert.Equal(t, "https://example.com", defaults.Payload)
 	assert.Nil(t, defaults.Render)
 }
 

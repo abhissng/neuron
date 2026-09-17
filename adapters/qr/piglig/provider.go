@@ -3,6 +3,7 @@ package piglig
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"image"
@@ -63,6 +64,10 @@ func (p *Provider) Generate(ctx context.Context, req qr.Request) (*qr.Result, er
 	}
 
 	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := qr.ValidateRenderedDimensions(code.Size(), req); err != nil {
 		return nil, err
 	}
 
@@ -158,22 +163,29 @@ func toPigligConfig(req qr.Request) (*go_qr.QrCodeImgConfig, error) {
 		}
 	}
 
-	return go_qr.NewQrCodeImgConfig(req.Scale, req.Margin, options...), nil
+	margin := req.Margin
+	// go-qr v1.1.0 SVG layout treats border as pixels; scale quiet zone by Scale
+	// so output matches PNG dimensions. Logo placement still expects module borders,
+	// so keep module units when a logo is configured.
+	if req.Format == qr.FormatSVG && (req.Render == nil || len(req.Render.Logo) == 0) {
+		margin = req.Margin * req.Scale
+	}
+
+	return go_qr.NewQrCodeImgConfig(req.Scale, margin, options...), nil
 }
 
-func parseHexColor(hex string) (color.RGBA, error) {
-	clean := strings.TrimPrefix(strings.TrimSpace(hex), "#")
+func parseHexColor(value string) (color.RGBA, error) {
+	clean := strings.TrimPrefix(strings.TrimSpace(value), "#")
 	if len(clean) != 6 {
-		return color.RGBA{}, fmt.Errorf("%w: invalid color %q", qr.ErrInvalidConfig, hex)
+		return color.RGBA{}, fmt.Errorf("%w: invalid color %q", qr.ErrInvalidConfig, value)
 	}
 
-	var c color.RGBA
-	_, err := fmt.Sscanf(clean, "%02x%02x%02x", &c.R, &c.G, &c.B)
-	if err != nil {
-		return color.RGBA{}, fmt.Errorf("%w: invalid color %q", qr.ErrInvalidConfig, hex)
+	decoded, err := hex.DecodeString(clean)
+	if err != nil || len(decoded) != 3 {
+		return color.RGBA{}, fmt.Errorf("%w: invalid color %q", qr.ErrInvalidConfig, value)
 	}
-	c.A = 0xFF
-	return c, nil
+
+	return color.RGBA{R: decoded[0], G: decoded[1], B: decoded[2], A: 0xFF}, nil
 }
 
 func toPigligECC(level qr.ErrorCorrection) (go_qr.Ecc, error) {

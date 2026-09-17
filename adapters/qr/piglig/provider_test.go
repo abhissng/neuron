@@ -7,6 +7,8 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -51,6 +53,29 @@ func TestDefaultGenerator_UsesRegisteredProvider(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "image/png", result.ContentType)
+}
+
+func TestProviderGenerate_SVGScaledQuietZone(t *testing.T) {
+	generator, err := piglig.NewGenerator()
+	require.NoError(t, err)
+
+	const scale = 3
+	const margin = 4
+	result, err := generator.Generate(context.Background(), qr.Request{
+		Payload: "https://example.com/scaled-svg",
+		Format:  qr.FormatSVG,
+		Scale:   scale,
+		Margin:  margin,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	viewBox := regexp.MustCompile(`viewBox="0 0 (\d+) (\d+)"`).FindStringSubmatch(string(result.Data))
+	require.Len(t, viewBox, 3)
+	assert.Equal(t, viewBox[1], viewBox[2])
+	assert.Equal(t, result.Width, atoi(t, viewBox[1]))
+	assert.Equal(t, result.Height, atoi(t, viewBox[2]))
+	assert.Greater(t, result.Width, 0)
 }
 
 func TestProviderGenerate_SVG(t *testing.T) {
@@ -142,6 +167,15 @@ func TestProviderGenerate_InvalidColorAndLogo(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, qr.ErrInvalidConfig)
 
+	_, err = generator.Generate(context.Background(), qr.Request{
+		Payload: "https://example.com",
+		Render: &qr.RenderOptions{
+			Foreground: "#00000g",
+		},
+	})
+	require.Error(t, err)
+	assert.ErrorIs(t, err, qr.ErrInvalidConfig)
+
 	logoBytes := makeTinyPNG(t)
 	_, err = generator.Generate(context.Background(), qr.Request{
 		Payload: "https://example.com",
@@ -152,6 +186,19 @@ func TestProviderGenerate_InvalidColorAndLogo(t *testing.T) {
 	})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, qr.ErrInvalidConfig)
+}
+
+func TestProviderGenerate_OutputDimensionTooLarge(t *testing.T) {
+	generator, err := piglig.NewGenerator()
+	require.NoError(t, err)
+
+	_, err = generator.Generate(context.Background(), qr.Request{
+		Payload: "https://example.com",
+		Scale:   20_000,
+		Margin:  4,
+	})
+	require.Error(t, err)
+	assert.ErrorIs(t, err, qr.ErrInvalidSize)
 }
 
 func TestProviderGenerate_PayloadTooLarge(t *testing.T) {
@@ -204,6 +251,13 @@ func TestProviderGenerate_Concurrent(t *testing.T) {
 	for err := range errCh {
 		require.NoError(t, err)
 	}
+}
+
+func atoi(t *testing.T, s string) int {
+	t.Helper()
+	n, err := strconv.Atoi(s)
+	require.NoError(t, err)
+	return n
 }
 
 func makeTinyPNG(t *testing.T) []byte {
